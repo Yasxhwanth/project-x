@@ -308,6 +308,31 @@ async function seedDefaultAuthAndOrganization() {
         )
       `);
     }
+
+    // Seed 3 Default Brand Campaigns
+    const c1 = await getDbRow("SELECT id FROM campaigns WHERE id = 'camp_01'");
+    if (!c1) {
+      await runDb(`
+        INSERT INTO campaigns (id, brand_name, product_name, max_budget_per_creator, target_reach_min, mandatory_phrases, promo_code, guidelines, organization_id, status)
+        VALUES ('camp_01', 'boAt Lifestyle', 'boAt Airdopes Pro Max 500', 50000, 100000, 'Use code SAVER20 for 20% off', 'SAVER20', 'Highlight 60h playtime and Active Noise Cancellation.', 'org_boat_01', 'ACTIVE')
+      `);
+    }
+
+    const c2 = await getDbRow("SELECT id FROM campaigns WHERE id = 'camp_02'");
+    if (!c2) {
+      await runDb(`
+        INSERT INTO campaigns (id, brand_name, product_name, max_budget_per_creator, target_reach_min, mandatory_phrases, promo_code, guidelines, organization_id, status)
+        VALUES ('camp_02', 'Mamaearth', 'Onion Hair Oil Natural Growth', 35000, 75000, 'Toxins-free natural hair care with code MAMAGROW15', 'MAMAGROW15', 'Focus on 100% natural ingredients and dermatologically tested benefits.', 'org_boat_01', 'ACTIVE')
+      `);
+    }
+
+    const c3 = await getDbRow("SELECT id FROM campaigns WHERE id = 'camp_03'");
+    if (!c3) {
+      await runDb(`
+        INSERT INTO campaigns (id, brand_name, product_name, max_budget_per_creator, target_reach_min, mandatory_phrases, promo_code, guidelines, organization_id, status)
+        VALUES ('camp_03', 'Cult.fit', 'Cultpass Elite Annual Pass', 75000, 200000, 'Transform your fitness with code CULTVIP25', 'CULTVIP25', 'Showcase gym workouts, group classes, and live trainer sessions.', 'org_boat_01', 'ACTIVE')
+      `);
+    }
   } catch (err) {
     console.error("Error seeding default auth & organization:", err);
   }

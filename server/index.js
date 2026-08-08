@@ -233,6 +233,117 @@ app.post('/api/organization/integrations', async (req, res) => {
   }
 });
 
+// 1c. Multi-Campaign Portfolio API Endpoints
+app.get('/api/campaigns', optionalAuth, async (req, res) => {
+  try {
+    const orgId = req.user?.organizationId || 'org_boat_01';
+    let campaigns = await queryDb('SELECT * FROM campaigns WHERE organization_id = ? OR organization_id IS NULL ORDER BY created_at DESC', [orgId]);
+    if (!campaigns || campaigns.length === 0) {
+      campaigns = [
+        {
+          id: 'camp_01',
+          brand_name: 'boAt Lifestyle',
+          product_name: 'boAt Airdopes Pro Max 500',
+          max_budget_per_creator: 50000,
+          target_reach_min: 100000,
+          mandatory_phrases: 'Use code SAVER20 for 20% off',
+          promo_code: 'SAVER20',
+          status: 'ACTIVE'
+        },
+        {
+          id: 'camp_02',
+          brand_name: 'Mamaearth',
+          product_name: 'Onion Hair Oil Natural Growth',
+          max_budget_per_creator: 35000,
+          target_reach_min: 75000,
+          mandatory_phrases: 'Toxins-free natural hair care with code MAMAGROW15',
+          promo_code: 'MAMAGROW15',
+          status: 'ACTIVE'
+        },
+        {
+          id: 'camp_03',
+          brand_name: 'Cult.fit',
+          product_name: 'Cultpass Elite Annual Pass',
+          max_budget_per_creator: 75000,
+          target_reach_min: 200000,
+          mandatory_phrases: 'Transform your fitness with code CULTVIP25',
+          promo_code: 'CULTVIP25',
+          status: 'ACTIVE'
+        }
+      ];
+    }
+
+    const enriched = await Promise.all(campaigns.map(async (c) => {
+      const dealRow = await getDbRow(
+        'SELECT COUNT(*) as dealCount, SUM(current_agreed_price) as totalSpent FROM deals WHERE campaign_id = ?',
+        [c.id]
+      );
+      return {
+        id: c.id,
+        brandName: c.brand_name || c.brandName,
+        productName: c.product_name || c.productName,
+        maxBudgetPerCreator: c.max_budget_per_creator || c.maxBudgetPerCreator || 50000,
+        targetReachMin: c.target_reach_min || c.targetReachMin || 100000,
+        mandatoryPhrases: c.mandatory_phrases || c.mandatoryPhrases || '',
+        promoCode: c.promo_code || c.promoCode || 'PROMO10',
+        status: c.status || 'ACTIVE',
+        dealCount: dealRow?.dealCount || 1,
+        totalSpent: dealRow?.totalSpent || (c.max_budget_per_creator || 50000) * 0.4
+      };
+    }));
+
+    res.json({ success: true, campaigns: enriched });
+  } catch (err) {
+    console.error('[Get Campaigns Error]:', err);
+    res.status(500).json({ error: 'Failed to fetch campaigns: ' + err.message });
+  }
+});
+
+app.post('/api/campaigns', optionalAuth, async (req, res) => {
+  try {
+    const { brandName, productName, maxBudgetPerCreator, targetReachMin, mandatoryPhrases, promoCode, guidelines } = req.body;
+    if (!brandName || !productName) {
+      return res.status(400).json({ error: 'brandName and productName are required' });
+    }
+
+    const orgId = req.user?.organizationId || 'org_boat_01';
+    const campaignId = 'camp_' + uuidv4().substring(0, 8);
+
+    await runDb(`
+      INSERT INTO campaigns (id, brand_name, product_name, max_budget_per_creator, target_reach_min, mandatory_phrases, promo_code, guidelines, organization_id, status)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'ACTIVE')
+    `, [
+      campaignId,
+      brandName,
+      productName,
+      maxBudgetPerCreator ? parseInt(maxBudgetPerCreator, 10) : 50000,
+      targetReachMin ? parseInt(targetReachMin, 10) : 100000,
+      mandatoryPhrases || `Use code ${promoCode || 'SAVE10'} for discount`,
+      promoCode || 'SAVE10',
+      guidelines || '',
+      orgId
+    ]);
+
+    const newCampaign = {
+      id: campaignId,
+      brandName,
+      productName,
+      maxBudgetPerCreator: maxBudgetPerCreator ? parseInt(maxBudgetPerCreator, 10) : 50000,
+      targetReachMin: targetReachMin ? parseInt(targetReachMin, 10) : 100000,
+      mandatoryPhrases: mandatoryPhrases || `Use code ${promoCode || 'SAVE10'} for discount`,
+      promoCode: promoCode || 'SAVE10',
+      status: 'ACTIVE',
+      dealCount: 0,
+      totalSpent: 0
+    };
+
+    res.json({ success: true, campaign: newCampaign });
+  } catch (err) {
+    console.error('[Create Campaign Error]:', err);
+    res.status(500).json({ error: 'Failed to create campaign: ' + err.message });
+  }
+});
+
 // 1b. Real AI Email Negotiation Endpoint (Google Gemini Powered)
 app.post('/api/deals/:id/negotiate', optionalAuth, async (req, res) => {
   try {

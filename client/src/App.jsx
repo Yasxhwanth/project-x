@@ -47,11 +47,14 @@ import OrgSettingsModal from './components/OrgSettingsModal';
 import WelcomeLaunchpad from './components/WelcomeLaunchpad';
 import WorkspaceOverview from './components/WorkspaceOverview';
 import AgencyCommandCenter from './components/AgencyCommandCenter';
+import CampaignPortfolioModal from './components/CampaignPortfolioModal';
 
 export default function App() {
   const [selectedTab, setSelectedTab] = useState(0);
   const [activeDeal, setActiveDeal] = useState(null);
   const [activeCampaign, setActiveCampaign] = useState(null);
+  const [campaigns, setCampaigns] = useState([]);
+  const [isCampaignModalOpen, setIsCampaignModalOpen] = useState(false);
   
   // Auth & Organization Session State
   const [session, setSession] = useState(null);
@@ -93,8 +96,10 @@ export default function App() {
     try {
       const res = await fetch('/api/campaigns');
       const data = await res.json();
-      if (data && data.length > 0) {
-        setActiveCampaign(data[0]);
+      const list = data?.campaigns || data;
+      if (Array.isArray(list) && list.length > 0) {
+        setCampaigns(list);
+        setActiveCampaign(list[0]);
       }
     } catch (err) {
       console.error("Failed to load active campaign", err);
@@ -149,6 +154,13 @@ export default function App() {
               <SelectItem value="creator" text="Creator studio" />
             </Select>
           </HeaderMenuItem>
+          {activeCampaign && (
+            <HeaderMenuItem href="#" onClick={() => setIsCampaignModalOpen(true)}>
+              <Tag type="green" size="md" style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', cursor: 'pointer' }}>
+                <Idea size={14} /> Campaign: {activeCampaign.brandName} ({activeCampaign.productName})
+              </Tag>
+            </HeaderMenuItem>
+          )}
           {session?.organization && (
             <HeaderMenuItem href="#" onClick={() => setIsOrgSettingsOpen(true)}>
               <Tag type="blue" size="md" style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', cursor: 'pointer' }}>
@@ -163,15 +175,13 @@ export default function App() {
           </HeaderMenuItem>
         </HeaderNavigation>
         <HeaderGlobalBar>
-          {session?.user && (
-            <HeaderGlobalAction 
-              aria-label="Sign Out Workspace" 
-              tooltipAlignment="end"
-              onClick={handleLogout}
-            >
-              <Switcher size={20} />
-            </HeaderGlobalAction>
-          )}
+          <HeaderGlobalAction 
+            aria-label="Switch Campaign Portfolio" 
+            tooltipAlignment="end"
+            onClick={() => setIsCampaignModalOpen(true)}
+          >
+            <Switcher size={20} />
+          </HeaderGlobalAction>
           <HeaderGlobalAction 
             aria-label="Organization & AI Settings" 
             tooltipAlignment="end"
@@ -181,6 +191,16 @@ export default function App() {
           </HeaderGlobalAction>
         </HeaderGlobalBar>
       </Header>
+
+      {/* Campaign Portfolio & Switcher Modal */}
+      <CampaignPortfolioModal
+        isOpen={isCampaignModalOpen}
+        onClose={() => setIsCampaignModalOpen(false)}
+        campaigns={campaigns}
+        activeCampaign={activeCampaign}
+        onSelectCampaign={(c) => setActiveCampaign(c)}
+        onCampaignCreated={(c) => setCampaigns([c, ...campaigns])}
+      />
 
       {/* Organization Profile & AI Settings Modal */}
       <OrgSettingsModal
