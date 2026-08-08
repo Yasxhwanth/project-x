@@ -50,28 +50,33 @@ Compose a concise, direct email reply. End with appropriate sign-off.`;
 
   // 1. Google Gemini API Call (Free Tier)
   if (geminiApiKey && geminiApiKey !== 'your_gemini_api_key_here') {
-    try {
-      console.log("🤖 [Real AI Negotiator] Calling Google Gemini API (gemini-1.5-flash)...");
-      const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`;
+    const modelsToTry = ['gemini-2.0-flash', 'gemini-2.5-flash', 'gemini-1.5-flash'];
+    for (const modelName of modelsToTry) {
+      if (aiReplyText) break;
+      try {
+        console.log(`🤖 [Real AI Negotiator] Calling Google Gemini API (${modelName})...`);
+        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${geminiApiKey}`;
 
-      const res = await fetch(geminiUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{
-            parts: [{ text: promptText }]
-          }]
-        })
-      });
+        const res = await fetch(geminiUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{
+              parts: [{ text: promptText }]
+            }]
+          })
+        });
 
-      const data = await res.json();
-      const candidateText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-      if (candidateText) {
-        aiReplyText = candidateText;
-        console.log("✨ Google Gemini API response generated successfully!");
+        const data = await res.json();
+        const candidateText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (candidateText) {
+          aiReplyText = candidateText;
+          console.log(`✨ Google Gemini API (${modelName}) response generated successfully!`);
+          break;
+        }
+      } catch (err) {
+        console.error(`Gemini API (${modelName}) call failed:`, err.message);
       }
-    } catch (err) {
-      console.error("Gemini API call failed:", err);
     }
   }
 
