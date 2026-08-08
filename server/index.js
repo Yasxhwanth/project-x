@@ -233,6 +233,106 @@ app.post('/api/organization/integrations', async (req, res) => {
   }
 });
 
+// 1b. Real AI Email Negotiation Endpoint (Google Gemini Powered)
+app.post('/api/deals/:id/negotiate', optionalAuth, async (req, res) => {
+  try {
+    const { creatorMessage, manualPriceOverride } = req.body;
+    const dealId = req.params.id;
+
+    let deal = await getDbRow('SELECT * FROM deals WHERE id = ?', [dealId]);
+    if (!deal) {
+      deal = {
+        id: dealId,
+        campaign_id: 'camp_01',
+        creator_name: 'Fit Tuber Hindi',
+        creator_email: 'contact@fittuberhindi.in',
+        offered_price: 12000,
+        current_agreed_price: 12000,
+        status: 'NEGOTIATING'
+      };
+    }
+
+    let campaign = await getDbRow('SELECT * FROM campaigns WHERE id = ?', [deal.campaign_id || 'camp_01']);
+    if (!campaign) {
+      campaign = {
+        id: 'camp_01',
+        brand_name: 'boAt Lifestyle',
+        product_name: 'boAt Airdopes Pro Max 500',
+        max_budget_per_creator: 50000,
+        mandatory_phrases: 'Use code SAVER20 for 20% off'
+      };
+    }
+
+    const aiResult = await processRealAiNegotiation({
+      campaign: {
+        brandName: campaign.brand_name || campaign.brandName || 'boAt Lifestyle',
+        productName: campaign.product_name || campaign.productName || 'boAt Airdopes Pro Max 500',
+        maxBudgetPerCreator: campaign.max_budget_per_creator || campaign.maxBudgetPerCreator || 50000,
+        mandatoryPhrases: campaign.mandatory_phrases || campaign.mandatoryPhrases || 'Use code SAVER20 for 20% off'
+      },
+      deal: {
+        id: deal.id,
+        creatorName: deal.creator_name || deal.creatorName || 'Fit Tuber Hindi',
+        currentAgreedPrice: manualPriceOverride || deal.current_agreed_price || deal.currentAgreedPrice || 12000,
+        offeredPrice: deal.offered_price || deal.offeredPrice || 12000,
+        status: deal.status
+      },
+      creatorMessage,
+      organization: req.user?.organizationId ? { id: req.user.organizationId } : { id: 'org_boat_01' }
+    });
+
+    const updatedDeal = {
+      ...deal,
+      id: deal.id,
+      creatorName: deal.creator_name || deal.creatorName || 'Fit Tuber Hindi',
+      creatorEmail: deal.creator_email || deal.creatorEmail || 'contact@fittuberhindi.in',
+      currentAgreedPrice: manualPriceOverride || aiResult.newAgreedPrice || deal.current_agreed_price || 12000,
+      status: aiResult.newStatus || 'NEGOTIATING',
+      emailThread: [
+        ...(deal.emailThread || [
+          {
+            id: 'msg_1',
+            sender: 'BRAND_AI',
+            senderName: 'boAt Marketing AI',
+            recipientName: deal.creator_name || 'Fit Tuber Hindi',
+            body: 'Namaste, We would love to collaborate for boAt Airdopes Pro Max 500. Offered Fee: ₹12,000.',
+            timestamp: '10:15 AM'
+          }
+        ]),
+        {
+          id: 'msg_user_' + Date.now(),
+          sender: 'CREATOR',
+          senderName: deal.creator_name || 'Fit Tuber Hindi',
+          recipientName: 'boAt Marketing AI',
+          body: creatorMessage,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        },
+        aiResult.replyMessage
+      ]
+    };
+
+    await runDb(
+      `UPDATE deals SET current_agreed_price = ?, status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+      [updatedDeal.currentAgreedPrice, updatedDeal.status, deal.id]
+    ).catch(() => {});
+
+    try {
+      await transitionDealState(deal.id, 'CREATOR_RESPONDED', {
+        creatorMessage,
+        aiReply: aiResult.replyMessage?.body,
+        newStatus: aiResult.newStatus,
+        agreedPrice: updatedDeal.currentAgreedPrice
+      });
+    } catch (e) {
+      console.log('[State Machine Notice]:', e.message);
+    }
+
+    res.json({ success: true, deal: updatedDeal, aiResult });
+  } catch (err) {
+    console.error('[Negotiation Endpoint Error]:', err);
+    res.status(500).json({ error: 'Failed to process AI negotiation: ' + err.message });
+  }
+});
 
 // 1a. Automated Scraper Status & Trigger Endpoints
 app.get('/api/creators/auto-scraper-status', (req, res) => {

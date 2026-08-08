@@ -59,9 +59,13 @@ export default function EmailNegotiator({ activeDeal, activeCampaign, onDealUpda
 
     setLoading(true);
     try {
+      const token = localStorage.getItem('cc_token');
+      const headers = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
       const res = await fetch(`/api/deals/${deal.id}/negotiate`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           creatorMessage: creatorReplyInput,
           manualPriceOverride: manualPriceOverride ? parseInt(manualPriceOverride, 10) : null
@@ -69,7 +73,7 @@ export default function EmailNegotiator({ activeDeal, activeCampaign, onDealUpda
       });
       const data = await res.json();
       if (data.deal) {
-        onDealUpdated(data.deal);
+        if (onDealUpdated) onDealUpdated(data.deal);
         setCreatorReplyInput('');
         setManualPriceOverride('');
         setIsEditingOverride(false);
