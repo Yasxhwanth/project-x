@@ -1,5 +1,7 @@
-import { scraperSdk } from './scraperSdk.js';
+import { CreatorScraperSDK } from '../sdk/creatorScraperSdk.js';
 import { getIntegrationSecret } from '../database/sqliteDb.js';
+
+const scraperSdk = new CreatorScraperSDK();
 
 /**
  * Natural-Language AI Creator Search Service powered by Google Gemini API
