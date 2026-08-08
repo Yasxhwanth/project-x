@@ -150,6 +150,12 @@ export default function EmailNegotiator({ activeDeal, activeCampaign, onDealUpda
         <p style={{ color: '#a8a8a8' }}>
           Autonomous Google Gemini AI negotiator with procedural response streaming & manual overrides.
         </p>
+        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginTop: '0.75rem' }}>
+          <Tag type="blue" size="sm">🛡️ Sec 194J Tax Calculation Skill</Tag>
+          <Tag type="purple" size="sm">💬 Hinglish Counter-Offer Skill</Tag>
+          <Tag type="cyan" size="sm">📹 VideoDB Multimodal Compliance Skill</Tag>
+          <Tag type="magenta" size="sm">⚙️ Autonomous Risk Ceiling Skill</Tag>
+        </div>
       </div>
 
       {errorMsg && (

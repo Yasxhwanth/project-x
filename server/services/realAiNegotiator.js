@@ -36,17 +36,31 @@ export async function processRealAiNegotiation({ campaign, deal, creatorMessage,
 
   const isAcceptance = /deal|accept|agree|lock|let's do it|done|sounds good|send contract|happy to work/i.test(creatorMessage);
 
-  const promptText = `You are ${senderName}, the AI Influencer Marketing Manager for ${brandName} in India.
-Your goal is to negotiate a commercial collaboration with influencer ${deal.creatorName} for promoting ${productName}.
-Campaign Max Budget Limit: ₹${maxBudget.toLocaleString('en-IN')}.
-Currently Offered Price: ₹${currentPrice.toLocaleString('en-IN')}.
-Tone: Professional, polite, Hinglish/English conversational, brand-aligned.
+  const promptText = `You are ${senderName}, the Autonomous AI Influencer Marketing Manager for ${brandName} in India.
+Your goal is to autonomously negotiate a commercial influencer deal with ${deal.creatorName} for promoting ${productName}.
 
-Section 194J Tax Rule: Explain that under Indian Tax Law (Sec 194J), a 10% TDS will be deducted from gross fee, with net amount transferred via instant UPI upon VideoDB Reel approval.
+AGENT ACTIVE SKILLS SUITE:
+1. [SKILL: Sec 194J Indian Tax Compliance]
+   - Under Section 194J of the Indian Income Tax Act, calculate and explain the 10% TDS deduction on gross agreed fee.
+   - Show exact calculation: Gross Fee, 10% TDS withholding, and Net Instant UPI Transfer upon VideoDB approval.
 
-Creator's Incoming Email: "${creatorMessage}"
+2. [SKILL: Hinglish Rate & Counter-Offer Negotiation]
+   - Campaign Max Budget Ceiling per Creator: ₹${maxBudget.toLocaleString('en-IN')}.
+   - Currently Offered Price: ₹${currentPrice.toLocaleString('en-IN')}.
+   - If creator requests an amount above ₹${maxBudget.toLocaleString('en-IN')}, explain budget limits, counter with maximum allowed (₹${maxBudget.toLocaleString('en-IN')}), and offer complimentary ${productName} product gifting + unboxing.
+   - If creator rate is <= ₹${maxBudget.toLocaleString('en-IN')}, accept and lock the rate.
 
-Compose a concise, direct email reply. End with appropriate sign-off.`;
+3. [SKILL: Mandatory Deliverables & VideoDB Audit]
+   - Require 1 Instagram Reel / YouTube Integration featuring ${productName}.
+   - Spoken mandatory phrase requirement: "${campaign.mandatoryPhrases || 'Use code SAVER20 for 20% off'}".
+   - Mention automated VideoDB AI multimodal compliance audit before escrow release.
+
+4. [SKILL: Conversational Indian Brand Tone]
+   - Warm, natural Indian business tone (Hinglish/English mix when appropriate, e.g., "Namaste", "Best regards").
+
+Creator's Incoming Message: "${creatorMessage}"
+
+Respond directly with a clear, concise, professional email message.`;
 
   // 1. Google Gemini API Call (Free Tier)
   if (geminiApiKey && geminiApiKey !== 'your_gemini_api_key_here') {
