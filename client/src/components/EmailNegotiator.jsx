@@ -90,10 +90,10 @@ export default function EmailNegotiator({ activeDeal, activeCampaign, onDealUpda
   const [thinkingStep, setThinkingStep] = useState(0);
 
   const thinkingSteps = [
-    '🔍 Analyzing creator message & counter-offer rate request...',
-    '⚖️ Evaluating Section 194J 10% TDS tax compliance policy...',
-    '✨ Invoking Google Gemini 2.5 Flash API for Hinglish brand response...',
-    '✉️ Finalizing email payload & updating state machine...'
+    'Analyzing creator response and commercial terms...',
+    'Evaluating Section 194J 10% TDS tax compliance policy...',
+    'Invoking Google Gemini 2.5 Flash for enterprise brand response...',
+    'Finalizing email payload and state machine transition...'
   ];
 
   const [errorMsg, setErrorMsg] = useState(null);
@@ -151,10 +151,10 @@ export default function EmailNegotiator({ activeDeal, activeCampaign, onDealUpda
           Autonomous Google Gemini AI negotiator with procedural response streaming & manual overrides.
         </p>
         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginTop: '0.75rem' }}>
-          <Tag type="blue" size="sm">🛡️ Sec 194J Tax Calculation Skill</Tag>
-          <Tag type="purple" size="sm">💬 Hinglish Counter-Offer Skill</Tag>
-          <Tag type="cyan" size="sm">📹 VideoDB Multimodal Compliance Skill</Tag>
-          <Tag type="magenta" size="sm">⚙️ Autonomous Risk Ceiling Skill</Tag>
+          <Tag type="blue" size="sm">Sec 194J Tax Calculation</Tag>
+          <Tag type="purple" size="sm">Hinglish Rate Negotiation</Tag>
+          <Tag type="cyan" size="sm">VideoDB Compliance Audit</Tag>
+          <Tag type="magenta" size="sm">Confidential Risk Ceiling</Tag>
         </div>
       </div>
 
@@ -248,8 +248,8 @@ export default function EmailNegotiator({ activeDeal, activeCampaign, onDealUpda
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
                     <Loading small withOverlay={false} />
-                    <span style={{ fontWeight: '600', color: '#78a9ff', fontSize: '0.95rem' }}>
-                      🤖 Gemini AI Agent Reasoning in Progress...
+                    <span style={{ fontWeight: '600', color: '#78a9ff', fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <Bot size={18} style={{ color: '#78a9ff' }} /> Gemini AI Agent Reasoning in Progress...
                     </span>
                   </div>
                   <div style={{ color: '#edf5ff', fontSize: '0.875rem', fontWeight: '500' }}>

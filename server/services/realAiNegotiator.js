@@ -65,9 +65,13 @@ AGENT ACTIVE SKILLS SUITE:
 2. [SKILL: Sec 194J Tax Calculation] Compute Gross Fee, 10% TDS withholding, and Net Instant UPI Transfer.
 3. [SKILL: VideoDB Multimodal Compliance Audit] Explain multimodal AI video audit requirements and instant UPI escrow release.
 
+TONE & FORMATTING POLICY:
+- ABSOLUTELY NO EMOJIS: Do NOT use any emojis anywhere in the email response body under any circumstances.
+- FORMAL CORPORATE TONE: Maintain a highly professional, crisp, executive corporate brand tone at all times.
+
 Creator's Incoming Message: "${creatorMessage}"
 
-Compose a professional, polite, brand-aligned email response without revealing internal budget limits.`;
+Compose a formal, sleek, highly professional corporate email response without any emojis or disclosure of internal budget limits.`;
 
   // 1. Google Gemini API Call (Free Tier)
   if (geminiApiKey && geminiApiKey !== 'your_gemini_api_key_here') {
