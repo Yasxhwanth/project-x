@@ -233,6 +233,121 @@ app.post('/api/organization/integrations', async (req, res) => {
   }
 });
 
+// Gmail OAuth 2.0 Authentication Routes
+app.get('/api/integrations/gmail/connect', optionalAuth, (req, res) => {
+  const clientId = process.env.GOOGLE_CLIENT_ID;
+  if (!clientId || clientId === 'your_google_oauth_client_id_here') {
+    return res.status(400).send('GOOGLE_CLIENT_ID is not configured in server/.env. Please add GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET.');
+  }
+
+  const host = req.get('host');
+  const protocol = req.protocol === 'https' || req.headers['x-forwarded-proto'] === 'https' ? 'https' : 'http';
+  const redirectUri = `${protocol}://${host}/api/integrations/gmail/callback`;
+  const orgId = req.query.orgId || req.user?.organizationId || 'org_boat_01';
+
+  const scopes = [
+    'https://www.googleapis.com/auth/gmail.send',
+    'https://www.googleapis.com/auth/gmail.readonly',
+    'https://www.googleapis.com/auth/userinfo.email'
+  ].join(' ');
+
+  const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${encodeURIComponent(scopes)}&access_type=offline&prompt=consent&state=${orgId}`;
+
+  res.redirect(authUrl);
+});
+
+app.get('/api/integrations/gmail/callback', async (req, res) => {
+  const { code, state, error } = req.query;
+  if (error || !code) {
+    return res.redirect('/?gmail_error=' + encodeURIComponent(error || 'No authorization code returned'));
+  }
+
+  try {
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+    const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+    const host = req.get('host');
+    const protocol = req.protocol === 'https' || req.headers['x-forwarded-proto'] === 'https' ? 'https' : 'http';
+    const redirectUri = `${protocol}://${host}/api/integrations/gmail/callback`;
+    const orgId = state || 'org_boat_01';
+
+    const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        code,
+        client_id: clientId,
+        client_secret: clientSecret,
+        redirect_uri: redirectUri,
+        grant_type: 'authorization_code'
+      })
+    });
+
+    const tokenData = await tokenRes.json();
+    if (tokenData.error) {
+      throw new Error(tokenData.error_description || tokenData.error);
+    }
+
+    const { access_token, refresh_token } = tokenData;
+
+    const userRes = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+      headers: { Authorization: `Bearer ${access_token}` }
+    });
+    const userData = await userRes.json();
+    const connectedEmail = userData.email;
+
+    await runDb(`
+      UPDATE organizations SET sender_email = ?, google_refresh_token = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?
+    `, [connectedEmail, refresh_token || '', orgId]).catch(() => {});
+
+    await runDb(`
+      INSERT INTO organization_integrations (organization_id, integration_key, secret_value, updated_at)
+      VALUES (?, 'gmail_oauth', ?, CURRENT_TIMESTAMP)
+      ON CONFLICT(organization_id, integration_key)
+      DO UPDATE SET secret_value = excluded.secret_value, updated_at = CURRENT_TIMESTAMP
+    `, [orgId, JSON.stringify({ email: connectedEmail, refreshToken: refresh_token, accessToken: access_token })]);
+
+    res.redirect('/?gmail_status=connected&email=' + encodeURIComponent(connectedEmail));
+  } catch (err) {
+    console.error('[Gmail OAuth Callback Error]:', err);
+    res.redirect('/?gmail_error=' + encodeURIComponent(err.message));
+  }
+});
+
+app.get('/api/integrations/gmail/status', optionalAuth, async (req, res) => {
+  try {
+    const orgId = req.user?.organizationId || 'org_boat_01';
+    const org = await getDbRow('SELECT sender_email, google_refresh_token FROM organizations WHERE id = ?', [orgId]);
+    const integration = await getDbRow('SELECT secret_value, updated_at FROM organization_integrations WHERE organization_id = ? AND integration_key = ?', [orgId, 'gmail_oauth']);
+
+    let parsed = null;
+    if (integration?.secret_value) {
+      try { parsed = JSON.parse(integration.secret_value); } catch (e) {}
+    }
+
+    const isConnected = Boolean(org?.google_refresh_token || parsed?.refreshToken || process.env.GOOGLE_REFRESH_TOKEN);
+    const email = parsed?.email || org?.sender_email || process.env.GMAIL_USER || 'collabs@boat-lifestyle.com';
+
+    res.json({
+      connected: isConnected,
+      email,
+      updatedAt: integration?.updated_at || null
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/integrations/gmail/disconnect', optionalAuth, async (req, res) => {
+  try {
+    const orgId = req.user?.organizationId || 'org_boat_01';
+    await runDb('UPDATE organizations SET google_refresh_token = NULL WHERE id = ?', [orgId]);
+    await runDb('DELETE FROM organization_integrations WHERE organization_id = ? AND integration_key = ?', [orgId, 'gmail_oauth']);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // 1c. Multi-Campaign Portfolio API Endpoints
 app.get('/api/campaigns', optionalAuth, async (req, res) => {
   try {

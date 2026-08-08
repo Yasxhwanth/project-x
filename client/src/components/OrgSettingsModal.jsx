@@ -37,12 +37,33 @@ export default function OrgSettingsModal({ isOpen, onClose, session, onOpenAuthM
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
 
+  const [gmailStatus, setGmailStatus] = useState({ connected: false, email: '' });
+
   useEffect(() => {
     if (isOpen && session?.user) {
       fetchSettings();
       fetchIntegrations();
+      fetchGmailStatus();
     }
   }, [isOpen, session]);
+
+  const fetchGmailStatus = async () => {
+    try {
+      const token = localStorage.getItem('cc_token');
+      const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+      const res = await fetch('/api/integrations/gmail/status', { headers });
+      if (res.ok) setGmailStatus(await res.json());
+    } catch (err) { console.error('Failed to load Gmail status', err); }
+  };
+
+  const handleDisconnectGmail = async () => {
+    try {
+      const token = localStorage.getItem('cc_token');
+      const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+      await fetch('/api/integrations/gmail/disconnect', { method: 'POST', headers });
+      await fetchGmailStatus();
+    } catch (err) { console.error('Failed to disconnect Gmail', err); }
+  };
 
   const fetchSettings = async () => {
     try {
@@ -208,6 +229,40 @@ export default function OrgSettingsModal({ isOpen, onClose, session, onOpenAuthM
                   {errorMsg && (
                     <InlineNotification kind="error" title="Error" subtitle={errorMsg} />
                   )}
+
+                  {/* Google Gmail OAuth 2.0 1-Click Integration Card */}
+                  <div style={{ background: '#161616', border: '1px solid #393939', padding: '1.25rem', borderRadius: '4px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <Bot size={20} style={{ color: '#ea4335' }} />
+                        <span style={{ fontWeight: '600', color: '#ffffff', fontSize: '0.95rem' }}>Google Gmail OAuth 2.0 Integration</span>
+                      </div>
+                      <Tag type={gmailStatus?.connected ? 'green' : 'yellow'} size="sm">
+                        {gmailStatus?.connected ? `Connected: ${gmailStatus.email}` : 'Not Connected'}
+                      </Tag>
+                    </div>
+                    <p style={{ fontSize: '0.85rem', color: '#a8a8a8', marginBottom: '1rem' }}>
+                      Connect your company Gmail or Google Workspace account with 1-click permission to let AI send and read creator emails natively from your address.
+                    </p>
+                    <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                      <Button
+                        size="sm"
+                        kind={gmailStatus?.connected ? 'secondary' : 'primary'}
+                        onClick={() => window.location.href = `/api/integrations/gmail/connect?orgId=${session?.organization?.id || 'org_boat_01'}`}
+                      >
+                        {gmailStatus?.connected ? 'Re-authorize Company Gmail' : 'Connect Company Gmail (1-Click OAuth2)'}
+                      </Button>
+                      {gmailStatus?.connected && (
+                        <Button
+                          size="sm"
+                          kind="danger--ghost"
+                          onClick={handleDisconnectGmail}
+                        >
+                          Disconnect Gmail
+                        </Button>
+                      )}
+                    </div>
+                  </div>
 
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                     <TextInput

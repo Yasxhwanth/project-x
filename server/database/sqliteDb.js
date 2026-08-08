@@ -259,6 +259,7 @@ function initDatabaseSchema() {
       // Run safe DB schema migrations
       db.run(`ALTER TABLE campaigns ADD COLUMN organization_id TEXT`, () => {});
       db.run(`ALTER TABLE deals ADD COLUMN organization_id TEXT`, () => {});
+      db.run(`ALTER TABLE organizations ADD COLUMN google_refresh_token TEXT`, () => {});
       isInitialized = true;
       seedDefaultAuthAndOrganization().catch(err => console.error("Auth seeding error:", err));
       seedInstagramCreatorsDatabase().catch(err => console.error("Creator seeding error:", err));
