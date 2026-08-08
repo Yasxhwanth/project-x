@@ -113,33 +113,42 @@ export default function CreatorSearch({ onSelectCreator, activeCampaign }) {
     }
   };
 
-  const handleNlSearch = (e) => {
-    e.preventDefault();
+  // AI Search State
+  const [aiSearching, setAiSearching] = useState(false);
+  const [aiParsedResult, setAiParsedResult] = useState(null);
+  const [aiSearchError, setAiSearchError] = useState(null);
+
+  const handleNlSearch = async (e) => {
+    if (e) e.preventDefault();
     if (!nlQuery.trim()) return;
     
-    // Auto adjust filters if prompt specifies parameters
-    const lowerNL = nlQuery.toLowerCase();
-    if (lowerNL.includes("under ₹20k") || lowerNL.includes("under 20k")) {
-      setBudgetMax(20000);
-    } else if (lowerNL.includes("under ₹50k") || lowerNL.includes("under 50k")) {
-      setBudgetMax(50000);
-    }
+    setAiSearching(true);
+    setAiSearchError(null);
+    try {
+      const res = await fetch('/api/creators/ai-search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: nlQuery })
+      });
 
-    if (lowerNL.includes("fitness")) {
-      setSelectedNiche("Fitness & Health");
-    } else if (lowerNL.includes("tech")) {
-      setSelectedNiche("Tech & Gadgets");
-    } else if (lowerNL.includes("fashion")) {
-      setSelectedNiche("Beauty & Fashion");
-    }
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to process AI Natural-Language Search');
+      }
 
-    if (lowerNL.includes("reels") || lowerNL.includes("instagram")) {
-      setSelectedPlatform("Instagram");
-    } else if (lowerNL.includes("youtube")) {
-      setSelectedPlatform("YouTube");
+      if (data.creators) {
+        setCreators(data.creators);
+        setAiParsedResult(data.parsed);
+        if (data.parsed?.maxBudget) {
+          setBudgetMax(data.parsed.maxBudget);
+        }
+      }
+    } catch (err) {
+      console.error("AI Creator Search Error:", err);
+      setAiSearchError(err.message);
+    } finally {
+      setAiSearching(false);
     }
-
-    fetchCreators();
   };
 
   const handleScrapeInstagram = async () => {
@@ -204,7 +213,11 @@ export default function CreatorSearch({ onSelectCreator, activeCampaign }) {
     creator: c,
     platform: c.platform,
     reach: c.reachText || `${formatCountInKAndM(c.subscribersRaw || c.followersRaw)} Followers`,
-    matchRationale: c.aiMatchRationale || `${c.aiScores?.brandFit || 95}% Match • Clean Exclusivity • Fits Budget`,
+    matchRationale: {
+      score: c.matchScore || c.aiScores?.brandFit || 95,
+      reason: c.aiMatchReason || c.aiMatchRationale || `${c.niche} creator with high engagement fitting target budget.`,
+      highlights: c.aiHighlights || [c.niche, c.platform]
+    },
     price: c.pricePerPost,
     action: c
   }));
@@ -246,12 +259,48 @@ export default function CreatorSearch({ onSelectCreator, activeCampaign }) {
               size="md"
               kind="primary"
               type="submit"
+              disabled={aiSearching}
               renderIcon={Idea}
             >
-              Run AI Natural Search
+              {aiSearching ? 'Analyzing Prompt...' : 'Run AI Natural Search'}
             </Button>
           </div>
         </form>
+
+        {aiSearching && (
+          <div style={{ marginTop: '1rem', display: 'flex', alignItems: 'center', gap: '0.75rem', background: '#161616', padding: '0.75rem 1rem', borderRadius: '4px', border: '1px solid #393939' }}>
+            <Loading small withOverlay={false} description="Google Gemini AI is parsing prompt and ranking creators..." />
+            <span style={{ fontSize: '0.85rem', color: '#4589ff' }}>
+              Google Gemini AI is analyzing prompt semantic intent, matching demographics, and ranking creators...
+            </span>
+          </div>
+        )}
+
+        {aiSearchError && (
+          <InlineNotification
+            kind="error"
+            title="AI Search Error"
+            subtitle={aiSearchError}
+            style={{ marginTop: '1rem' }}
+          />
+        )}
+
+        {aiParsedResult && (
+          <div style={{ marginTop: '1rem', background: '#161616', padding: '1rem', borderRadius: '4px', border: '1px solid #0f62fe' }}>
+            <div style={{ fontSize: '0.85rem', fontWeight: '600', color: '#4589ff', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <Idea size={16} /> Google Gemini AI Intent Parsing Breakdown
+            </div>
+            <p style={{ fontSize: '0.85rem', color: '#edf5ff', marginBottom: '0.5rem', fontWeight: '500' }}>
+              "{aiParsedResult.parsedSummary}"
+            </p>
+            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+              {aiParsedResult.niche && <Tag type="blue" size="sm">Niche: {aiParsedResult.niche}</Tag>}
+              {aiParsedResult.platform && <Tag type="purple" size="sm">Platform: {aiParsedResult.platform}</Tag>}
+              {aiParsedResult.city && <Tag type="teal" size="sm">City: {aiParsedResult.city}</Tag>}
+              {aiParsedResult.maxBudget && <Tag type="green" size="sm">Max Budget: ≤ ₹{aiParsedResult.maxBudget.toLocaleString('en-IN')}</Tag>}
+            </div>
+          </div>
+        )}
 
         {/* Quick Sample Presets */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.75rem', flexWrap: 'wrap' }}>
@@ -264,14 +313,9 @@ export default function CreatorSearch({ onSelectCreator, activeCampaign }) {
               style={{ cursor: 'pointer', background: '#393939', color: '#f4f4f4' }}
               onClick={() => {
                 setNlQuery(promptText);
-                const lowerNL = promptText.toLowerCase();
-                if (lowerNL.includes("under ₹20k")) setBudgetMax(20000);
-                if (lowerNL.includes("under ₹50,000")) setBudgetMax(50000);
-                if (lowerNL.includes("fitness")) setSelectedNiche("Fitness & Health");
-                if (lowerNL.includes("tech")) setSelectedNiche("Tech & Gadgets");
-                if (lowerNL.includes("reels")) setSelectedPlatform("Instagram");
-                if (lowerNL.includes("youtube")) setSelectedPlatform("YouTube");
-                fetchCreators();
+                setTimeout(() => {
+                  handleNlSearch(null);
+                }, 100);
               }}
             >
               Prompt {idx + 1}: {promptText.substring(0, 48)}...
@@ -464,8 +508,24 @@ export default function CreatorSearch({ onSelectCreator, activeCampaign }) {
                             {formattedReach}
                           </TableCell>
                           <TableCell>
-                            <div style={{ fontSize: '0.8rem', color: '#42be65', background: '#161616', padding: '0.35rem 0.5rem', borderRadius: '4px', border: '1px solid #393939' }}>
-                              {matchRationaleText}
+                            <div style={{ background: '#161616', padding: '0.5rem', borderRadius: '4px', border: '1px solid #393939', maxWidth: '320px' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
+                                <Tag type="green" size="sm" style={{ fontWeight: '700', margin: 0 }}>
+                                  {matchRationaleText?.score || 95}% AI Match
+                                </Tag>
+                              </div>
+                              <div style={{ fontSize: '0.78rem', color: '#c6c6c6', lineHeight: '1.25' }}>
+                                {matchRationaleText?.reason}
+                              </div>
+                              {Array.isArray(matchRationaleText?.highlights) && matchRationaleText.highlights.length > 0 && (
+                                <div style={{ display: 'flex', gap: '0.25rem', marginTop: '0.35rem', flexWrap: 'wrap' }}>
+                                  {matchRationaleText.highlights.map((h, i) => (
+                                    <Tag key={i} type="blue" size="sm" style={{ fontSize: '0.7rem', padding: '0 0.4rem' }}>
+                                      {h}
+                                    </Tag>
+                                  ))}
+                                </div>
+                              )}
                             </div>
                           </TableCell>
                           <TableCell style={{ fontWeight: '700', color: '#f1c21b' }}>

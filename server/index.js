@@ -21,6 +21,7 @@ import { generateCampaignStrategy } from './services/aiCampaignStrategyService.j
 import { getCampaignAnalyticsSummary } from './services/analyticsService.js';
 import { loginUser, registerUserAndOrganization, getCurrentUserSession, getOrganizationMembers, sendLoginOtp, verifyLoginOtp, loginWithGoogle } from './services/authService.js';
 import { processRealAiNegotiation } from './services/realAiNegotiator.js';
+import { searchCreatorsWithNaturalLanguage } from './services/aiCreatorSearch.js';
 import { sendCreatorEmail, pollCreatorInbox } from './services/gmailEmailService.js';
 import { getTanoPricingMatrix, generateLlmsTxt, generateAgentCardJson } from './services/tanoServicesEngine.js';
 
@@ -593,6 +594,23 @@ app.get('/api/creators', async (req, res) => {
   } catch (err) {
     console.error("SDK search error:", err);
     res.status(500).json({ error: "Failed to fetch creators via SDK" });
+  }
+});
+
+// 1c. Natural-Language AI Creator Search Endpoint (Google Gemini Powered)
+app.post('/api/creators/ai-search', optionalAuth, async (req, res) => {
+  try {
+    const { prompt } = req.body;
+    if (!prompt || !prompt.trim()) {
+      return res.status(400).json({ error: 'Prompt is required for Natural-Language AI Creator Search' });
+    }
+
+    const orgId = req.user?.organizationId || 'org_boat_01';
+    const result = await searchCreatorsWithNaturalLanguage({ prompt, organizationId: orgId });
+    res.json(result);
+  } catch (err) {
+    console.error('[AI Creator Search Endpoint Error]:', err);
+    res.status(500).json({ error: err.message });
   }
 });
 
