@@ -1,8 +1,16 @@
+import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+dotenv.config({ path: path.resolve(__dirname, '.env') });
+dotenv.config();
+
 import express from 'express';
 import cors from 'cors';
 import { v4 as uuidv4 } from 'uuid';
-import path from 'path';
-import { fileURLToPath } from 'url';
 
 import { queryDb, getDbRow, runDb } from './database/sqliteDb.js';
 import { CreatorScraperSDK } from './sdk/creatorScraperSdk.js';
@@ -28,14 +36,6 @@ import { requireAuth, optionalAuth } from './middleware/authMiddleware.js';
 
 // Attribution & Order Conversion Service
 import { recordConversion, getCampaignAttribution, generateCreatorUtmLink } from './services/attributionService.js';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-
-
-
-
 
 const app = express();
 const PORT = process.env.PORT || 5001;
