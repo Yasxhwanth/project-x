@@ -187,7 +187,7 @@ export default function App() {
         isOpen={isOrgSettingsOpen}
         onClose={() => setIsOrgSettingsOpen(false)}
         session={session}
-        onUpdateSession={setSession}
+        onOpenAuthModal={() => setIsAuthModalOpen(true)}
       />
 
       {/* Auth & Login Modal */}
