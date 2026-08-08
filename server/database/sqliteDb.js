@@ -256,6 +256,8 @@ function initDatabaseSchema() {
         created_at   DATETIME DEFAULT CURRENT_TIMESTAMP
       )
     `, () => {
+      // Run safe DB schema migrations
+      db.run(`ALTER TABLE campaigns ADD COLUMN organization_id TEXT`, () => {});
       isInitialized = true;
       seedDefaultAuthAndOrganization().catch(err => console.error("Auth seeding error:", err));
       seedInstagramCreatorsDatabase().catch(err => console.error("Creator seeding error:", err));

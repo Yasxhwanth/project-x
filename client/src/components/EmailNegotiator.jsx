@@ -10,33 +10,25 @@ import {
   InlineNotification,
   Loading
 } from '@carbon/react';
-import { Email, Send, Checkmark, Edit, Reset } from '@carbon/icons-react';
+import { Email, Send, Checkmark, Edit, Reset, Bot } from '@carbon/icons-react';
 
 export default function EmailNegotiator({ activeDeal, activeCampaign, onDealUpdated }) {
   const deal = activeDeal || {
     id: 'deal_01',
-    creatorName: 'Vivek Mittal (Fit Tuber)',
-    creatorEmail: 'vivek@fittuber.com',
+    creatorName: 'Fit Tuber Hindi',
+    creatorEmail: 'contact@fittuberhindi.in',
     creatorAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=250&q=80',
-    offeredPrice: 45000,
-    currentAgreedPrice: 45000,
-    status: 'COUNTER_OFFER',
+    offeredPrice: 12000,
+    currentAgreedPrice: 12000,
+    status: 'NEGOTIATING',
     emailThread: [
       {
         id: 'msg_1',
         sender: 'BRAND_AI',
         senderName: 'boAt Marketing AI',
-        recipientName: 'Vivek Mittal',
-        body: 'Namaste Vivek, We would love to collaborate with Fit Tuber for boAt Airdopes Pro Max 500. Offered Fee: ₹45,000 for 1 Instagram Reel with mandatory phrase "Use code SAVER20 for 20% off".',
+        recipientName: 'Fit Tuber Hindi',
+        body: 'Namaste, We would love to collaborate for boAt Airdopes Pro Max 500. Offered Fee: ₹12,000.',
         timestamp: '10:15 AM'
-      },
-      {
-        id: 'msg_2',
-        sender: 'CREATOR',
-        senderName: 'Vivek Mittal',
-        recipientName: 'boAt Marketing AI',
-        body: 'Bhai, 45k thoda kam h. Can we do ₹55,000? I will do unboxing + fitness test in the Reel.',
-        timestamp: '10:42 AM'
       }
     ]
   };
@@ -52,12 +44,25 @@ export default function EmailNegotiator({ activeDeal, activeCampaign, onDealUpda
   const [manualPriceOverride, setManualPriceOverride] = useState('');
   const [isEditingOverride, setIsEditingOverride] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [thinkingStep, setThinkingStep] = useState(0);
+
+  const thinkingSteps = [
+    '🔍 Analyzing creator message & counter-offer rate request...',
+    '⚖️ Evaluating Section 194J 10% TDS tax compliance policy...',
+    '✨ Invoking Google Gemini 2.5 Flash API for Hinglish brand response...',
+    '✉️ Finalizing email payload & updating state machine...'
+  ];
 
   const handleSimulateCreatorReply = async (e) => {
     e.preventDefault();
     if (!creatorReplyInput.trim()) return;
 
     setLoading(true);
+    setThinkingStep(0);
+    const stepInterval = setInterval(() => {
+      setThinkingStep((prev) => (prev < thinkingSteps.length - 1 ? prev + 1 : prev));
+    }, 700);
+
     try {
       const token = localStorage.getItem('cc_token');
       const headers = { 'Content-Type': 'application/json' };
@@ -81,6 +86,7 @@ export default function EmailNegotiator({ activeDeal, activeCampaign, onDealUpda
     } catch (err) {
       console.error("Failed to process AI negotiation", err);
     } finally {
+      clearInterval(stepInterval);
       setLoading(false);
     }
   };
@@ -124,8 +130,10 @@ export default function EmailNegotiator({ activeDeal, activeCampaign, onDealUpda
 
         {/* Email Thread */}
         <Column lg={10} md={8} sm={4}>
-          <Tile style={{ padding: '1.5rem', background: '#262626', minHeight: '420px', display: 'flex', flexDirection: 'column' }}>
-            <h4 style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '1rem' }}>Live Email Negotiation Thread</h4>
+          <Tile style={{ padding: '1.5rem', background: '#262626', minHeight: '450px', display: 'flex', flexDirection: 'column' }}>
+            <h4 style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <Bot size={20} style={{ color: '#0f62fe' }} /> Live Email Negotiation Thread
+            </h4>
             
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '1rem', overflowY: 'auto', maxHeight: '420px', paddingRight: '0.5rem' }}>
               {deal.emailThread?.map((msg) => (
@@ -137,30 +145,56 @@ export default function EmailNegotiator({ activeDeal, activeCampaign, onDealUpda
                     background: msg.sender === 'BRAND_AI' ? '#161616' : '#393939',
                     borderLeft: msg.sender === 'BRAND_AI' ? '4px solid #0f62fe' : '4px solid #f1c21b',
                     alignSelf: msg.sender === 'BRAND_AI' ? 'flex-start' : 'flex-end',
-                    width: '90%'
+                    width: '92%'
                   }}
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: '0.8rem', color: '#a8a8a8' }}>
-                    <strong>{msg.senderName}</strong>
+                    <span style={{ fontWeight: '600', color: msg.sender === 'BRAND_AI' ? '#4589ff' : '#f1c21b' }}>
+                      {msg.senderName}
+                    </span>
                     <span>{msg.timestamp}</span>
                   </div>
-                  <div style={{ whiteSpace: 'pre-line', fontSize: '0.9rem', color: '#f4f4f4', lineHeight: '1.4' }}>
+                  <p style={{ color: '#ffffff', whiteSpace: 'pre-wrap', lineHeight: '1.5', fontSize: '0.9rem', margin: 0 }}>
                     {msg.body}
-                  </div>
+                  </p>
                 </div>
               ))}
+
+              {/* Animated AI Agent Thinking Card */}
+              {loading && (
+                <div 
+                  style={{
+                    padding: '1.25rem',
+                    borderRadius: '4px',
+                    background: '#001d6c',
+                    borderLeft: '4px solid #4589ff',
+                    boxShadow: '0 0 15px rgba(15, 98, 254, 0.5)',
+                    alignSelf: 'flex-start',
+                    width: '92%',
+                    transition: 'all 0.3s ease'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
+                    <Loading small withOverlay={false} />
+                    <span style={{ fontWeight: '600', color: '#78a9ff', fontSize: '0.95rem' }}>
+                      🤖 Gemini AI Agent Reasoning in Progress...
+                    </span>
+                  </div>
+                  <div style={{ color: '#edf5ff', fontSize: '0.875rem', fontWeight: '500' }}>
+                    {thinkingSteps[thinkingStep]}
+                  </div>
+                </div>
+              )}
             </div>
           </Tile>
         </Column>
 
-        {/* Creator Reply Simulator & Manual Price Override Panel */}
+        {/* Action Panel */}
         <Column lg={6} md={8} sm={4}>
-          <Tile style={{ padding: '1.5rem', background: '#262626' }}>
-            <h4 style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '1rem' }}>
-              Simulate Creator Reply & Manual Override
-            </h4>
+          <Tile style={{ padding: '1.5rem', background: '#262626', height: '100%' }}>
+            <h4 style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '1rem' }}>Simulate Creator Reply & Manual Override</h4>
 
-            <form onSubmit={handleSimulateCreatorReply}>
+            <form onSubmit={handleSimulateCreatorReply} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
               <TextArea
                 id="creator-reply-input"
                 labelText="Creator Incoming Email Response"
@@ -168,32 +202,32 @@ export default function EmailNegotiator({ activeDeal, activeCampaign, onDealUpda
                 rows={4}
                 value={creatorReplyInput}
                 onChange={(e) => setCreatorReplyInput(e.target.value)}
-                style={{ marginBottom: '1rem' }}
                 required
               />
 
-              {/* Inline Manual Price Override Field */}
-              <div style={{ background: '#161616', padding: '1rem', borderRadius: '4px', marginBottom: '1.25rem', border: '1px solid #393939' }}>
+              <div style={{ background: '#161616', padding: '1rem', borderRadius: '4px', border: '1px solid #393939' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                  <span style={{ fontSize: '0.85rem', fontWeight: '600', color: '#f1c21b', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                  <span style={{ fontSize: '0.85rem', fontWeight: '600', color: '#f1c21b', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
                     <Edit size={16} /> Manual Price Override (Optional)
                   </span>
-                  <Tag type={manualPriceOverride ? "purple" : "gray"} size="sm">
-                    {manualPriceOverride ? "Manual Override Active" : "AI Auto-Calculated"}
+                  <Tag type={manualPriceOverride ? 'purple' : 'gray'} size="sm">
+                    {manualPriceOverride ? 'Manual Active' : 'AI Auto-Calculated'}
                   </Tag>
                 </div>
                 <TextInput
-                  id="manual-price-override-input"
+                  id="manual-price-override"
                   labelText=""
+                  hideLabel
                   placeholder="Override agreed fee in ₹ (e.g. 50000)"
+                  type="number"
                   value={manualPriceOverride}
                   onChange={(e) => setManualPriceOverride(e.target.value)}
                   helperText="Leave blank for Autonomous AI negotiation, or type ₹ to force price override."
                 />
               </div>
 
-              <Button type="submit" kind="primary" renderIcon={Send} disabled={loading} style={{ width: '100%' }}>
-                {loading ? "AI Processing..." : "Send Email & Trigger AI Negotiator"}
+              <Button type="submit" renderIcon={Send} disabled={loading || !creatorReplyInput.trim()}>
+                {loading ? 'AI Negotiating...' : 'Send Email & Trigger AI Negotiator'}
               </Button>
             </form>
           </Tile>
