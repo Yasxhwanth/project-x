@@ -137,7 +137,7 @@ export default function App() {
     <Theme theme="g100">
       <div className="cds--g100 creatorconnect-app" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       {/* Carbon UI Top Fixed Header */}
-      <Header aria-label="CreatorConnect AI Header">
+      <Header aria-label="Project X Header">
         <HeaderName href="#" prefix="">
           Project X (Autonomous Creator Marketing OS)
         </HeaderName>
