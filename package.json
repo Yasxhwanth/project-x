@@ -4,10 +4,12 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "start": "npm run start:all",
-    "start:server": "npm --prefix server start",
+    "start": "node server/index.js",
+    "start:server": "node server/index.js",
     "start:client": "npm --prefix client run dev",
     "dev:server": "npm --prefix server run dev",
+    "install:all": "npm install && npm --prefix client install && npm --prefix server install",
+    "build": "npm --prefix client install && npm --prefix client run build",
     "build:client": "npm --prefix client run build",
     "start:all": "concurrently \"npm run start:server\" \"npm run start:client\"",
     "dev": "concurrently \"npm run dev:server\" \"npm run start:client\""

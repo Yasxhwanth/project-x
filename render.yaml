@@ -3,7 +3,7 @@ services:
   - type: web
     name: project-x-server
     env: node
-    buildCommand: npm install && npm --prefix client run build
+    buildCommand: npm run install:all && npm run build
     startCommand: npm start
     envVars:
       - key: NODE_ENV

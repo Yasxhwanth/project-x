@@ -876,11 +876,15 @@ app.post('/api/deals/:id/utm-link', async (req, res) => {
   }
 });
 
+// Serve static client build files in production
+const clientDistPath = path.join(__dirname, '../client/dist');
+app.use(express.static(clientDistPath));
+
 // Wildcard SPA route
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '../client/dist/index.html'));
+  res.sendFile(path.join(clientDistPath, 'index.html'));
 });
 
 app.listen(PORT, () => {
-  console.log(`CreatorConnect Ground-Up SDK Server running on http://localhost:${PORT}`);
+  console.log(`Project X Server running on port ${PORT}`);
 });
