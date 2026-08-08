@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Tile, 
   Grid, 
@@ -11,6 +11,49 @@ import {
   Loading
 } from '@carbon/react';
 import { Email, Send, Checkmark, Edit, Reset, Bot } from '@carbon/icons-react';
+
+// Procedurally Generated Typewriter Text Component
+function TypewriterText({ text, speed = 12 }) {
+  const [displayedText, setDisplayedText] = useState('');
+  const [isTyping, setIsTyping] = useState(true);
+
+  useEffect(() => {
+    let index = 0;
+    setDisplayedText('');
+    setIsTyping(true);
+
+    const interval = setInterval(() => {
+      if (index < text.length) {
+        setDisplayedText((prev) => text.substring(0, index + 1));
+        index++;
+      } else {
+        setIsTyping(false);
+        clearInterval(interval);
+      }
+    }, speed);
+
+    return () => clearInterval(interval);
+  }, [text, speed]);
+
+  return (
+    <span>
+      {displayedText}
+      {isTyping && (
+        <span 
+          style={{
+            display: 'inline-block',
+            width: '8px',
+            height: '15px',
+            background: '#4589ff',
+            marginLeft: '4px',
+            verticalAlign: 'middle',
+            animation: 'blink 0.8s infinite'
+          }}
+        />
+      )}
+    </span>
+  );
+}
 
 export default function EmailNegotiator({ activeDeal, activeCampaign, onDealUpdated }) {
   const deal = activeDeal || {
@@ -98,7 +141,7 @@ export default function EmailNegotiator({ activeDeal, activeCampaign, onDealUpda
           <Email size={24} style={{ color: '#0f62fe' }} /> AI Back-and-Forth Email Negotiator & Manual Override Studio
         </h2>
         <p style={{ color: '#a8a8a8' }}>
-          Autonomous Google Gemini AI negotiator with real-time inline manual price & message overrides.
+          Autonomous Google Gemini AI negotiator with procedural response streaming & manual overrides.
         </p>
       </div>
 
@@ -136,29 +179,36 @@ export default function EmailNegotiator({ activeDeal, activeCampaign, onDealUpda
             </h4>
             
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '1rem', overflowY: 'auto', maxHeight: '420px', paddingRight: '0.5rem' }}>
-              {deal.emailThread?.map((msg) => (
-                <div 
-                  key={msg.id}
-                  style={{
-                    padding: '1rem',
-                    borderRadius: '4px',
-                    background: msg.sender === 'BRAND_AI' ? '#161616' : '#393939',
-                    borderLeft: msg.sender === 'BRAND_AI' ? '4px solid #0f62fe' : '4px solid #f1c21b',
-                    alignSelf: msg.sender === 'BRAND_AI' ? 'flex-start' : 'flex-end',
-                    width: '92%'
-                  }}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: '0.8rem', color: '#a8a8a8' }}>
-                    <span style={{ fontWeight: '600', color: msg.sender === 'BRAND_AI' ? '#4589ff' : '#f1c21b' }}>
-                      {msg.senderName}
-                    </span>
-                    <span>{msg.timestamp}</span>
+              {deal.emailThread?.map((msg, idx) => {
+                const isLatestAiReply = msg.sender === 'BRAND_AI' && idx === deal.emailThread.length - 1;
+                return (
+                  <div 
+                    key={msg.id}
+                    style={{
+                      padding: '1rem',
+                      borderRadius: '4px',
+                      background: msg.sender === 'BRAND_AI' ? '#161616' : '#393939',
+                      borderLeft: msg.sender === 'BRAND_AI' ? '4px solid #0f62fe' : '4px solid #f1c21b',
+                      alignSelf: msg.sender === 'BRAND_AI' ? 'flex-start' : 'flex-end',
+                      width: '92%'
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: '0.8rem', color: '#a8a8a8' }}>
+                      <span style={{ fontWeight: '600', color: msg.sender === 'BRAND_AI' ? '#4589ff' : '#f1c21b' }}>
+                        {msg.senderName}
+                      </span>
+                      <span>{msg.timestamp}</span>
+                    </div>
+                    <p style={{ color: '#ffffff', whiteSpace: 'pre-wrap', lineHeight: '1.5', fontSize: '0.9rem', margin: 0 }}>
+                      {isLatestAiReply ? (
+                        <TypewriterText text={msg.body} speed={10} />
+                      ) : (
+                        msg.body
+                      )}
+                    </p>
                   </div>
-                  <p style={{ color: '#ffffff', whiteSpace: 'pre-wrap', lineHeight: '1.5', fontSize: '0.9rem', margin: 0 }}>
-                    {msg.body}
-                  </p>
-                </div>
-              ))}
+                );
+              })}
 
               {/* Animated AI Agent Thinking Card */}
               {loading && (
