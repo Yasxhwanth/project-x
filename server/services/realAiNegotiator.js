@@ -107,32 +107,11 @@ Compose a concise, direct email reply. End with appropriate sign-off.`;
     }
   }
 
-  // 3. Fallback Smart Rule & Hinglish NLP Engine
+  // 3. No Dummy Fallbacks — Throw explicit error if AI Key is missing or failed
   if (!aiReplyText) {
-    if (isAcceptance) {
-      newStatus = 'AGREED';
-      const tds = Math.round(newAgreedPrice * 0.10);
-      const net = newAgreedPrice - tds;
-
-      aiReplyText = `Namaste ${deal.creatorName},\n\nWonderful! We are thrilled to confirm your partnership for ${productName} at the agreed rate of ₹${newAgreedPrice.toLocaleString('en-IN')}.\n\n📋 Next Steps:\n1. Create & publish your Instagram Reel featuring ${productName}.\n2. Ensure mandatory spoken phrase is included: "${campaign.mandatoryPhrases}".\n3. Submit your published Reel link in the Video Audit tab.\n\n💰 Payment Breakdown (Section 194J Compliance):\n- Agreed Gross Fee: ₹${newAgreedPrice.toLocaleString('en-IN')}\n- 10% TDS Deduction: ₹${tds.toLocaleString('en-IN')}\n- Net Instant UPI Transfer: ₹${net.toLocaleString('en-IN')}\n\nLooking forward to an amazing video!\n\nBest regards,\n${senderName}`;
-    } else if (requestedPrice && requestedPrice > maxBudget) {
-      newStatus = 'COUNTER_OFFER';
-      newAgreedPrice = maxBudget;
-      const tds = Math.round(maxBudget * 0.10);
-      const net = maxBudget - tds;
-
-      aiReplyText = `Namaste ${deal.creatorName},\n\nThank you for getting back to us! We really value your work, but ₹${requestedPrice.toLocaleString('en-IN')} exceeds our maximum allocated campaign budget limit.\n\nThe highest final fee we can offer for this campaign is ₹${maxBudget.toLocaleString('en-IN')} (Net UPI payout: ₹${net.toLocaleString('en-IN')} after 10% TDS deduction under Sec 194J).\n\nAdditionally, we will ship a brand new ${productName} directly to your address for unboxing!\n\nPlease let us know if we can lock this deal at ₹${maxBudget.toLocaleString('en-IN')}!\n\nBest regards,\n${senderName}`;
-    } else if (requestedPrice && requestedPrice <= maxBudget) {
-      newStatus = 'AGREED';
-      newAgreedPrice = requestedPrice;
-      const tds = Math.round(newAgreedPrice * 0.10);
-      const net = newAgreedPrice - tds;
-
-      aiReplyText = `Namaste ${deal.creatorName},\n\nThat sounds completely fair! We accept your proposed rate of ₹${newAgreedPrice.toLocaleString('en-IN')}.\n\n💰 Tax Breakdown (Sec 194J):\n- Gross Fee: ₹${newAgreedPrice.toLocaleString('en-IN')}\n- 10% TDS Withholding: ₹${tds.toLocaleString('en-IN')}\n- Net Instant UPI Payout: ₹${net.toLocaleString('en-IN')}\n\nPlease proceed with filming your Reel featuring "${campaign.mandatoryPhrases}". Once published, submit your video link for automated VideoDB audit & instant payout!\n\nBest regards,\n${senderName}`;
-    } else {
-      newStatus = 'NEGOTIATING';
-      aiReplyText = `Namaste ${deal.creatorName},\n\nThanks for your reply! To clarify, our campaign for ${productName} includes product gifting + an agreed fee of ₹${currentPrice.toLocaleString('en-IN')}.\n\nThe deliverables are 1 Instagram Reel highlighting ${productName} with the required phrase: "${campaign.mandatoryPhrases}".\n\nPlease let us know if you have any questions or if you'd like to confirm this collaboration!\n\nBest regards,\n${senderName}`;
-    }
+    throw new Error(
+      "Google Gemini AI API Key is unconfigured or failed to generate a response. Please add a valid GEMINI_API_KEY in Organization Settings or server/.env."
+    );
   }
 
   const replyMessageObj = {

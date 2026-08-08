@@ -96,11 +96,14 @@ export default function EmailNegotiator({ activeDeal, activeCampaign, onDealUpda
     '✉️ Finalizing email payload & updating state machine...'
   ];
 
+  const [errorMsg, setErrorMsg] = useState(null);
+
   const handleSimulateCreatorReply = async (e) => {
     e.preventDefault();
     if (!creatorReplyInput.trim()) return;
 
     setLoading(true);
+    setErrorMsg(null);
     setThinkingStep(0);
     const stepInterval = setInterval(() => {
       setThinkingStep((prev) => (prev < thinkingSteps.length - 1 ? prev + 1 : prev));
@@ -120,6 +123,9 @@ export default function EmailNegotiator({ activeDeal, activeCampaign, onDealUpda
         })
       });
       const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "AI Negotiation request failed");
+      }
       if (data.deal) {
         if (onDealUpdated) onDealUpdated(data.deal);
         setCreatorReplyInput('');
@@ -128,6 +134,7 @@ export default function EmailNegotiator({ activeDeal, activeCampaign, onDealUpda
       }
     } catch (err) {
       console.error("Failed to process AI negotiation", err);
+      setErrorMsg(err.message);
     } finally {
       clearInterval(stepInterval);
       setLoading(false);
@@ -144,6 +151,15 @@ export default function EmailNegotiator({ activeDeal, activeCampaign, onDealUpda
           Autonomous Google Gemini AI negotiator with procedural response streaming & manual overrides.
         </p>
       </div>
+
+      {errorMsg && (
+        <InlineNotification
+          kind="error"
+          title="Google Gemini AI Negotiation Error"
+          subtitle={errorMsg}
+          style={{ marginBottom: '1.25rem' }}
+        />
+      )}
 
       <Grid style={{ padding: 0, rowGap: '1.5rem', columnGap: '1.5rem' }}>
         {/* Deal Header Overview */}
