@@ -2,17 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { 
   Header, 
   HeaderName, 
-  HeaderNavigation, 
-  HeaderMenuItem, 
   HeaderGlobalBar, 
   HeaderGlobalAction,
   SideNav,
   SideNavItems,
   SideNavLink,
   Tag,
-  Theme,
-  Select,
-  SelectItem
+  Theme
 } from '@carbon/react';
 import { 
   Search, 
@@ -39,7 +35,6 @@ import CampaignBuilder from './components/CampaignBuilder';
 import EmailNegotiator from './components/EmailNegotiator';
 import VideoVerification from './components/VideoVerification';
 import PayoutDashboard from './components/PayoutDashboard';
-import OrgEmailSettings from './components/OrgEmailSettings';
 import AgentControlPlane from './components/AgentControlPlane';
 import AttributionDashboard from './components/AttributionDashboard';
 import AuthModal from './components/AuthModal';
@@ -50,16 +45,16 @@ import AgencyCommandCenter from './components/AgencyCommandCenter';
 import CampaignPortfolioModal from './components/CampaignPortfolioModal';
 
 export default function App() {
-  const [selectedTab, setSelectedTab] = useState(0);
+  const [currentTab, setCurrentTab] = useState('overview');
   const [activeDeal, setActiveDeal] = useState(null);
   const [activeCampaign, setActiveCampaign] = useState(null);
   const [campaigns, setCampaigns] = useState([]);
-  const [isCampaignModalOpen, setIsCampaignModalOpen] = useState(false);
   
-  // Auth & Organization Session State
-  const [session, setSession] = useState(null);
+  // Modals & Auth State
+  const [isCampaignModalOpen, setIsCampaignModalOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isOrgSettingsOpen, setIsOrgSettingsOpen] = useState(false);
+  const [session, setSession] = useState(null);
   const [workspaceMode, setWorkspaceMode] = useState('brand');
 
   useEffect(() => {
@@ -108,233 +103,300 @@ export default function App() {
 
   const handleSelectCreatorForOutreach = (deal) => {
     setActiveDeal(deal);
-    setSelectedTab(3); // Switch to AI Email Negotiation Tab
+    setCurrentTab('negotiator');
   };
 
-  const handleLaunchPortfolio = (portfolio) => {
-    setSelectedTab(3); // Switch to AI Email Negotiation Tab
-  };
+  const navSections = [
+    {
+      category: 'MAIN WORKSPACE',
+      items: [
+        { id: 'overview', label: 'Launchpad & Overview', icon: Rocket },
+        { id: 'discovery', label: 'Creator Discovery Engine', icon: Search },
+        { id: 'pipeline', label: 'CRM Deal Pipeline', icon: Application }
+      ]
+    },
+    {
+      category: 'AUTONOMOUS EXECUTION',
+      items: [
+        { id: 'negotiator', label: 'AI Email Negotiator', icon: Email },
+        { id: 'video_qa', label: 'VideoDB AI Multimodal Audit', icon: Video },
+        { id: 'payouts', label: 'Instant UPI & Tax Ledger', icon: Currency }
+      ]
+    },
+    {
+      category: 'CAMPAIGNS & STRATEGY',
+      items: [
+        { id: 'portfolio', label: 'Campaign Portfolio Studio', icon: Idea },
+        { id: 'strategy', label: 'AI Strategy Assistant', icon: Idea }
+      ]
+    },
+    {
+      category: 'MEASURE & GOVERN',
+      items: [
+        { id: 'attribution', label: 'Shopify Attribution & Orders', icon: ShoppingBag },
+        { id: 'analytics', label: 'ROI Analytics Dashboard', icon: ChartBar },
+        { id: 'control_plane', label: 'AI Governance Control Plane', icon: Security }
+      ]
+    }
+  ];
 
-  const navByWorkspace = {
-    brand: [
-      ['Workspace', [{ label: 'Overview', icon: Rocket, tab: 0 }]],
-      ['Plan', [{ label: 'Campaigns', icon: Idea, tab: 3 }, { label: 'Creator discovery', icon: Search, tab: 1 }, { label: 'Pipeline', icon: Application, tab: 2 }]],
-      ['Execute', [{ label: 'Outreach & deals', icon: Email, tab: 4 }, { label: 'Content review', icon: Video, tab: 5 }, { label: 'Payouts', icon: Currency, tab: 10 }]],
-      ['Measure', [{ label: 'Attribution', icon: ShoppingBag, tab: 6 }, { label: 'Analytics', icon: ChartBar, tab: 7 }]],
-      ['Automation', [{ label: 'Strategy assistant', icon: Idea, tab: 9 }, { label: 'Control centre', icon: Security, tab: 8 }]]
-    ],
-    agency: [
-      ['Workspace', [{ label: 'Overview', icon: Rocket, tab: 0 }]],
-      ['Manage', [{ label: 'Client campaigns', icon: Idea, tab: 3 }, { label: 'Talent roster', icon: Search, tab: 1 }, { label: 'Delivery pipeline', icon: Application, tab: 2 }]],
-      ['Deliver', [{ label: 'Negotiations', icon: Email, tab: 4 }, { label: 'Content approvals', icon: Video, tab: 5 }, { label: 'Creator payouts', icon: Currency, tab: 10 }]],
-      ['Report', [{ label: 'Client attribution', icon: ShoppingBag, tab: 6 }, { label: 'Performance', icon: ChartBar, tab: 7 }]],
-      ['Operations', [{ label: 'Strategy assistant', icon: Idea, tab: 9 }, { label: 'Control centre', icon: Security, tab: 8 }]]
-    ],
-    creator: [
-      ['Studio', [{ label: 'Overview', icon: Rocket, tab: 0 }]],
-      ['Work', [{ label: 'Opportunities', icon: Application, tab: 2 }, { label: 'Collaboration messages', icon: Email, tab: 4 }, { label: 'Content submissions', icon: Video, tab: 5 }]],
-      ['Earnings', [{ label: 'Payouts', icon: Currency, tab: 10 }, { label: 'Performance', icon: ChartBar, tab: 6 }]]
-    ]
-  };
-  const navSections = navByWorkspace[workspaceMode];
+  // Find active nav item details for breadcrumb
+  let activeNavItem = null;
+  for (const sec of navSections) {
+    const found = sec.items.find(i => i.id === currentTab);
+    if (found) {
+      activeNavItem = { ...found, category: sec.category };
+      break;
+    }
+  }
 
   return (
     <Theme theme="g100">
       <div className="cds--g100 creatorconnect-app" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-      {/* Carbon UI Top Fixed Header */}
-      <Header aria-label="Project X Header">
-        <HeaderName href="#" prefix="">
-          Project X (Autonomous Creator Marketing OS)
-        </HeaderName>
-        <HeaderNavigation aria-label="Organization Workspace Tag">
-          <HeaderMenuItem href="#" onClick={(event) => event.preventDefault()}>
-            <Select id="workspace-mode" hideLabel labelText="Workspace mode" value={workspaceMode} onChange={(e) => { setWorkspaceMode(e.target.value); setSelectedTab(0); }} style={{ minWidth: '142px' }}>
-              <SelectItem value="brand" text="Brand workspace" />
-              <SelectItem value="agency" text="Agency workspace" />
-              <SelectItem value="creator" text="Creator studio" />
-            </Select>
-          </HeaderMenuItem>
-          {activeCampaign && (
-            <HeaderMenuItem href="#" onClick={() => setIsCampaignModalOpen(true)}>
-              <Tag type="green" size="md" style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', cursor: 'pointer' }}>
-                <Idea size={14} /> Campaign: {activeCampaign.brandName} ({activeCampaign.productName})
-              </Tag>
-            </HeaderMenuItem>
-          )}
-          {session?.organization && (
-            <HeaderMenuItem href="#" onClick={() => setIsOrgSettingsOpen(true)}>
-              <Tag type="blue" size="md" style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', cursor: 'pointer' }}>
-                <Enterprise size={14} /> Organization: {session.organization.name} ({session.organization.plan || 'Enterprise'})
-              </Tag>
-            </HeaderMenuItem>
-          )}
-          <HeaderMenuItem href="#" onClick={() => setIsAuthModalOpen(true)}>
-            <Tag type={session?.user ? 'purple' : 'magenta'} size="md" style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', cursor: 'pointer' }}>
-              <User size={14} /> {session?.user ? `${session.user.name} (${session.user.role})` : 'Sign In / Register'}
-            </Tag>
-          </HeaderMenuItem>
-        </HeaderNavigation>
-        <HeaderGlobalBar>
-          <HeaderGlobalAction 
-            aria-label="Switch Campaign Portfolio" 
-            tooltipAlignment="end"
-            onClick={() => setIsCampaignModalOpen(true)}
+        
+        {/* Carbon UI Clean Header */}
+        <Header aria-label="Project X Header">
+          <HeaderName href="#" prefix="" style={{ fontSize: '1rem', fontWeight: '600' }}>
+            Project X <span style={{ color: '#0f62fe', marginLeft: '0.25rem', fontWeight: '400' }}>Autonomous OS</span>
+          </HeaderName>
+
+          <HeaderGlobalBar>
+            {/* Active Campaign Quick Badge */}
+            {activeCampaign && (
+              <div 
+                onClick={() => setIsCampaignModalOpen(true)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  padding: '0.25rem 0.75rem',
+                  background: '#161616',
+                  borderRadius: '16px',
+                  border: '1px solid #393939',
+                  cursor: 'pointer',
+                  marginRight: '0.5rem'
+                }}
+              >
+                <Tag type="green" size="sm" style={{ margin: 0 }}>Active</Tag>
+                <span style={{ fontSize: '0.85rem', color: '#f4f4f4', fontWeight: '500' }}>
+                  {activeCampaign.brandName} ({activeCampaign.productName})
+                </span>
+                <Switcher size={16} style={{ color: '#a8a8a8' }} />
+              </div>
+            )}
+
+            {/* Auth / Account Profile Button */}
+            <HeaderGlobalAction
+              aria-label="User Profile"
+              tooltipAlignment="end"
+              onClick={() => session?.user ? setIsOrgSettingsOpen(true) : setIsAuthModalOpen(true)}
+            >
+              <User size={20} style={{ color: session?.user ? '#4589ff' : '#ffffff' }} />
+            </HeaderGlobalAction>
+
+            {/* Organization Settings */}
+            <HeaderGlobalAction 
+              aria-label="Organization Settings" 
+              tooltipAlignment="end"
+              onClick={() => setIsOrgSettingsOpen(true)}
+            >
+              <Settings size={20} />
+            </HeaderGlobalAction>
+          </HeaderGlobalBar>
+        </Header>
+
+        {/* Campaign Portfolio & Switcher Modal */}
+        <CampaignPortfolioModal
+          isOpen={isCampaignModalOpen}
+          onClose={() => setIsCampaignModalOpen(false)}
+          campaigns={campaigns}
+          activeCampaign={activeCampaign}
+          onSelectCampaign={(c) => setActiveCampaign(c)}
+          onCampaignCreated={(c) => setCampaigns([c, ...campaigns])}
+        />
+
+        {/* Organization Profile & AI Settings Modal */}
+        <OrgSettingsModal
+          isOpen={isOrgSettingsOpen}
+          onClose={() => setIsOrgSettingsOpen(false)}
+          session={session}
+          onOpenAuthModal={() => setIsAuthModalOpen(true)}
+        />
+
+        {/* Auth & Login Modal */}
+        <AuthModal 
+          isOpen={isAuthModalOpen}
+          onClose={() => setIsAuthModalOpen(false)}
+          onAuthSuccess={(newSession) => {
+            setSession(newSession);
+            setWorkspaceMode(newSession.user?.role === 'Agency Admin' ? 'agency' : newSession.user?.role === 'Creator' ? 'creator' : 'brand');
+            setCurrentTab('overview');
+          }}
+        />
+
+        {/* Main Workspace Layout with Fixed SideNav */}
+        <div style={{ display: 'flex', flex: 1, marginTop: '3rem' }}>
+          
+          {/* Left Vertical SideNav */}
+          <SideNav
+            aria-label="Side Navigation"
+            expanded={true}
+            isFixedNav
+            className="workspace-sidenav"
+            style={{ width: '256px', top: '3rem', background: '#161616', borderRight: '1px solid #393939' }}
           >
-            <Switcher size={20} />
-          </HeaderGlobalAction>
-          <HeaderGlobalAction 
-            aria-label="Organization & AI Settings" 
-            tooltipAlignment="end"
-            onClick={() => setIsOrgSettingsOpen(true)}
-          >
-            <Settings size={20} />
-          </HeaderGlobalAction>
-        </HeaderGlobalBar>
-      </Header>
+            <SideNavItems>
+              {navSections.map((sec) => (
+                <div key={sec.category} style={{ padding: '0.75rem 0 0.25rem 0' }}>
+                  <div style={{ fontSize: '0.7rem', fontWeight: '700', color: '#6f6f6f', padding: '0 1rem 0.5rem 1rem', letterSpacing: '0.5px' }}>
+                    {sec.category}
+                  </div>
+                  {sec.items.map((item) => {
+                    const Icon = item.icon;
+                    const isActive = currentTab === item.id;
+                    return (
+                      <SideNavLink
+                        key={item.id}
+                        renderIcon={Icon}
+                        isActive={isActive}
+                        onClick={() => setCurrentTab(item.id)}
+                        style={{
+                          borderLeft: isActive ? '4px solid #0f62fe' : '4px solid transparent',
+                          background: isActive ? '#262626' : 'transparent',
+                          fontWeight: isActive ? '600' : '400'
+                        }}
+                      >
+                        {item.label}
+                      </SideNavLink>
+                    );
+                  })}
+                </div>
+              ))}
+            </SideNavItems>
+          </SideNav>
 
-      {/* Campaign Portfolio & Switcher Modal */}
-      <CampaignPortfolioModal
-        isOpen={isCampaignModalOpen}
-        onClose={() => setIsCampaignModalOpen(false)}
-        campaigns={campaigns}
-        activeCampaign={activeCampaign}
-        onSelectCampaign={(c) => setActiveCampaign(c)}
-        onCampaignCreated={(c) => setCampaigns([c, ...campaigns])}
-      />
+          {/* Main Panel Content Area */}
+          <main style={{ marginLeft: '256px', flex: 1, padding: '2rem 2.5rem', width: 'calc(100% - 256px)', background: '#161616', minHeight: 'calc(100vh - 3rem)' }}>
+            
+            {/* Top Breadcrumb Header Bar */}
+            <div style={{ marginBottom: '1.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #262626', paddingBottom: '0.75rem' }}>
+              <div style={{ fontSize: '0.85rem', color: '#8d8d8d', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Rocket size={14} style={{ color: '#0f62fe' }} />
+                <span>Project X</span>
+                <span>/</span>
+                <span>{activeNavItem?.category}</span>
+                <span>/</span>
+                <span style={{ color: '#ffffff', fontWeight: '600' }}>{activeNavItem?.label}</span>
+              </div>
 
-      {/* Organization Profile & AI Settings Modal */}
-      <OrgSettingsModal
-        isOpen={isOrgSettingsOpen}
-        onClose={() => setIsOrgSettingsOpen(false)}
-        session={session}
-        onOpenAuthModal={() => setIsAuthModalOpen(true)}
-      />
+              {session?.user && (
+                <div style={{ fontSize: '0.8rem', color: '#a8a8a8' }}>
+                  Signed in as <span style={{ color: '#4589ff', fontWeight: '500' }}>{session.user.name}</span>
+                </div>
+              )}
+            </div>
 
-      {/* Auth & Login Modal */}
-      <AuthModal 
-        isOpen={isAuthModalOpen}
-        onClose={() => setIsAuthModalOpen(false)}
-        onAuthSuccess={(newSession) => {
-          setSession(newSession);
-          setWorkspaceMode(newSession.user?.role === 'Agency Admin' ? 'agency' : newSession.user?.role === 'Creator' ? 'creator' : 'brand');
-          setSelectedTab(0);
-        }}
-      />
+            {/* Page View Routing */}
+            {currentTab === 'overview' && (
+              workspaceMode === 'agency' ? (
+                <AgencyCommandCenter
+                  onOpenCampaign={(campaign) => {
+                    setActiveCampaign({ id: campaign.campaign_id, brandName: campaign.client_name, productName: campaign.campaign_name });
+                    setCurrentTab('negotiator');
+                  }}
+                />
+              ) : (
+                <WorkspaceOverview
+                  mode={workspaceMode}
+                  session={session}
+                  onNavigate={(tabIdx) => {
+                    const tabMap = ['overview', 'discovery', 'pipeline', 'portfolio', 'negotiator', 'video_qa', 'attribution', 'analytics', 'control_plane', 'strategy', 'payouts'];
+                    setCurrentTab(tabMap[tabIdx] || 'overview');
+                  }}
+                />
+              )
+            )}
 
-      {/* Main Workspace Layout with Left Vertical SideNav */}
-      <div style={{ display: 'flex', flex: 1, marginTop: '3rem' }}>
-        {/* Left SideNav Sidebar */}
-        <SideNav
-          aria-label="Side Navigation"
-          expanded={true}
-          isFixedNav
-          className="workspace-sidenav"
-          style={{ width: '256px', top: '3rem', background: '#161616', borderRight: '1px solid #393939' }}
-        >
-          <SideNavItems>
-            {navSections.map(([section, items]) => <div className="nav-section" key={section}>
-              <div className="nav-section-label">{section}</div>
-              {items.map((item) => {
-                const Icon = item.icon;
-                return <SideNavLink key={item.label} renderIcon={Icon} isActive={selectedTab === item.tab} onClick={() => setSelectedTab(item.tab)}>
-                  {item.label}
-                </SideNavLink>;
-              })}
-            </div>)}
-          </SideNavItems>
-        </SideNav>
+            {currentTab === 'discovery' && (
+              <CreatorSearch 
+                onSelectCreator={handleSelectCreatorForOutreach} 
+                activeCampaign={activeCampaign}
+              />
+            )}
 
-        {/* Main Panel Content Area */}
-        <main style={{ marginLeft: '256px', flex: 1, padding: '2rem 2.5rem', width: 'calc(100% - 256px)', background: '#161616', minHeight: 'calc(100vh - 3rem)' }}>
-          {selectedTab === 0 && (
-            workspaceMode === 'agency' ? <AgencyCommandCenter
-              onOpenCampaign={(campaign) => { setActiveCampaign({ id: campaign.campaign_id, brandName: campaign.client_name, productName: campaign.campaign_name }); setSelectedTab(3); }}
-            /> : <WorkspaceOverview
-              mode={workspaceMode}
-              session={session}
-              onNavigate={(tabIdx) => setSelectedTab(tabIdx)}
-            />
-          )}
+            {currentTab === 'pipeline' && (
+              <CreatorCrmPipeline 
+                onSelectDealForNegotiation={(deal) => {
+                  setActiveDeal(deal);
+                  setCurrentTab('negotiator');
+                }}
+                onSelectDealForVideo={(deal) => {
+                  setActiveDeal(deal);
+                  setCurrentTab('video_qa');
+                }}
+                onSelectDealForPayout={(deal) => {
+                  setActiveDeal(deal);
+                  setCurrentTab('payouts');
+                }}
+              />
+            )}
 
-          {selectedTab === 1 && (
-            <CreatorSearch 
-              onSelectCreator={handleSelectCreatorForOutreach} 
-              activeCampaign={activeCampaign}
-            />
-          )}
+            {currentTab === 'portfolio' && (
+              <CampaignBuilder 
+                activeCampaign={activeCampaign}
+                onCampaignSaved={(c) => {
+                  setActiveCampaign(c);
+                  fetchActiveCampaign();
+                }}
+                onSwitchCampaign={(c) => {
+                  setActiveCampaign(c);
+                }}
+              />
+            )}
 
-          {selectedTab === 2 && (
-            <CreatorCrmPipeline 
-              onSelectDealForNegotiation={(deal) => {
-                setActiveDeal(deal);
-                setSelectedTab(4);
-              }}
-              onSelectDealForVideo={(deal) => {
-                setActiveDeal(deal);
-                setSelectedTab(5);
-              }}
-              onSelectDealForPayout={(deal) => {
-                setActiveDeal(deal);
-                setSelectedTab(10);
-              }}
-            />
-          )}
+            {currentTab === 'negotiator' && (
+              <EmailNegotiator 
+                activeDeal={activeDeal}
+                activeCampaign={activeCampaign}
+                onDealUpdated={setActiveDeal}
+              />
+            )}
 
-          {selectedTab === 3 && (
-            <CampaignBuilder 
-              activeCampaign={activeCampaign}
-              onCampaignSaved={(c) => {
-                setActiveCampaign(c);
-                fetchActiveCampaign();
-              }}
-              onSwitchCampaign={(c) => {
-                setActiveCampaign(c);
-              }}
-            />
-          )}
+            {currentTab === 'video_qa' && (
+              <VideoVerification 
+                activeDeal={activeDeal}
+                activeCampaign={activeCampaign}
+                onVerificationComplete={setActiveDeal}
+              />
+            )}
 
-          {selectedTab === 4 && (
-            <EmailNegotiator 
-              activeDeal={activeDeal}
-              activeCampaign={activeCampaign}
-              onDealUpdated={setActiveDeal}
-            />
-          )}
+            {currentTab === 'payouts' && (
+              <PayoutDashboard 
+                activeDeal={activeDeal}
+                activeCampaign={activeCampaign}
+              />
+            )}
 
-          {selectedTab === 5 && (
-            <VideoVerification 
-              activeDeal={activeDeal}
-              activeCampaign={activeCampaign}
-              onVerificationComplete={setActiveDeal}
-            />
-          )}
+            {currentTab === 'attribution' && (
+              <AttributionDashboard campaignId={activeCampaign?.id} />
+            )}
 
-          {selectedTab === 6 && (
-            <AttributionDashboard campaignId={activeCampaign?.id} />
-          )}
+            {currentTab === 'analytics' && (
+              <AnalyticsDashboard />
+            )}
 
-          {selectedTab === 7 && (
-            <AnalyticsDashboard />
-          )}
+            {currentTab === 'control_plane' && (
+              <AgentControlPlane />
+            )}
 
-          {selectedTab === 8 && (
-            <AgentControlPlane />
-          )}
-
-          {selectedTab === 9 && (
-            <CampaignStrategyGenerator 
-              onLaunchPortfolio={handleLaunchPortfolio}
-            />
-          )}
-
-          {selectedTab === 10 && (
-            <PayoutDashboard 
-              activeDeal={activeDeal}
-            />
-          )}
-        </main>
+            {currentTab === 'strategy' && (
+              <CampaignStrategyGenerator 
+                onLaunchPortfolio={() => setCurrentTab('negotiator')}
+              />
+            )}
+          </main>
+        </div>
       </div>
-    </div>
-  </Theme>
-);
+    </Theme>
+  );
 }
