@@ -24,8 +24,26 @@ function buildTransporter(org) {
     });
   }
 
-  // Option B: Gmail App Password from environment
-  const gmailUser = process.env.GMAIL_USER;
+  // Option B: Google OAuth 2.0 Tokens (1-Click User Permission Grant)
+  const googleClientId = process.env.GOOGLE_CLIENT_ID;
+  const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;
+  const googleRefreshToken = org?.google_refresh_token || process.env.GOOGLE_REFRESH_TOKEN;
+  const gmailUser = org?.sender_email || process.env.GMAIL_USER;
+
+  if (googleClientId && googleClientSecret && googleRefreshToken && gmailUser) {
+    return nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        type: 'OAuth2',
+        user: gmailUser,
+        clientId: googleClientId,
+        clientSecret: googleClientSecret,
+        refreshToken: googleRefreshToken
+      }
+    });
+  }
+
+  // Option C: Gmail App Password from environment
   const gmailPass = process.env.GMAIL_APP_PASSWORD;
   if (gmailUser && gmailPass) {
     return nodemailer.createTransport({
