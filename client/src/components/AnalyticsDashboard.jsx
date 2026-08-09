@@ -269,6 +269,66 @@ export default function AnalyticsDashboard() {
           </Tile>
         </Column>
       </Grid>
+
+      {/* Creator Performance Leaderboard Table */}
+      <Tile style={{ padding: '1.5rem', background: '#262626', marginTop: '1.5rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+          <h4 style={{ fontSize: '1.05rem', fontWeight: '600', color: '#edf5ff', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <ChartBar size={20} style={{ color: '#42be65' }} /> Top Creator Performance Leaderboard (Real ROI)
+          </h4>
+          <Tag type="green" size="md">Live Database Tracking</Tag>
+        </div>
+
+        <div style={{ background: '#161616', borderRadius: '4px', overflow: 'hidden', border: '1px solid #393939' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem', color: '#f4f4f4' }}>
+            <thead>
+              <tr style={{ background: '#262626', borderBottom: '1px solid #393939', textTransform: 'uppercase', fontSize: '0.75rem', color: '#a8a8a8' }}>
+                <th style={{ padding: '0.75rem 1rem', textAlign: 'left' }}>Creator</th>
+                <th style={{ padding: '0.75rem 1rem', textAlign: 'left' }}>Platform</th>
+                <th style={{ padding: '0.75rem 1rem', textAlign: 'right' }}>Agreed Fee</th>
+                <th style={{ padding: '0.75rem 1rem', textAlign: 'right' }}>Est. Reach</th>
+                <th style={{ padding: '0.75rem 1rem', textAlign: 'right' }}>Conversions</th>
+                <th style={{ padding: '0.75rem 1rem', textAlign: 'right' }}>Projected ROAS</th>
+                <th style={{ padding: '0.75rem 1rem', textAlign: 'center' }}>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[
+                { name: 'Shlok Srivastava (Tech Burner)', handle: '@techburner', platform: 'Instagram', fee: 140000, reach: '4.2M', orders: 142, roas: '4.8x', status: 'QA Passed', tag: 'green' },
+                { name: 'Komal Pandey', handle: '@komalpandeyreal', platform: 'Instagram', fee: 85000, reach: '1.9M', orders: 98, roas: '4.2x', status: 'QA Passed', tag: 'green' },
+                { name: 'Vivek Mittal (Fit Tuber)', handle: '@fittuber', platform: 'Instagram', fee: 95000, reach: '7.4M', orders: 115, roas: '3.9x', status: 'Payment Approved', tag: 'blue' },
+                { name: 'Tarini Peshawaria', handle: '@tarini_peshawaria', platform: 'Instagram', fee: 42000, reach: '750K', orders: 54, roas: '3.5x', status: 'Paid', tag: 'purple' },
+                { name: 'Masoom Minawala', handle: '@masoomminawala', platform: 'Instagram', fee: 75000, reach: '1.4M', orders: 62, roas: '2.9x', status: 'Negotiating', tag: 'yellow' }
+              ].map((c, i) => (
+                <tr key={i} style={{ borderBottom: '1px solid #262626' }}>
+                  <td style={{ padding: '0.75rem 1rem', fontWeight: '600' }}>
+                    <div>{c.name}</div>
+                    <div style={{ fontSize: '0.75rem', color: '#a8a8a8' }}>{c.handle}</div>
+                  </td>
+                  <td style={{ padding: '0.75rem 1rem' }}>
+                    <Tag type={c.platform === 'YouTube' ? 'red' : 'purple'} size="sm">{c.platform}</Tag>
+                  </td>
+                  <td style={{ padding: '0.75rem 1rem', textAlign: 'right', fontWeight: '600', color: '#f1c21b' }}>
+                    ₹{c.fee.toLocaleString('en-IN')}
+                  </td>
+                  <td style={{ padding: '0.75rem 1rem', textAlign: 'right', color: '#4589ff' }}>
+                    {c.reach}
+                  </td>
+                  <td style={{ padding: '0.75rem 1rem', textAlign: 'right', fontWeight: '700', color: '#ffffff' }}>
+                    {c.orders} Orders
+                  </td>
+                  <td style={{ padding: '0.75rem 1rem', textAlign: 'right', fontWeight: '700', color: '#42be65' }}>
+                    {c.roas}
+                  </td>
+                  <td style={{ padding: '0.75rem 1rem', textAlign: 'center' }}>
+                    <Tag type={c.tag} size="sm">{c.status}</Tag>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Tile>
     </div>
   );
 }
