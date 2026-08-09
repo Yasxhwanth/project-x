@@ -38,11 +38,18 @@ import { requireAuth, optionalAuth } from './middleware/authMiddleware.js';
 // Attribution & Order Conversion Service
 import { recordConversion, getCampaignAttribution, generateCreatorUtmLink } from './services/attributionService.js';
 
+import { runAutonomousDirectorCycle } from './agents/directorAgent.js';
+
 const app = express();
 const PORT = process.env.PORT || 5001;
 
 // Start Automated Background Scraper Job (Every 30 mins)
 startBackgroundCronSchedule(30);
+
+// Start Autonomous Campaign Director Agent (Every 5 mins)
+setInterval(() => {
+  runAutonomousDirectorCycle().catch(err => console.error('[Director Agent Cron Error]:', err));
+}, 5 * 60 * 1000);
 
 // v3: Start Event Bus Dispatcher and Agent Orchestrator
 try {
@@ -1217,6 +1224,16 @@ app.post('/api/deals/:id/utm-link', async (req, res) => {
     res.json(payload);
   } catch (err) {
     res.status(500).json({ error: 'Failed to generate UTM link' });
+  }
+});
+
+// ─── Autonomous Director Agent On-Demand Trigger ─────────────────────────
+app.post('/api/agents/director/run', async (req, res) => {
+  try {
+    const summary = await runAutonomousDirectorCycle();
+    res.json({ success: true, summary, message: 'Autonomous Director Cycle Executed Successfully' });
+  } catch (err) {
+    res.status(500).json({ error: 'Director Agent cycle error: ' + err.message });
   }
 });
 

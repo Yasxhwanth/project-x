@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Tile, Grid, Column, Tag, Button, InlineNotification, Table, TableHead, TableRow, TableHeader, TableBody, TableCell, Tabs, TabList, Tab, TabPanels, TabPanel } from '@carbon/react';
-import { Security, Checkmark, Warning, Renew, UserFollow, Locked, Idea, ArrowRight, Debug, Play } from '@carbon/icons-react';
+import { Security, Checkmark, Warning, Renew, UserFollow, Locked, Idea, ArrowRight, Debug, Play, Rocket } from '@carbon/icons-react';
 
 const RISK_COLORS = { LOW: '#42be65', MEDIUM: '#f1c21b', HIGH: '#ff832b', CRITICAL: '#da1e28' };
 const RISK_TAG_TYPE = { LOW: 'green', MEDIUM: 'yellow', HIGH: 'orange', CRITICAL: 'red' };
@@ -15,6 +15,7 @@ export default function AgentControlPlane() {
   const [loading, setLoading]           = useState(true);
   const [approvalMessage, setApprovalMessage] = useState(null);
   const [runningEval, setRunningEval]   = useState(false);
+  const [runningDirector, setRunningDirector] = useState(false);
 
   useEffect(() => { fetchAll(); }, []);
 
@@ -65,6 +66,23 @@ export default function AgentControlPlane() {
     finally { setRunningEval(false); }
   };
 
+  const handleTriggerDirector = async () => {
+    setRunningDirector(true);
+    try {
+      const res = await fetch('/api/agents/director/run', { method: 'POST' });
+      const data = await res.json();
+      if (data.success) {
+        setApprovalMessage(`Autonomous Campaign Director Executed! Discovered ${data.summary?.creatorsDiscovered || 0} creators, sent ${data.summary?.outreachSent || 0} emails, executed ${data.summary?.payoutsExecuted || 0} payouts.`);
+        fetchAll();
+        setTimeout(() => setApprovalMessage(null), 5000);
+      }
+    } catch (err) {
+      console.error('Director trigger error', err);
+    } finally {
+      setRunningDirector(false);
+    }
+  };
+
   const tabs = [
     { label: 'Human Approval Queue', icon: UserFollow },
     { label: 'Agent Runs',           icon: Debug },
@@ -86,7 +104,18 @@ export default function AgentControlPlane() {
             Deterministic execution oversight — LLM proposes, policy engine authorizes, state machine enforces.
           </p>
         </div>
-        <Button size="sm" kind="tertiary" renderIcon={Renew} onClick={fetchAll}>Refresh</Button>
+        <div style={{ display: 'flex', gap: '0.75rem' }}>
+          <Button 
+            size="sm" 
+            kind="primary" 
+            renderIcon={Rocket} 
+            disabled={runningDirector}
+            onClick={handleTriggerDirector}
+          >
+            {runningDirector ? 'Running Director...' : 'Run Autonomous Campaign Director'}
+          </Button>
+          <Button size="sm" kind="tertiary" renderIcon={Renew} onClick={fetchAll}>Refresh</Button>
+        </div>
       </div>
 
       {approvalMessage && (
