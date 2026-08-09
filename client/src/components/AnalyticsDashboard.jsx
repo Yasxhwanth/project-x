@@ -7,7 +7,15 @@ import {
   Tag, 
   Loading,
   Button,
-  InlineNotification
+  InlineNotification,
+  DataTable,
+  TableContainer,
+  Table,
+  TableHead,
+  TableHeader,
+  TableRow,
+  TableCell,
+  TableBody
 } from '@carbon/react';
 import { Analytics, Currency, UserFollow, ChartBar, Renew, Checkmark, View, Idea, Security, ArrowRight } from '@carbon/icons-react';
 
@@ -404,55 +412,81 @@ export default function AnalyticsDashboard() {
           <Tag type="green" size="md">Live Database Tracking</Tag>
         </div>
 
-        <div style={{ background: '#161616', borderRadius: '4px', overflow: 'hidden', border: '1px solid #393939' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem', color: '#f4f4f4' }}>
-            <thead>
-              <tr style={{ background: '#262626', borderBottom: '1px solid #393939', textTransform: 'uppercase', fontSize: '0.75rem', color: '#a8a8a8' }}>
-                <th style={{ padding: '0.75rem 1rem', textAlign: 'left' }}>Creator</th>
-                <th style={{ padding: '0.75rem 1rem', textAlign: 'left' }}>Platform</th>
-                <th style={{ padding: '0.75rem 1rem', textAlign: 'right' }}>Agreed Fee</th>
-                <th style={{ padding: '0.75rem 1rem', textAlign: 'right' }}>Est. Reach</th>
-                <th style={{ padding: '0.75rem 1rem', textAlign: 'right' }}>Conversions</th>
-                <th style={{ padding: '0.75rem 1rem', textAlign: 'right' }}>Projected ROAS</th>
-                <th style={{ padding: '0.75rem 1rem', textAlign: 'center' }}>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {[
-                { name: 'Shlok Srivastava (Tech Burner)', handle: '@techburner', platform: 'Instagram', fee: 140000, reach: '4.2M', orders: 142, roas: '4.8x', status: 'QA Passed', tag: 'green' },
-                { name: 'Komal Pandey', handle: '@komalpandeyreal', platform: 'Instagram', fee: 85000, reach: '1.9M', orders: 98, roas: '4.2x', status: 'QA Passed', tag: 'green' },
-                { name: 'Vivek Mittal (Fit Tuber)', handle: '@fittuber', platform: 'Instagram', fee: 95000, reach: '7.4M', orders: 115, roas: '3.9x', status: 'Payment Approved', tag: 'blue' },
-                { name: 'Tarini Peshawaria', handle: '@tarini_peshawaria', platform: 'Instagram', fee: 42000, reach: '750K', orders: 54, roas: '3.5x', status: 'Paid', tag: 'purple' },
-                { name: 'Masoom Minawala', handle: '@masoomminawala', platform: 'Instagram', fee: 75000, reach: '1.4M', orders: 62, roas: '2.9x', status: 'Negotiating', tag: 'yellow' }
-              ].map((c, i) => (
-                <tr key={i} style={{ borderBottom: '1px solid #262626' }}>
-                  <td style={{ padding: '0.75rem 1rem', fontWeight: '600' }}>
-                    <div>{c.name}</div>
-                    <div style={{ fontSize: '0.75rem', color: '#a8a8a8' }}>{c.handle}</div>
-                  </td>
-                  <td style={{ padding: '0.75rem 1rem' }}>
-                    <Tag type={c.platform === 'YouTube' ? 'red' : 'purple'} size="sm">{c.platform}</Tag>
-                  </td>
-                  <td style={{ padding: '0.75rem 1rem', textAlign: 'right', fontWeight: '600', color: '#f1c21b' }}>
-                    ₹{c.fee.toLocaleString('en-IN')}
-                  </td>
-                  <td style={{ padding: '0.75rem 1rem', textAlign: 'right', color: '#4589ff' }}>
-                    {c.reach}
-                  </td>
-                  <td style={{ padding: '0.75rem 1rem', textAlign: 'right', fontWeight: '700', color: '#ffffff' }}>
-                    {c.orders} Orders
-                  </td>
-                  <td style={{ padding: '0.75rem 1rem', textAlign: 'right', fontWeight: '700', color: '#42be65' }}>
-                    {c.roas}
-                  </td>
-                  <td style={{ padding: '0.75rem 1rem', textAlign: 'center' }}>
-                    <Tag type={c.tag} size="sm">{c.status}</Tag>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <DataTable
+          rows={[
+            { id: '1', name: 'Shlok Srivastava (Tech Burner)', handle: '@techburner', platform: 'Instagram', fee: '₹1,40,000', reach: '4.2M', orders: '142 Orders', roas: '4.8x', status: 'QA Passed', tag: 'green' },
+            { id: '2', name: 'Komal Pandey', handle: '@komalpandeyreal', platform: 'Instagram', fee: '₹85,000', reach: '1.9M', orders: '98 Orders', roas: '4.2x', status: 'QA Passed', tag: 'green' },
+            { id: '3', name: 'Vivek Mittal (Fit Tuber)', handle: '@fittuber', platform: 'Instagram', fee: '₹95,000', reach: '7.4M', orders: '115 Orders', roas: '3.9x', status: 'Payment Approved', tag: 'blue' },
+            { id: '4', name: 'Tarini Peshawaria', handle: '@tarini_peshawaria', platform: 'Instagram', fee: '₹42,000', reach: '750K', orders: '54 Orders', roas: '3.5x', status: 'Paid', tag: 'purple' },
+            { id: '5', name: 'Masoom Minawala', handle: '@masoomminawala', platform: 'Instagram', fee: '₹75,000', reach: '1.4M', orders: '62 Orders', roas: '2.9x', status: 'Negotiating', tag: 'yellow' }
+          ]}
+          headers={[
+            { key: 'name', header: 'Creator' },
+            { key: 'platform', header: 'Platform' },
+            { key: 'fee', header: 'Agreed Fee' },
+            { key: 'reach', header: 'Est. Reach' },
+            { key: 'orders', header: 'Conversions' },
+            { key: 'roas', header: 'Projected ROAS' },
+            { key: 'status', header: 'Status' }
+          ]}
+          render={({ rows: tableRows, headers: tableHeaders, getHeaderProps, getRowProps, getTableProps }) => (
+            <TableContainer>
+              <Table {...getTableProps()} size="md" isSortable>
+                <TableHead>
+                  <TableRow>
+                    {tableHeaders.map(header => (
+                      <TableHeader key={header.key} {...getHeaderProps({ header })}>
+                        {header.header}
+                      </TableHeader>
+                    ))}
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {tableRows.map(row => {
+                    const rowData = [
+                      { id: '1', name: 'Shlok Srivastava (Tech Burner)', handle: '@techburner', platform: 'Instagram', fee: '₹1,40,000', reach: '4.2M', orders: '142 Orders', roas: '4.8x', status: 'QA Passed', tag: 'green' },
+                      { id: '2', name: 'Komal Pandey', handle: '@komalpandeyreal', platform: 'Instagram', fee: '₹85,000', reach: '1.9M', orders: '98 Orders', roas: '4.2x', status: 'QA Passed', tag: 'green' },
+                      { id: '3', name: 'Vivek Mittal (Fit Tuber)', handle: '@fittuber', platform: 'Instagram', fee: '₹95,000', reach: '7.4M', orders: '115 Orders', roas: '3.9x', status: 'Payment Approved', tag: 'blue' },
+                      { id: '4', name: 'Tarini Peshawaria', handle: '@tarini_peshawaria', platform: 'Instagram', fee: '₹42,000', reach: '750K', orders: '54 Orders', roas: '3.5x', status: 'Paid', tag: 'purple' },
+                      { id: '5', name: 'Masoom Minawala', handle: '@masoomminawala', platform: 'Instagram', fee: '₹75,000', reach: '1.4M', orders: '62 Orders', roas: '2.9x', status: 'Negotiating', tag: 'yellow' }
+                    ].find(item => item.id === row.id);
+
+                    return (
+                      <TableRow key={row.id} {...getRowProps({ row })}>
+                        <TableCell>
+                          <div style={{ fontWeight: '600' }}>{rowData.name}</div>
+                          <div style={{ fontSize: '0.75rem', color: '#a8a8a8' }}>{rowData.handle}</div>
+                        </TableCell>
+                        <TableCell>
+                          <Tag type={rowData.platform === 'YouTube' ? 'red' : 'purple'} size="sm">
+                            {rowData.platform}
+                          </Tag>
+                        </TableCell>
+                        <TableCell style={{ fontWeight: '600', color: '#f1c21b' }}>
+                          {rowData.fee}
+                        </TableCell>
+                        <TableCell style={{ color: '#4589ff' }}>
+                          {rowData.reach}
+                        </TableCell>
+                        <TableCell style={{ fontWeight: '700', color: '#ffffff' }}>
+                          {rowData.orders}
+                        </TableCell>
+                        <TableCell style={{ fontWeight: '700', color: '#42be65' }}>
+                          {rowData.roas}
+                        </TableCell>
+                        <TableCell>
+                          <Tag type={rowData.tag} size="sm">
+                            {rowData.status}
+                          </Tag>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          )}
+        />
       </Tile>
     </div>
   );
