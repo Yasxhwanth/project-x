@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Tile, Grid, Column, Tag, Button, InlineNotification, Table, TableHead, TableRow, TableHeader, TableBody, TableCell } from '@carbon/react';
+import { Tile, Grid, Column, Tag, Button, InlineNotification, Table, TableHead, TableRow, TableHeader, TableBody, TableCell, Tabs, TabList, Tab, TabPanels, TabPanel } from '@carbon/react';
 import { Security, Checkmark, Warning, Renew, UserFollow, Locked, Idea, ArrowRight, Debug, Play } from '@carbon/icons-react';
 
 const RISK_COLORS = { LOW: '#42be65', MEDIUM: '#f1c21b', HIGH: '#ff832b', CRITICAL: '#da1e28' };
@@ -111,27 +111,25 @@ export default function AgentControlPlane() {
         ))}
       </Grid>
 
-      {/* Tab Navigation */}
-      <div style={{ display: 'flex', gap: 0, marginBottom: '1.5rem', borderBottom: '1px solid #393939' }}>
-        {tabs.map((tab, idx) => {
-          const Icon = tab.icon;
-          const isActive = activeTab === idx;
-          const hasBadge = (idx === 0 && pendingEscalations.length > 0) || (idx === 2 && deadLetters.filter(d => d.status === 'PENDING').length > 0);
-          return (
-            <button key={idx} onClick={() => setActiveTab(idx)} style={{
-              display: 'flex', alignItems: 'center', gap: '0.4rem',
-              padding: '0.75rem 1.25rem', background: 'transparent', border: 'none',
-              borderBottom: isActive ? '2px solid #0f62fe' : '2px solid transparent',
-              color: isActive ? '#0f62fe' : '#c6c6c6', cursor: 'pointer',
-              fontSize: '0.875rem', fontWeight: isActive ? '600' : '400', transition: 'all 0.2s'
-            }}>
-              <Icon size={16} />
-              {tab.label}
-              {hasBadge && <span style={{ background: '#f1c21b', color: '#161616', borderRadius: '999px', padding: '0 6px', fontSize: '0.7rem', fontWeight: '700' }}>!</span>}
-            </button>
-          );
-        })}
-      </div>
+      {/* Carbon Standard Tabs Navigation */}
+      <Tabs selectedIndex={activeTab} onChange={({ selectedIndex }) => setActiveTab(selectedIndex)} style={{ marginBottom: '1.5rem' }}>
+        <TabList aria-label="Agent Control Plane Navigation">
+          {tabs.map((tab, idx) => {
+            const Icon = tab.icon;
+            const hasBadge = (idx === 0 && pendingEscalations.length > 0) || (idx === 2 && deadLetters.filter(d => d.status === 'PENDING').length > 0);
+            return (
+              <Tab key={idx} renderIcon={Icon}>
+                {tab.label}
+                {hasBadge && (
+                  <Tag type="warning" size="sm" style={{ marginLeft: '6px', padding: '0 4px', fontWeight: '700' }}>
+                    !
+                  </Tag>
+                )}
+              </Tab>
+            );
+          })}
+        </TabList>
+      </Tabs>
 
       {/* Tab 0: Human Approval Queue */}
       {activeTab === 0 && (
