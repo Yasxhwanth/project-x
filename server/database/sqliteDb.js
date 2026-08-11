@@ -255,11 +255,30 @@ function initDatabaseSchema() {
         expires_at   DATETIME NOT NULL,
         created_at   DATETIME DEFAULT CURRENT_TIMESTAMP
       )
+    `);
+
+    // 15. Creator Memory & Persistent Relationship Graph Table (Solves "Cold Start")
+    db.run(`
+      CREATE TABLE IF NOT EXISTS creator_memory (
+        id                             TEXT PRIMARY KEY,
+        creator_handle                 TEXT UNIQUE NOT NULL,
+        creator_name                   TEXT,
+        total_campaigns_completed      INTEGER DEFAULT 0,
+        historical_lowest_agreed_price INTEGER,
+        avg_response_time_hours        REAL DEFAULT 4.0,
+        content_quality_score          INTEGER DEFAULT 95,
+        comment_sentiment_score        REAL DEFAULT 0.92,
+        brand_safety_rating            INTEGER DEFAULT 98,
+        preferred_niche                TEXT,
+        relationship_notes             TEXT,
+        updated_at                     DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
     `, () => {
       // Run safe DB schema migrations
       db.run(`ALTER TABLE campaigns ADD COLUMN organization_id TEXT`, () => {});
       db.run(`ALTER TABLE deals ADD COLUMN organization_id TEXT`, () => {});
       db.run(`ALTER TABLE organizations ADD COLUMN google_refresh_token TEXT`, () => {});
+      db.run(`ALTER TABLE creators ADD COLUMN memory_summary TEXT`, () => {});
       isInitialized = true;
       seedDefaultAuthAndOrganization().catch(err => console.error("Auth seeding error:", err));
       seedInstagramCreatorsDatabase().catch(err => console.error("Creator seeding error:", err));
