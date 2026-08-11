@@ -70,7 +70,7 @@ export default function EmailNegotiator({ activeDeal, activeCampaign, onDealUpda
         sender: 'BRAND_AI',
         senderName: 'boAt Marketing AI',
         recipientName: 'Fit Tuber Hindi',
-        body: 'Namaste, We would love to collaborate for boAt Airdopes Pro Max 500. Offered Fee: ₹12,000.',
+        body: 'Dear Vivek, We would like to propose a formal brand collaboration for boAt Airdopes Pro Max 500. Offered Fee: ₹12,000.',
         timestamp: '10:15 AM'
       }
     ]
@@ -152,7 +152,7 @@ export default function EmailNegotiator({ activeDeal, activeCampaign, onDealUpda
         </p>
         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginTop: '0.75rem' }}>
           <Tag type="blue" size="sm">Sec 194J Tax Calculation</Tag>
-          <Tag type="purple" size="sm">Hinglish Rate Negotiation</Tag>
+          <Tag type="purple" size="sm">Professional AI Negotiation</Tag>
           <Tag type="cyan" size="sm">VideoDB Compliance Audit</Tag>
           <Tag type="magenta" size="sm">Confidential Risk Ceiling</Tag>
         </div>

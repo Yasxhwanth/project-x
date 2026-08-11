@@ -81,8 +81,8 @@ export async function runAutonomousDirectorCycle() {
         console.log(`✉️ [Director Agent] Generating and dispatching AI outreach email to ${deal.creator_name}...`);
         
         const outreachEmail = {
-          subject: `Paid Brand Collaboration: ${campaign.brand_name} x ${deal.creator_name}`,
-          body: `Namaste ${deal.creator_name},\n\nWe love your content on ${deal.niche}! ${campaign.brand_name} would like to collaborate with you for our flagship ${campaign.product_name}.\n\nOffered Budget: ₹${(deal.offered_price || 25000).toLocaleString('en-IN')}\nDeliverable: 1 Dedicated Reel / Video featuring ${campaign.product_name}.\nGuidelines: ${campaign.mandatory_phrases || 'Highlight key benefits'}.\n\nPlease let us know if this works or reply with your preferred rate.\n\nBest regards,\n${campaign.brand_name} AI Partnerships Team`
+          subject: `Partnership Proposal: ${campaign.brand_name} x ${deal.creator_name}`,
+          body: `Dear ${deal.creator_name},\n\nWe have been following your work in the ${deal.niche} space and would be delighted to propose a formal brand collaboration on behalf of ${campaign.brand_name} for our product, ${campaign.product_name}.\n\nProposed Sponsorship Fee: ₹${(deal.offered_price || 25000).toLocaleString('en-IN')}\nDeliverable: 1 High-Impact Video/Reel showcasing ${campaign.product_name}.\nKey Objectives: ${campaign.mandatory_phrases || 'Highlight product performance and key benefits'}.\n\nPlease let us know if this aligns with your scheduling and rates. We look forward to building a successful partnership.\n\nSincerely,\n${campaign.brand_name} Brand Partnerships Team`
         };
 
         const updatedThread = JSON.stringify([

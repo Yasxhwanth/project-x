@@ -22,7 +22,7 @@ export default function OrgEmailSettings() {
   const [smtpPort, setSmtpPort] = useState(587);
   const [smtpUser, setSmtpUser] = useState('');
   const [smtpPass, setSmtpPass] = useState('');
-  const [aiTone, setAiTone] = useState('Hinglish Casual & Professional');
+  const [aiTone, setAiTone] = useState('Professional Executive & Strategic');
   const [autoReplyEnabled, setAutoReplyEnabled] = useState(true);
 
   const [loading, setLoading] = useState(false);
@@ -140,7 +140,7 @@ export default function OrgEmailSettings() {
                 value={aiTone}
                 onChange={(e) => setAiTone(e.target.value)}
               >
-                <SelectItem value="Hinglish Casual & Professional" text="Hinglish Casual & Professional (Recommended for India)" />
+                <SelectItem value="Professional Executive & Strategic" text="Professional Executive & Strategic (Recommended)" />
                 <SelectItem value="Formal Corporate" text="Formal Corporate & Precise" />
                 <SelectItem value="Friendly & Youthful" text="Friendly & Youthful (College Brand Tone)" />
               </Select>

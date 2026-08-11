@@ -27,7 +27,7 @@ export default function OrgSettingsModal({ isOpen, onClose, session, onOpenAuthM
   const [smtpPort, setSmtpPort] = useState(587);
   const [smtpUser, setSmtpUser] = useState('');
   const [smtpPass, setSmtpPass] = useState('');
-  const [aiTone, setAiTone] = useState('Hinglish Casual & Professional');
+  const [aiTone, setAiTone] = useState('Professional Executive & Strategic');
   const [autoReplyEnabled, setAutoReplyEnabled] = useState(true);
   const [integrationKeys, setIntegrationKeys] = useState({ gemini: '', openai: '', videodb: '', rapidapi: '', youtube: '' });
   const [integrations, setIntegrations] = useState({});
@@ -319,9 +319,9 @@ export default function OrgSettingsModal({ isOpen, onClose, session, onOpenAuthM
                     value={aiTone}
                     onChange={(e) => setAiTone(e.target.value)}
                   >
-                    <SelectItem value="Hinglish Casual & Professional" text="Hinglish Casual & Professional (Recommended for India)" />
+                    <SelectItem value="Professional Executive & Strategic" text="Professional Executive & Strategic (Recommended)" />
                     <SelectItem value="Formal Corporate" text="Formal Corporate" />
-                    <SelectItem value="Creator Friendly & Friendly" text="Creator Friendly & Warm" />
+                    <SelectItem value="Creator Friendly & Warm" text="Creator Friendly & Warm" />
                   </Select>
 
                   <Toggle
