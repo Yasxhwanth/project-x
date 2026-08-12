@@ -39,6 +39,7 @@ import { requireAuth, optionalAuth } from './middleware/authMiddleware.js';
 import { recordConversion, getCampaignAttribution, generateCreatorUtmLink } from './services/attributionService.js';
 
 import { runAutonomousDirectorCycle } from './agents/directorAgent.js';
+import { AGENT_TOOL_SCHEMAS, executeAgentTool } from './tools/agentToolsRegistry.js';
 
 const app = express();
 const PORT = process.env.PORT || 5001;
@@ -1234,6 +1235,32 @@ app.post('/api/agents/director/run', async (req, res) => {
     res.json({ success: true, summary, message: 'Autonomous Director Cycle Executed Successfully' });
   } catch (err) {
     res.status(500).json({ error: 'Director Agent cycle error: ' + err.message });
+  }
+});
+
+// ─── AI Agent Tool Registry & Function Calling API ─────────────────────
+app.get('/api/agents/tools', (req, res) => {
+  res.json({
+    tools: AGENT_TOOL_SCHEMAS,
+    count: AGENT_TOOL_SCHEMAS.length,
+    description: 'Authoritative Function Calling Tool Schemas for AI Agents'
+  });
+});
+
+app.post('/api/agents/tools/execute', async (req, res) => {
+  try {
+    const { toolName, args, campaignId, dealId, actorAgent } = req.body;
+    if (!toolName) return res.status(400).json({ error: 'toolName parameter is required' });
+
+    const result = await executeAgentTool({
+      toolName,
+      args: args || {},
+      context: { campaignId, dealId, actorAgent: actorAgent || 'API Calling Agent' }
+    });
+
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: 'Tool execution error: ' + err.message });
   }
 });
 
