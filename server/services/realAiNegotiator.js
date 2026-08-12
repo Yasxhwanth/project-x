@@ -1,9 +1,28 @@
 import { getIntegrationSecret } from '../database/sqliteDb.js';
+import { sanitizeAndAuditInput, sanitizeAiOutputResponse } from '../security/antiJailbreakShield.js';
 
 /**
  * Real LLM AI Email Negotiation Engine (Powered by Google Gemini API & OpenAI fallback)
  */
 export async function processRealAiNegotiation({ campaign, deal, creatorMessage, organization }) {
+  // 🛡️ Security Check 1: Audit input for prompt injections & jailbreak attacks
+  const securityCheck = sanitizeAndAuditInput({
+    creatorMessage,
+    dealId: deal.id,
+    creatorName: deal.creatorName,
+    campaignId: deal.campaignId
+  });
+
+  if (!securityCheck.isClean) {
+    return {
+      replyText: "Your response triggered our security policy audit. A brand manager has been notified to review your message manually.",
+      newAgreedPrice: deal.currentAgreedPrice || deal.offeredPrice || 25000,
+      newStatus: deal.status,
+      escalationTriggered: true,
+      securityBlocked: true
+    };
+  }
+
   const organizationId = organization?.id;
   const geminiApiKey = (organizationId && await getIntegrationSecret(organizationId, 'gemini')) || process.env.GEMINI_API_KEY || organization?.gmail_api_key;
   const openaiApiKey = (organizationId && await getIntegrationSecret(organizationId, 'openai')) || process.env.OPENAI_API_KEY;
@@ -144,12 +163,14 @@ Compose a formal, sleek, highly professional corporate email response without an
     );
   }
 
+  const sanitizedReply = sanitizeAiOutputResponse({ aiResponseText: aiReplyText, maxBudgetCap: maxBudget });
+
   const replyMessageObj = {
     id: "msg_ai_" + Date.now(),
     sender: "BRAND_AI",
     senderName,
     recipientName: deal.creatorName,
-    body: aiReplyText,
+    body: sanitizedReply,
     timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     intent: isAcceptance ? "AGREEMENT_CONFIRMATION" : "AI_REPLY"
   };
