@@ -40,6 +40,7 @@ import { recordConversion, getCampaignAttribution, generateCreatorUtmLink } from
 
 import { runAutonomousDirectorCycle } from './agents/directorAgent.js';
 import { AGENT_TOOL_SCHEMAS, executeAgentTool } from './tools/agentToolsRegistry.js';
+import { handleMcpRpcRequest } from './mcp/mcpServer.js';
 
 const app = express();
 const PORT = process.env.PORT || 5001;
@@ -1262,6 +1263,34 @@ app.post('/api/agents/tools/execute', async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: 'Tool execution error: ' + err.message });
   }
+});
+
+// ─── Model Context Protocol (MCP) Server Endpoints ─────────────────────
+app.post('/api/mcp', async (req, res) => {
+  try {
+    const rpcResponse = await handleMcpRpcRequest(req.body);
+    res.json(rpcResponse);
+  } catch (err) {
+    res.status(500).json({
+      jsonrpc: '2.0',
+      id: req.body?.id || null,
+      error: { code: -32603, message: 'MCP handler error: ' + err.message }
+    });
+  }
+});
+
+app.get('/api/mcp/sse', (req, res) => {
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+
+  const endpointNotice = {
+    event: 'endpoint',
+    data: '/api/mcp'
+  };
+
+  res.write(`event: ${endpointNotice.event}\ndata: ${endpointNotice.data}\n\n`);
+  console.log('🔌 [MCP Server] Client connected via SSE transport');
 });
 
 // Serve static client build files in production
