@@ -28,7 +28,7 @@ function buildTransporter(org) {
   const googleClientId = process.env.GOOGLE_CLIENT_ID;
   const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;
   const googleRefreshToken = org?.google_refresh_token || process.env.GOOGLE_REFRESH_TOKEN;
-  const gmailUser = org?.sender_email || process.env.GMAIL_USER;
+  const gmailUser = process.env.GMAIL_USER || (org?.sender_email && !org.sender_email.includes('boat-lifestyle.com') ? org.sender_email : null);
 
   if (googleClientId && googleClientSecret && googleRefreshToken && gmailUser) {
     return nodemailer.createTransport({
@@ -58,7 +58,7 @@ function buildTransporter(org) {
 export async function sendCreatorEmail({ toEmail, creatorName, subject, body, organizationId }) {
   const org = await getDbRow('SELECT * FROM organizations WHERE id = ?', [organizationId || 'org_boat_01']);
 
-  const senderEmail = org?.sender_email || process.env.GMAIL_USER || 'collabs@project-x.in';
+  const senderEmail = process.env.GMAIL_USER || (org?.sender_email && !org.sender_email.includes('boat-lifestyle.com') ? org.sender_email : null) || 'collabs@project-x.in';
   const senderName  = org?.sender_name  || 'Project X Marketing AI';
 
   const transporter = buildTransporter(org);

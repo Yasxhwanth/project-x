@@ -335,7 +335,7 @@ app.get('/api/integrations/gmail/status', optionalAuth, async (req, res) => {
     }
 
     const isConnected = Boolean(org?.google_refresh_token || parsed?.refreshToken || process.env.GOOGLE_REFRESH_TOKEN);
-    const email = parsed?.email || org?.sender_email || process.env.GMAIL_USER || 'collabs@boat-lifestyle.com';
+    const email = parsed?.email || process.env.GMAIL_USER || (org?.sender_email && !org.sender_email.includes('boat-lifestyle.com') ? org.sender_email : null) || 'Not configured';
 
     res.json({
       connected: isConnected,
