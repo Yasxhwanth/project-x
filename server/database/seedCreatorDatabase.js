@@ -41,6 +41,7 @@ const LANGUAGES = [
 
 // Each entry: [handle, name, niche, platform, city, lang, followers, engRate, pricePerPost, bio]
 const CURATED_CREATORS = [
+  ['@yashwanth_tech','Yashwanth (Test Creator)','Tech & Gadgets','YouTube','Bengaluru, Karnataka','English & Hindi',250000,'9.8',25000,'Top Tech & Software Creator. Collabs & business: yashwanthtm5@gmail.com'],
   // FASHION & LIFESTYLE
   ['@komalpandeyreal','Komal Pandey','Fashion & Lifestyle','Instagram','Delhi, NCR','Hinglish',1900000,'9.2',85000,'Fashion pioneer and content creator. Experimental styling across India.'],
   ['@thatbohogirl','Kritika Khurana','Fashion & Lifestyle','Instagram','Delhi, NCR','Hinglish',1700000,'8.4',80000,'Boho fashion icon and lifestyle creator. Empowering Indian youth.'],
