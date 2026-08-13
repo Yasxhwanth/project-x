@@ -1,10 +1,14 @@
 services:
-  # Node.js Web Service for Express Backend + Event Bus Engine
+  # Node.js Web Service for Express Backend + Event Bus Engine + MCP + 24/7 Agent
   - type: web
     name: project-x-server
     env: node
     buildCommand: npm run install:all && npm run build
     startCommand: npm start
+    disk:
+      name: sqlite-data
+      mountPath: /opt/render/project/src/server/database
+      sizeGB: 1
     envVars:
       - key: NODE_ENV
         value: production
