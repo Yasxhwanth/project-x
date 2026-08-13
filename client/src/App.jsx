@@ -119,9 +119,24 @@ export default function App() {
     }
   };
 
-  const handleSelectCreatorForOutreach = (deal) => {
-    setActiveDeal(deal);
-    setCurrentTab('negotiator');
+  const handleSelectCreatorForOutreach = async (creator) => {
+    if (!creator) return;
+    try {
+      const campaignId = activeCampaign?.id || 'camp_01';
+      const res = await fetch('/api/deals/outreach', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ creatorId: creator.id, campaignId })
+      });
+      if (res.ok) {
+        const deal = await res.json();
+        setActiveDeal(deal);
+      }
+    } catch (err) {
+      console.error('Failed to launch outreach', err);
+    } finally {
+      setCurrentTab('portfolio');
+    }
   };
 
   const navSections = [

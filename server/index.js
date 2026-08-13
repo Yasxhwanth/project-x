@@ -875,6 +875,19 @@ app.post('/api/deals/outreach', async (req, res) => {
       creator.platform, initialPrice, initialPrice, 'INVITED', '', JSON.stringify([initialEmail])
     ]);
 
+    // Dispatch real email via Gmail / Nodemailer engine
+    try {
+      await sendCreatorEmail({
+        toEmail: creator.email,
+        creatorName: creator.name,
+        subject: `Collaboration Proposal: ${campaign.brand_name} x ${campaign.product_name}`,
+        body: initialEmail.body,
+        organizationId: campaign.organization_id || 'org_boat_01'
+      });
+    } catch (emailErr) {
+      console.error('[Outreach API] Email send warning:', emailErr.message);
+    }
+
     const newDeal = {
       id: dealId,
       campaignId: campaign.id,
