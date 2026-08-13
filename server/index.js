@@ -853,13 +853,25 @@ app.get('/api/deals', async (req, res) => {
 });
 
 app.post('/api/deals/outreach', async (req, res) => {
-  const { creatorId, campaignId, offeredPrice } = req.body;
+  const { creatorId, campaignId, offeredPrice, creatorName, creatorEmail, creatorAvatar, platform } = req.body;
 
   try {
-    const creator = await getDbRow("SELECT * FROM creators WHERE id = ?", [creatorId]);
-    const campaign = await getDbRow("SELECT * FROM campaigns WHERE id = ?", [campaignId]) || await getDbRow("SELECT * FROM campaigns LIMIT 1");
+    let creator = await getDbRow("SELECT * FROM creators WHERE id = ?", [creatorId]);
+    if (!creator && creatorEmail) {
+      creator = await getDbRow("SELECT * FROM creators WHERE email = ?", [creatorEmail]);
+    }
+    if (!creator) {
+      creator = {
+        id: creatorId || "creator_" + Date.now(),
+        name: creatorName || "Creator",
+        email: creatorEmail || "collabs@project-x.in",
+        avatar: creatorAvatar || "",
+        platform: platform || "Instagram",
+        price_per_post: offeredPrice || 25000
+      };
+    }
 
-    if (!creator) return res.status(404).json({ error: "Creator not found" });
+    const campaign = await getDbRow("SELECT * FROM campaigns WHERE id = ?", [campaignId]) || await getDbRow("SELECT * FROM campaigns LIMIT 1");
 
     const initialPrice = offeredPrice || creator.price_per_post;
     const dealId = "deal_" + uuidv4().substring(0, 8);

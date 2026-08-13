@@ -86,7 +86,11 @@ export default function CreatorSearch({ onSelectCreator, activeCampaign }) {
         body: JSON.stringify({
           creatorId: outreachCreator.id,
           campaignId: targetCampaignId || 'camp_01',
-          offeredPrice: offeredFee
+          offeredPrice: offeredFee,
+          creatorName: outreachCreator.name,
+          creatorEmail: outreachCreator.email,
+          creatorAvatar: outreachCreator.avatar,
+          platform: outreachCreator.platform
         })
       });
       if (res.ok) {
