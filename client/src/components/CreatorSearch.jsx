@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { 
   Search as SearchInput, Select, SelectItem, Button, Tag, Loading,
-  SkeletonPlaceholder, Pagination
+  SkeletonPlaceholder, Pagination, Modal, NumberInput, InlineNotification, Tile, Grid, Column
 } from '@carbon/react';
 import { 
-  Search, CheckmarkOutline, WarningAlt, Send, Currency, UserFollow, Launch, ChevronLeft, ChevronRight, Email
+  Search, CheckmarkOutline, WarningAlt, Send, Currency, UserFollow, Launch, ChevronLeft, ChevronRight, Email, CheckmarkFilled
 } from '@carbon/icons-react';
 import CreatorProfileModal from './CreatorProfileModal';
 
@@ -43,7 +43,67 @@ export default function CreatorSearch({ onSelectCreator, activeCampaign }) {
   const [latency, setLatency] = useState(0);
   
   const [selectedCreatorId, setSelectedCreatorId] = useState(null);
-  
+
+  // Outreach Proposal Modal State
+  const [outreachCreator, setOutreachCreator] = useState(null);
+  const [campaignsList, setCampaignsList] = useState([]);
+  const [targetCampaignId, setTargetCampaignId] = useState('');
+  const [offeredFee, setOfferedFee] = useState(25000);
+  const [sendingOutreach, setSendingOutreach] = useState(false);
+  const [outreachResult, setOutreachResult] = useState(null);
+
+  useEffect(() => {
+    fetchCampaignsList();
+  }, []);
+
+  const fetchCampaignsList = async () => {
+    try {
+      const res = await fetch('/api/campaigns');
+      if (res.ok) {
+        const data = await res.json();
+        const list = Array.isArray(data) ? data : data.campaigns || [];
+        setCampaignsList(list);
+        if (list.length > 0) setTargetCampaignId(list[0].id);
+      }
+    } catch (e) { console.error("Failed to load campaigns", e); }
+  };
+
+  const handleOpenOutreachModal = (c) => {
+    setOutreachCreator(c);
+    setOfferedFee(c.price_per_post || 25000);
+    setTargetCampaignId(activeCampaign?.id || campaignsList[0]?.id || 'camp_01');
+    setOutreachResult(null);
+  };
+
+  const handleSendOutreachSubmit = async () => {
+    if (!outreachCreator) return;
+    setSendingOutreach(true);
+    setOutreachResult(null);
+    try {
+      const res = await fetch('/api/deals/outreach', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          creatorId: outreachCreator.id,
+          campaignId: targetCampaignId || 'camp_01',
+          offeredPrice: offeredFee
+        })
+      });
+      if (res.ok) {
+        const deal = await res.json();
+        setOutreachResult({ success: true, deal });
+        if (onSelectCreator) onSelectCreator(deal);
+      } else {
+        const errData = await res.json();
+        setOutreachResult({ success: false, error: errData.error || 'Failed to dispatch email' });
+      }
+    } catch (err) {
+      setOutreachResult({ success: false, error: err.message });
+    } finally {
+      setSendingOutreach(false);
+    }
+  };
+
   // Debounce ref
   const debounceTimer = useRef(null);
 
@@ -293,7 +353,7 @@ export default function CreatorSearch({ onSelectCreator, activeCampaign }) {
                       size="sm" 
                       renderIcon={Send}
                       style={{ width: '100%', maxWidth: 'none', justifyContent: 'space-between' }}
-                      onClick={() => handleSelect(c)}
+                      onClick={() => handleOpenOutreachModal(c)}
                       disabled={isRisky}
                     >
                       {isRisky ? 'Blocked by Risk Policy' : 'Draft Outreach'}
@@ -336,12 +396,103 @@ export default function CreatorSearch({ onSelectCreator, activeCampaign }) {
         </div>
       </div>
       
-      {/* Profile Modal */}
+      {/* Profile Detail Modal */}
       <CreatorProfileModal
         creatorId={selectedCreatorId}
         isOpen={!!selectedCreatorId}
         onClose={() => setSelectedCreatorId(null)}
       />
+
+      {/* Outreach Proposal Carbon Modal */}
+      <Modal
+        open={!!outreachCreator}
+        modalHeading="Draft & Send Collaboration Outreach Proposal"
+        modalLabel="AI OUTREACH DISPATCH"
+        primaryButtonText={sendingOutreach ? "Sending via Gmail..." : "🚀 Send Proposal Email (Gmail)"}
+        secondaryButtonText="Cancel"
+        primaryButtonDisabled={sendingOutreach}
+        onRequestClose={() => setOutreachCreator(null)}
+        onRequestSubmit={handleSendOutreachSubmit}
+        size="md"
+      >
+        {outreachCreator && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', paddingTop: '0.5rem' }}>
+            {/* Creator Summary Header Tile */}
+            <Tile style={{ background: '#262626', border: '1px solid #393939', padding: '1rem', borderRadius: 6 }}>
+              <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                <img 
+                  src={outreachCreator.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(outreachCreator.name)}&background=0f62fe&color=ffffff`} 
+                  alt={outreachCreator.name} 
+                  style={{ width: 52, height: 52, borderRadius: '50%', objectFit: 'cover' }} 
+                />
+                <div style={{ flex: 1 }}>
+                  <h4 style={{ margin: 0, color: '#f4f4f4', fontSize: '1.1rem', fontWeight: '600' }}>{outreachCreator.name}</h4>
+                  <p style={{ margin: '0.2rem 0 0 0', color: '#a8a8a8', fontSize: '0.85rem' }}>
+                    {outreachCreator.handle} • {outreachCreator.platform} • {outreachCreator.location}
+                  </p>
+                </div>
+                <Tag type="blue" size="sm">{outreachCreator.niche}</Tag>
+              </div>
+              <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid #393939', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: '#4589ff' }}>
+                <Email size={16} />
+                <span>Recipient Email: <strong>{outreachCreator.email}</strong></span>
+              </div>
+            </Tile>
+
+            {/* Campaign Selection */}
+            <Select 
+              id="outreach-target-campaign" 
+              labelText="Target Campaign" 
+              value={targetCampaignId} 
+              onChange={e => setTargetCampaignId(e.target.value)}
+              style={{ background: '#262626' }}
+            >
+              {campaignsList.map(c => (
+                <SelectItem key={c.id} value={c.id} text={`${c.brandName || c.brand_name} — ${c.productName || c.product_name}`} />
+              ))}
+            </Select>
+
+            {/* Proposed Fee */}
+            <NumberInput
+              id="outreach-fee-input"
+              label="Offered Collaboration Fee (₹)"
+              value={offeredFee}
+              onChange={(e, { value }) => setOfferedFee(Number(value || 0))}
+              min={1000}
+              max={1000000}
+              step={1000}
+              style={{ background: '#262626' }}
+            />
+
+            {/* Email Preview */}
+            <div>
+              <p style={{ fontSize: '0.8rem', color: '#c6c6c6', marginBottom: '0.4rem', fontWeight: '600' }}>Email Preview (Sent via Gmail OAuth):</p>
+              <div style={{ background: '#161616', border: '1px solid #393939', padding: '1rem', borderRadius: 4, fontSize: '0.85rem', color: '#dcdcdc', fontFamily: 'monospace', whiteSpace: 'pre-wrap', maxHeight: '140px', overflowY: 'auto' }}>
+                {`Namaste ${outreachCreator.name},\n\nWe love your content! We'd like to invite you to collaborate on our upcoming campaign.\n\n- Proposed Fee: ₹${Number(offeredFee).toLocaleString('en-IN')}\n\nPlease reply directly to confirm your interest so our AI agent can send contract terms!`}
+              </div>
+            </div>
+
+            {/* Result Notification */}
+            {outreachResult && (
+              outreachResult.success ? (
+                <InlineNotification
+                  kind="success"
+                  title="Proposal Email Dispatched!"
+                  subtitle={`Outreach email successfully sent to ${outreachCreator.email}.`}
+                  hideCloseButton
+                />
+              ) : (
+                <InlineNotification
+                  kind="error"
+                  title="Outreach Failed"
+                  subtitle={outreachResult.error}
+                  hideCloseButton
+                />
+              )
+            )}
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }
