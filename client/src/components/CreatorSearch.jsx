@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { 
-  TextInput, Select, SelectItem, Button, Tag, Loading,
+  Search as SearchInput, Select, SelectItem, Button, Tag, Loading,
   SkeletonPlaceholder, Pagination
 } from '@carbon/react';
 import { 
@@ -107,12 +107,14 @@ export default function CreatorSearch({ onSelectCreator, activeCampaign }) {
       <div style={{ background: '#161616', borderBottom: '1px solid #393939', padding: '1.5rem', position: 'sticky', top: 0, zIndex: 10 }}>
         <div style={{ display: 'flex', alignItems: 'flex-end', gap: '1rem', flexWrap: 'wrap' }}>
           <div style={{ flex: '2', minWidth: '280px' }}>
-            <TextInput
+            <SearchInput
               id="fts-search"
-              labelText="Global Search (FTS5 Index)"
-              placeholder="Search by name, handle, bio, location..."
+              labelText="Global Creator Search"
+              placeholder="Search by name, handle (@yashwanth_tech), bio, email..."
               value={query}
               onChange={e => handleQueryChange(e.target.value)}
+              onClear={() => handleQueryChange('')}
+              size="lg"
               style={{ background: '#262626' }}
             />
           </div>

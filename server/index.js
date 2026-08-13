@@ -616,11 +616,20 @@ app.get('/api/creators/search', async (req, res) => {
     const conditions = [];
 
     if (fts_query && fts_query.trim()) {
-      baseSql += ` INNER JOIN creators_fts fts ON fts.creator_id = c.id`;
-      conditions.push(`fts.creators_fts MATCH ?`);
-      // Use wildcard for prefix matching if query doesn't have it
-      const matchQuery = fts_query.trim().split(/\s+/).map(term => term + '*').join(' AND ');
-      params.push(matchQuery);
+      const cleanTerm = fts_query.trim();
+      const sanitized = cleanTerm.replace(/[^a-zA-Z0-9_\-@\.\s]/g, '');
+      if (sanitized) {
+        conditions.push(`(
+          c.name LIKE ? OR 
+          c.handle LIKE ? OR 
+          c.bio LIKE ? OR 
+          c.niche LIKE ? OR 
+          c.email LIKE ? OR
+          c.location LIKE ?
+        )`);
+        const likeStr = `%${sanitized}%`;
+        params.push(likeStr, likeStr, likeStr, likeStr, likeStr, likeStr);
+      }
     }
 
     if (niche && niche !== 'All') {
