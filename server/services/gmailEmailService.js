@@ -33,6 +33,8 @@ function buildTransporter(org) {
   if (googleClientId && googleClientSecret && googleRefreshToken && gmailUser) {
     return nodemailer.createTransport({
       service: 'gmail',
+      connectionTimeout: 8000,
+      socketTimeout: 10000,
       auth: {
         type: 'OAuth2',
         user: gmailUser,
@@ -48,6 +50,8 @@ function buildTransporter(org) {
   if (gmailUser && gmailPass) {
     return nodemailer.createTransport({
       service: 'gmail',
+      connectionTimeout: 8000,
+      socketTimeout: 10000,
       auth: { user: gmailUser, pass: gmailPass }
     });
   }
