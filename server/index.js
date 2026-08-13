@@ -852,7 +852,7 @@ app.get('/api/deals', async (req, res) => {
   }
 });
 
-app.post('/api/deals/outreach', async (req, res) => {
+app.post(['/api/deals/outreach', '/api/deals'], async (req, res) => {
   const { creatorId, campaignId, offeredPrice, creatorName, creatorEmail, creatorAvatar, platform } = req.body;
 
   try {
