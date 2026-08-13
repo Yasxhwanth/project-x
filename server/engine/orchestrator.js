@@ -169,4 +169,26 @@ export function startOrchestrator() {
   console.log('[Orchestrator] All agent event handlers registered');
 }
 
+/**
+ * Creates a human escalation ticket in the escalation_queue table.
+ * Called by security shield and agent tools when a decision requires human approval.
+ */
+export async function createEscalationTicket({ dealId, creatorName, reason, requestedRate, maxAllowedRate, actorAgent, riskLevel }) {
+  try {
+    const id = 'esc_' + uuidv4().substring(0, 8);
+    await runDb(
+      `INSERT INTO escalation_queue (id, deal_id, creator_name, reason, requested_rate, max_allowed_rate, actor_agent, risk_level, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'PENDING')`,
+      [id, dealId || null, creatorName || 'Unknown', reason,
+       requestedRate || null, maxAllowedRate || null,
+       actorAgent || 'System', riskLevel || 'MEDIUM']
+    );
+    console.log(`[Orchestrator] Escalation ticket created: ${id} — ${reason}`);
+    return id;
+  } catch (err) {
+    console.error('[Orchestrator] createEscalationTicket error:', err.message);
+    return null;
+  }
+}
+
 export { createAgentRun };

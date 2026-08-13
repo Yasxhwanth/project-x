@@ -138,3 +138,6 @@ TASK:
     creators: enrichedCreators
   };
 }
+
+// Alias for directorAgent import compatibility
+export const searchCreatorsWithAi = searchCreatorsWithNaturalLanguage;

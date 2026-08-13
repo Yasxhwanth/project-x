@@ -1,29 +1,24 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  TextInput, 
-  TextArea, 
-  NumberInput, 
-  Button, 
-  Tile, 
-  InlineNotification,
-  Tag,
-  Grid,
-  Column,
-  Table,
-  TableHead,
-  TableRow,
-  TableHeader,
-  TableBody,
-  TableCell
+import {
+  Grid, Column, Tile, ClickableTile, Button, Tag,
+  InlineNotification, TextInput, TextArea, NumberInput,
+  StructuredListWrapper, StructuredListHead, StructuredListRow,
+  StructuredListCell, StructuredListBody,
+  Loading
 } from '@carbon/react';
-import { Launch, CheckmarkFilled, Add, Idea, Currency, Checkmark, Renew } from '@carbon/icons-react';
+import {
+  Launch, Add, Idea, CheckmarkFilled, Checkmark, Renew,
+  ChevronRight, Currency, UserFollow, Enterprise, View
+} from '@carbon/icons-react';
+import CampaignWorkspaceView from './CampaignWorkspaceView';
 
-export default function CampaignBuilder({ activeCampaign, onCampaignSaved, onSwitchCampaign }) {
+export default function CampaignBuilder({ activeCampaign, onCampaignSaved, onSwitchCampaign, forceCreateNew }) {
   const [campaignsList, setCampaignsList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isCreatingNew, setIsCreatingNew] = useState(false);
+  const [selectedWorkspaceCampaign, setSelectedWorkspaceCampaign] = useState(null);
 
-  // Form State
+  // Form state
   const [brandName, setBrandName] = useState('boAt Lifestyle');
   const [productName, setProductName] = useState('boAt Airdopes Pro Max 500');
   const [totalBudget, setTotalBudget] = useState(1000000);
@@ -31,18 +26,14 @@ export default function CampaignBuilder({ activeCampaign, onCampaignSaved, onSwi
   const [mandatoryPhrases, setMandatoryPhrases] = useState('Use code SAVER20 for 20% off on boAt-lifestyle.com');
   const [promoCode, setPromoCode] = useState('SAVER20');
   const [guidelines, setGuidelines] = useState('Show active noise cancellation test, battery life demo, link in description. Mention 1-year warranty.');
-  
-  // Tier Allocations
   const [microCount, setMicroCount] = useState(20);
   const [midCount, setMidCount] = useState(5);
   const [macroCount, setMacroCount] = useState(1);
-
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => {
-    fetchCampaigns();
-  }, []);
+  useEffect(() => { if (forceCreateNew) setIsCreatingNew(true); }, [forceCreateNew]);
+  useEffect(() => { fetchCampaigns(); }, []);
 
   const fetchCampaigns = async () => {
     setLoading(true);
@@ -50,17 +41,14 @@ export default function CampaignBuilder({ activeCampaign, onCampaignSaved, onSwi
       const res = await fetch('/api/campaigns');
       if (res.ok) {
         const data = await res.json();
-        setCampaignsList(data);
+        setCampaignsList(Array.isArray(data) ? data : (data.campaigns || []));
       }
-    } catch (err) {
-      console.error("Failed to load campaigns list", err);
-    } finally {
-      setLoading(false);
-    }
+    } catch (err) { console.error('Failed to load campaigns', err); }
+    finally { setLoading(false); }
   };
 
   const estReachMillions = ((microCount * 150000 + midCount * 450000 + macroCount * 1800000) / 1000000).toFixed(1);
-  const estSpentINR = (microCount * 18000 + midCount * 45000 + macroCount * 120000);
+  const estSpentINR = microCount * 18000 + midCount * 45000 + macroCount * 120000;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -69,265 +57,233 @@ export default function CampaignBuilder({ activeCampaign, onCampaignSaved, onSwi
       const res = await fetch('/api/campaigns', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          brandName,
-          productName,
-          maxBudgetPerCreator: Number(maxBudget),
-          mandatoryPhrases,
-          promoCode,
-          guidelines
-        })
+        body: JSON.stringify({ brandName, productName, maxBudgetPerCreator: Number(maxBudget), mandatoryPhrases, promoCode, guidelines })
       });
-
-      if (!res.ok) throw new Error("Failed to save campaign");
+      if (!res.ok) throw new Error('Failed to save');
       const newCamp = await res.json();
-
       setSavedSuccess(true);
       onCampaignSaved(newCamp);
       fetchCampaigns();
       setIsCreatingNew(false);
-      setTimeout(() => setSavedSuccess(false), 3000);
-    } catch (err) {
-      console.error("Save campaign error", err);
-    } finally {
-      setSubmitting(false);
-    }
+      setTimeout(() => setSavedSuccess(false), 4000);
+    } catch (err) { console.error('Save campaign error', err); }
+    finally { setSubmitting(false); }
   };
 
+  if (selectedWorkspaceCampaign) {
+    return (
+      <CampaignWorkspaceView
+        campaign={selectedWorkspaceCampaign}
+        onBack={() => setSelectedWorkspaceCampaign(null)}
+      />
+    );
+  }
+
   return (
-    <div style={{ maxWidth: '1000px', margin: '0 auto', color: '#ffffff' }}>
-      {/* Header */}
+    <div>
+      {/* Page Header */}
       <div style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
-          <h2 style={{ fontSize: '1.6rem', fontWeight: '400', marginBottom: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <Idea size={24} style={{ color: '#0f62fe' }} /> Campaign Hub & Brief Builder
+          <h2 style={{ fontSize: '1.75rem', fontWeight: '300', color: '#f4f4f4', margin: '0 0 0.35rem 0', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+            <Enterprise size={24} style={{ color: '#0f62fe' }} />
+            Campaign Hub
           </h2>
-          <p style={{ color: '#a8a8a8', fontSize: '0.875rem' }}>
-            Create new campaigns, manage budget caps, tier distributions, mandatory spoken keyphrases, and switch active campaign workspace.
+          <p style={{ color: '#8d8d8d', fontSize: '0.875rem', margin: 0 }}>
+            Each campaign is a fully isolated workspace — sourcing, outreach, video QA, and payments are scoped per campaign.
           </p>
         </div>
-        <Button 
-          size="sm" 
-          kind={isCreatingNew ? 'secondary' : 'primary'} 
-          renderIcon={isCreatingNew ? Checkmark : Add}
-          onClick={() => setIsCreatingNew(!isCreatingNew)}
-        >
-          {isCreatingNew ? 'View Active Campaigns' : '+ Create New Campaign'}
-        </Button>
+        <div style={{ display: 'flex', gap: '0.75rem' }}>
+          <Button kind="ghost" size="md" renderIcon={Renew} onClick={fetchCampaigns} hasIconOnly iconDescription="Refresh" />
+          <Button
+            kind={isCreatingNew ? 'secondary' : 'primary'}
+            size="md"
+            renderIcon={isCreatingNew ? Checkmark : Add}
+            onClick={() => setIsCreatingNew(!isCreatingNew)}
+          >
+            {isCreatingNew ? 'View Campaigns' : 'New Campaign'}
+          </Button>
+        </div>
       </div>
 
       {savedSuccess && (
         <InlineNotification
           kind="success"
-          title="Campaign Created & Activated!"
-          subtitle="New campaign parameters broadcasted across Discovery, Negotiation, and VideoDB Audit engines."
+          title="Campaign created!"
+          subtitle="New campaign is live. Open its workspace to start sourcing creators."
           style={{ marginBottom: '1.5rem' }}
         />
       )}
 
-      {/* View 1: Active Campaigns Ledger */}
+      {/* ── CAMPAIGN LIST VIEW ── */}
       {!isCreatingNew && (
-        <Tile style={{ padding: '1.5rem', background: '#262626', marginBottom: '1.5rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-            <h3 style={{ fontSize: '1.1rem', fontWeight: '600', color: '#edf5ff', margin: 0 }}>
-              Active Brand Campaigns ({campaignsList.length})
-            </h3>
-            <Button size="sm" kind="ghost" renderIcon={Renew} onClick={fetchCampaigns}>Refresh List</Button>
-          </div>
-
-          {campaignsList.length === 0 ? (
-            <div style={{ padding: '2rem', textAlign: 'center', color: '#a8a8a8' }}>
-              <p>No campaigns created yet. Click "+ Create New Campaign" to launch your first creator campaign!</p>
-            </div>
-          ) : (
-            <Table size="lg">
-              <TableHead>
-                <TableRow>
-                  <TableHeader>Brand & Product</TableHeader>
-                  <TableHeader>Max Creator Cap</TableHeader>
-                  <TableHeader>Mandatory Spoken Phrase</TableHeader>
-                  <TableHeader>Promo Code</TableHeader>
-                  <TableHeader>Status</TableHeader>
-                  <TableHeader>Action</TableHeader>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {campaignsList.map(c => {
-                  const isActive = activeCampaign?.id === c.id || (activeCampaign?.brandName === c.brandName && activeCampaign?.productName === c.productName);
-                  return (
-                    <TableRow key={c.id} style={{ background: isActive ? 'rgba(15, 98, 254, 0.1)' : 'transparent' }}>
-                      <TableCell style={{ fontWeight: '600', color: '#ffffff' }}>
-                        <div>{c.productName || c.product_name}</div>
-                        <span style={{ fontSize: '0.75rem', color: '#a8a8a8' }}>{c.brandName || c.brand_name}</span>
-                      </TableCell>
-                      <TableCell style={{ color: '#f1c21b', fontWeight: '600' }}>
-                        ₹{(c.maxBudgetPerCreator || c.max_budget_per_creator || 50000).toLocaleString('en-IN')}
-                      </TableCell>
-                      <TableCell style={{ color: '#4589ff', fontSize: '0.8rem', maxWidth: '240px' }}>
-                        "{c.mandatoryPhrases || c.mandatory_phrases}"
-                      </TableCell>
-                      <TableCell>
-                        <Tag type="teal" size="sm">{c.promoCode || c.promo_code || 'BOAT30'}</Tag>
-                      </TableCell>
-                      <TableCell>
-                        <Tag type={isActive ? 'green' : 'blue'} size="sm">
-                          {isActive ? 'ACTIVE WORKSPACE' : 'READY'}
-                        </Tag>
-                      </TableCell>
-                      <TableCell>
-                        <Button 
-                          size="sm" 
-                          kind={isActive ? 'tertiary' : 'primary'}
-                          onClick={() => onSwitchCampaign(c)}
-                        >
-                          {isActive ? 'Selected' : 'Select Campaign'}
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
+        <>
+          {/* Summary strip */}
+          {campaignsList.length > 0 && (
+            <Grid style={{ padding: 0, marginBottom: '1.5rem', columnGap: '1rem' }}>
+              {[
+                { label: 'Total Campaigns', value: campaignsList.length, color: '#78a9ff' },
+                { label: 'Active Workspaces', value: campaignsList.length, color: '#42be65' },
+                { label: 'Combined Budget Cap', value: `₹${(campaignsList.reduce((s, c) => s + (c.max_budget_per_creator || c.maxBudgetPerCreator || 50000), 0) / 100000).toFixed(1)}L`, color: '#f1c21b' }
+              ].map((stat, i) => (
+                <Column key={i} lg={5} md={2} sm={4}>
+                  <Tile style={{ background: '#262626', padding: '1rem 1.25rem' }}>
+                    <div style={{ fontSize: '0.65rem', letterSpacing: '1px', color: '#8d8d8d', textTransform: 'uppercase', marginBottom: '0.4rem' }}>{stat.label}</div>
+                    <div style={{ fontSize: '1.75rem', fontWeight: '600', color: stat.color, lineHeight: 1 }}>{stat.value}</div>
+                  </Tile>
+                </Column>
+              ))}
+            </Grid>
           )}
-        </Tile>
+
+          {loading ? (
+            <Tile style={{ background: '#262626', padding: '3rem', textAlign: 'center' }}>
+              <Loading withOverlay={false} small description="Loading campaigns..." />
+            </Tile>
+          ) : campaignsList.length === 0 ? (
+            <Tile style={{ background: '#262626', padding: '3rem 2rem', textAlign: 'center' }}>
+              <Idea size={40} style={{ color: '#0f62fe', marginBottom: '1rem' }} />
+              <h3 style={{ color: '#f4f4f4', fontSize: '1.1rem', fontWeight: '400', marginBottom: '0.5rem' }}>No campaigns yet</h3>
+              <p style={{ color: '#8d8d8d', marginBottom: '1.5rem', fontSize: '0.875rem' }}>
+                Launch your first campaign to start sourcing creators with AI agents.
+              </p>
+              <Button kind="primary" renderIcon={Add} onClick={() => setIsCreatingNew(true)}>
+                Create First Campaign
+              </Button>
+            </Tile>
+          ) : (
+            <Grid style={{ padding: 0, rowGap: '1rem', columnGap: '1rem' }}>
+              {campaignsList.map(c => {
+                const budget = c.maxBudgetPerCreator || c.max_budget_per_creator || 50000;
+                const promo = c.promoCode || c.promo_code || 'N/A';
+                const brand = c.brandName || c.brand_name || 'Brand';
+                const product = c.productName || c.product_name || 'Campaign';
+                return (
+                  <Column key={c.id} lg={8} md={8} sm={4}>
+                    <ClickableTile
+                      style={{ background: '#262626', borderTop: '3px solid #0f62fe', padding: '1.5rem' }}
+                      onClick={() => { onSwitchCampaign(c); setSelectedWorkspaceCampaign(c); }}
+                    >
+                      {/* Brand label */}
+                      <p style={{ fontSize: '0.7rem', letterSpacing: '1.5px', color: '#4589ff', textTransform: 'uppercase', fontWeight: '600', margin: '0 0 0.3rem 0' }}>{brand}</p>
+                      {/* Campaign title */}
+                      <h3 style={{ fontSize: '1.15rem', fontWeight: '400', color: '#f4f4f4', margin: '0 0 1rem 0' }}>{product}</h3>
+
+                      {/* Metric row */}
+                      <Grid style={{ padding: 0, marginBottom: '1rem' }}>
+                        <Column lg={5} md={2} sm={2} style={{ textAlign: 'center' }}>
+                          <div style={{ fontSize: '1.25rem', fontWeight: '600', color: '#f1c21b' }}>₹{(budget / 1000).toFixed(0)}K</div>
+                          <div style={{ fontSize: '0.65rem', color: '#8d8d8d', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Per Creator</div>
+                        </Column>
+                        <Column lg={5} md={2} sm={2} style={{ textAlign: 'center' }}>
+                          <div style={{ fontSize: '1.25rem', fontWeight: '600', color: '#78a9ff' }}>0</div>
+                          <div style={{ fontSize: '0.65rem', color: '#8d8d8d', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Active Deals</div>
+                        </Column>
+                        <Column lg={6} md={4} sm={4} style={{ textAlign: 'center' }}>
+                          <div style={{ fontSize: '1.25rem', fontWeight: '600', color: '#42be65' }}>0</div>
+                          <div style={{ fontSize: '0.65rem', color: '#8d8d8d', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Videos Done</div>
+                        </Column>
+                      </Grid>
+
+                      {/* Footer row */}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '0.75rem', borderTop: '1px solid #393939' }}>
+                        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                          <Tag type="teal" size="sm">{promo}</Tag>
+                          <Tag type="green" size="sm">Active</Tag>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.8rem', color: '#4589ff', fontWeight: '500' }}>
+                          Open Workspace <ChevronRight size={14} />
+                        </div>
+                      </div>
+                    </ClickableTile>
+                  </Column>
+                );
+              })}
+            </Grid>
+          )}
+        </>
       )}
 
-      {/* View 2: Create New Campaign Form */}
+      {/* ── CREATE CAMPAIGN FORM ── */}
       {isCreatingNew && (
         <>
-          <Tile style={{ padding: '1.25rem', marginBottom: '1.5rem', background: '#262626', borderLeft: '4px solid #0f62fe' }}>
+          {/* Estimate banner */}
+          <Tile style={{ background: '#262626', borderLeft: '4px solid #0f62fe', padding: '1rem 1.5rem', marginBottom: '1.5rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
-                <span style={{ fontSize: '0.85rem', color: '#a8a8a8' }}>New Campaign Strategy Estimate:</span>
-                <div style={{ fontSize: '1.1rem', fontWeight: '600', color: '#ffffff', marginTop: '0.25rem' }}>
-                  ₹{(totalBudget / 100000).toFixed(1)} Lakh Budget → {microCount} Micro + {midCount} Mid + {macroCount} Macro Creators
-                </div>
+                <p style={{ fontSize: '0.75rem', color: '#8d8d8d', margin: '0 0 0.25rem 0', letterSpacing: '0.5px' }}>CAMPAIGN BUDGET ESTIMATE</p>
+                <p style={{ fontSize: '1rem', fontWeight: '400', color: '#f4f4f4', margin: 0 }}>
+                  ₹{(totalBudget / 100000).toFixed(1)}L budget · {microCount} Micro + {midCount} Mid + {macroCount} Macro creators
+                </p>
               </div>
               <div style={{ textAlign: 'right' }}>
-                <Tag type="teal" size="md" style={{ fontWeight: '700' }}>
-                  Est. Reach: {estReachMillions}M Views
-                </Tag>
-                <div style={{ fontSize: '0.75rem', color: '#f1c21b', marginTop: '0.25rem' }}>
-                  Allocated: ₹{estSpentINR.toLocaleString('en-IN')} / ₹{totalBudget.toLocaleString('en-IN')}
-                </div>
+                <Tag type="teal" size="md">~{estReachMillions}M Est. Views</Tag>
+                <p style={{ fontSize: '0.75rem', color: '#f1c21b', margin: '0.25rem 0 0 0' }}>
+                  Spend: ₹{estSpentINR.toLocaleString('en-IN')} / ₹{totalBudget.toLocaleString('en-IN')}
+                </p>
               </div>
             </div>
           </Tile>
 
-          <Tile style={{ padding: '2rem', background: '#262626' }}>
-            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
-                <TextInput
-                  id="brand-name"
-                  labelText="Indian Brand / Company Name"
-                  value={brandName}
-                  onChange={(e) => setBrandName(e.target.value)}
-                  placeholder="e.g. boAt, Mamaearth, Lenskart"
-                  required
-                />
-                <TextInput
-                  id="product-name"
-                  labelText="Product / Service Title"
-                  value={productName}
-                  onChange={(e) => setProductName(e.target.value)}
-                  placeholder="e.g. boAt Wave Smartwatch 2026"
-                  required
-                />
-              </div>
+          <Tile style={{ background: '#262626', padding: '2rem' }}>
+            <form onSubmit={handleSubmit}>
+              {/* Section: Brand & Product */}
+              <p style={{ fontSize: '0.75rem', letterSpacing: '1px', color: '#4589ff', textTransform: 'uppercase', fontWeight: '600', margin: '0 0 1rem 0' }}>Brand & Product</p>
+              <Grid style={{ padding: 0, marginBottom: '1.5rem', columnGap: '1rem' }}>
+                <Column lg={8} md={4} sm={4}>
+                  <TextInput id="brand-name" labelText="Brand / Company Name" value={brandName} onChange={e => setBrandName(e.target.value)} placeholder="e.g. boAt, Mamaearth, Lenskart" required />
+                </Column>
+                <Column lg={8} md={4} sm={4}>
+                  <TextInput id="product-name" labelText="Product / Service Title" value={productName} onChange={e => setProductName(e.target.value)} placeholder="e.g. boAt Wave Smartwatch 2026" required />
+                </Column>
+              </Grid>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
-                <NumberInput
-                  id="total-budget"
-                  label="Total Campaign Spend Budget (₹ INR)"
-                  value={totalBudget}
-                  onChange={(e, { value }) => setTotalBudget(value)}
-                  min={50000}
-                  max={10000000}
-                  step={50000}
-                />
-                <NumberInput
-                  id="max-budget"
-                  label="Max Budget Cap per Creator (₹ INR)"
-                  value={maxBudget}
-                  onChange={(e, { value }) => setMaxBudget(value)}
-                  min={5000}
-                  max={500000}
-                  step={5000}
-                />
-              </div>
+              {/* Section: Budget */}
+              <p style={{ fontSize: '0.75rem', letterSpacing: '1px', color: '#4589ff', textTransform: 'uppercase', fontWeight: '600', margin: '0 0 1rem 0' }}>Budget Configuration</p>
+              <Grid style={{ padding: 0, marginBottom: '1rem', columnGap: '1rem' }}>
+                <Column lg={8} md={4} sm={4}>
+                  <NumberInput id="total-budget" label="Total Campaign Budget (₹ INR)" value={totalBudget} onChange={(e, { value }) => setTotalBudget(value)} min={50000} max={10000000} step={50000} />
+                </Column>
+                <Column lg={8} md={4} sm={4}>
+                  <NumberInput id="max-budget" label="Max Budget Cap per Creator (₹ INR)" value={maxBudget} onChange={(e, { value }) => setMaxBudget(value)} min={5000} max={500000} step={5000} />
+                </Column>
+              </Grid>
 
-              <div style={{ background: '#161616', padding: '1.25rem', borderRadius: '4px', border: '1px solid #393939' }}>
-                <h4 style={{ fontSize: '0.95rem', fontWeight: '600', color: '#0f62fe', marginBottom: '0.75rem' }}>
-                  Creator Tier Budget Distribution
-                </h4>
-                <Grid style={{ padding: 0, rowGap: '1rem', columnGap: '1rem' }}>
-                  <Column lg={5} md={2} sm={2}>
-                    <NumberInput
-                      id="micro-count"
-                      label="Micro Creators (<500K followers)"
-                      value={microCount}
-                      onChange={(e, { value }) => setMicroCount(value)}
-                      min={0}
-                      max={100}
-                    />
+              {/* Tier distribution */}
+              <Tile style={{ background: '#161616', padding: '1.25rem', marginBottom: '1.5rem' }}>
+                <p style={{ fontSize: '0.8rem', color: '#8d8d8d', margin: '0 0 1rem 0' }}>Creator Tier Distribution</p>
+                <Grid style={{ padding: 0, columnGap: '1rem' }}>
+                  <Column lg={5} md={2} sm={4}>
+                    <NumberInput id="micro-count" label="Micro (<500K followers)" value={microCount} onChange={(e, { value }) => setMicroCount(value)} min={0} max={100} />
                   </Column>
-                  <Column lg={5} md={2} sm={2}>
-                    <NumberInput
-                      id="mid-count"
-                      label="Mid-Tier Creators (500K-2M)"
-                      value={midCount}
-                      onChange={(e, { value }) => setMidCount(value)}
-                      min={0}
-                      max={50}
-                    />
+                  <Column lg={5} md={2} sm={4}>
+                    <NumberInput id="mid-count" label="Mid-Tier (500K–2M)" value={midCount} onChange={(e, { value }) => setMidCount(value)} min={0} max={50} />
                   </Column>
                   <Column lg={6} md={4} sm={4}>
-                    <NumberInput
-                      id="macro-count"
-                      label="Macro Creators (>2M followers)"
-                      value={macroCount}
-                      onChange={(e, { value }) => setMacroCount(value)}
-                      min={0}
-                      max={10}
-                    />
+                    <NumberInput id="macro-count" label="Macro (>2M followers)" value={macroCount} onChange={(e, { value }) => setMacroCount(value)} min={0} max={10} />
                   </Column>
                 </Grid>
+              </Tile>
+
+              {/* Section: Guardrails */}
+              <p style={{ fontSize: '0.75rem', letterSpacing: '1px', color: '#4589ff', textTransform: 'uppercase', fontWeight: '600', margin: '0 0 1rem 0' }}>Campaign Guardrails</p>
+              <Grid style={{ padding: 0, marginBottom: '1rem', columnGap: '1rem' }}>
+                <Column lg={11} md={5} sm={4}>
+                  <TextInput id="mandatory-phrase" labelText="Mandatory Spoken Phrase (AI-verified in video)" helperText="Creator MUST say this verbatim. Verified by transcript audit." value={mandatoryPhrases} onChange={e => setMandatoryPhrases(e.target.value)} required />
+                </Column>
+                <Column lg={5} md={3} sm={4}>
+                  <TextInput id="promo-code" labelText="Promo / Affiliate Code" value={promoCode} onChange={e => setPromoCode(e.target.value)} placeholder="e.g. SAVER20" />
+                </Column>
+              </Grid>
+              <div style={{ marginBottom: '1.5rem' }}>
+                <TextArea id="guidelines" labelText="Product Guidelines & Usage Rights" helperText="Key features to highlight, visual angles, organic rights period, and description link requirements." rows={3} value={guidelines} onChange={e => setGuidelines(e.target.value)} />
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1.5rem' }}>
-                <TextInput
-                  id="mandatory-phrase"
-                  labelText="Mandatory Spoken Phrase (Verified by VideoDB)"
-                  helperText="The creator MUST speak this phrase in their video (Hindi/Hinglish/English)."
-                  value={mandatoryPhrases}
-                  onChange={(e) => setMandatoryPhrases(e.target.value)}
-                  required
-                />
-                <TextInput
-                  id="promo-code"
-                  labelText="Affiliate Promo / Coupon Code"
-                  value={promoCode}
-                  onChange={(e) => setPromoCode(e.target.value)}
-                  placeholder="e.g. SAVER20"
-                />
-              </div>
-
-              <TextArea
-                id="guidelines"
-                labelText="Product Deliverable Guidelines & Usage Rights Restrictions"
-                helperText="Key features to highlight, visual product angles, organic rights period, and description link requirements."
-                rows={3}
-                value={guidelines}
-                onChange={(e) => setGuidelines(e.target.value)}
-              />
-
-              <div style={{ display: 'flex', gap: '1rem' }}>
-                <Button type="submit" renderIcon={CheckmarkFilled} size="lg" disabled={submitting}>
-                  {submitting ? 'Saving Campaign...' : 'Save & Activate Campaign'}
+              {/* Actions */}
+              <div style={{ display: 'flex', gap: '1rem', paddingTop: '1rem', borderTop: '1px solid #393939' }}>
+                <Button type="submit" kind="primary" renderIcon={CheckmarkFilled} size="lg" disabled={submitting}>
+                  {submitting ? 'Saving...' : 'Save & Activate Campaign'}
                 </Button>
-                <Button kind="secondary" size="lg" onClick={() => setIsCreatingNew(false)}>
-                  Cancel
-                </Button>
+                <Button kind="ghost" size="lg" onClick={() => setIsCreatingNew(false)}>Cancel</Button>
               </div>
             </form>
           </Tile>

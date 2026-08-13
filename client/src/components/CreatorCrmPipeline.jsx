@@ -32,10 +32,10 @@ import {
   Filter
 } from '@carbon/icons-react';
 
-export default function CreatorCrmPipeline({ onSelectDealForNegotiation, onSelectDealForVideo, onSelectDealForPayout }) {
+export default function CreatorCrmPipeline({ campaignId, onSelectDealForNegotiation, onSelectDealForVideo, onSelectDealForPayout }) {
   const [deals, setDeals] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedView, setSelectedView] = useState('stream'); // 'stream', 'datatable', or 'lifecycle'
+  const [selectedView, setSelectedView] = useState('stream');
   const [filterStage, setFilterStage] = useState('ALL');
 
   const pipelineStages = [
@@ -51,12 +51,13 @@ export default function CreatorCrmPipeline({ onSelectDealForNegotiation, onSelec
 
   useEffect(() => {
     fetchDeals();
-  }, []);
+  }, [campaignId]);;
 
   const fetchDeals = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/deals');
+      const url = campaignId ? `/api/deals?campaignId=${campaignId}` : '/api/deals';
+      const res = await fetch(url);
       const data = await res.json();
       setDeals(data || []);
     } catch (err) {

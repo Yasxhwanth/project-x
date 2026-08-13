@@ -1,600 +1,344 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { 
-  Slider, 
-  Select, 
-  SelectItem, 
-  TextInput, 
-  Button, 
-  Tag, 
-  Tile, 
-  InlineNotification,
-  Loading,
-  DataTable,
-  TableContainer,
-  Table,
-  TableHead,
-  TableRow,
-  TableHeader,
-  TableBody,
-  TableCell,
-  TableExpandHeader,
-  TableExpandRow,
-  TableExpandedRow,
-  Grid,
-  Column
+  TextInput, Select, SelectItem, Button, Tag, Loading,
+  SkeletonPlaceholder, Pagination
 } from '@carbon/react';
-import { Search, Send, UserFollow, Currency, Analytics, Checkmark, Launch, Video, LogoInstagram, LogoYoutube, Idea, Information } from '@carbon/icons-react';
+import { 
+  Search, CheckmarkOutline, WarningAlt, Send, Currency, UserFollow, Launch, ChevronLeft, ChevronRight, Email
+} from '@carbon/icons-react';
 import CreatorProfileModal from './CreatorProfileModal';
 
-// Helper to format counts in K and M / Mill
-function formatCountInKAndM(val) {
+const NICHES = ['All', 'Finance & Investing', 'Tech & Gadgets', 'Gaming & Esports', 'Business & Startups', 'Fashion & Lifestyle', 'Beauty & Skincare', 'Fitness & Health', 'Food & Cooking', 'Travel & Vlogging', 'Education & Motivation', 'Meme & Pop Culture', 'Regional Entertainment', 'Music & Arts', 'Sustainability & Environment', 'Photography & Cinematography', 'Parenting & Family'];
+const PLATFORMS = ['All', 'Instagram', 'YouTube'];
+const SORTS = [
+  { id: 'followers', label: 'Followers (High to Low)' },
+  { id: 'authenticity', label: 'Authenticity (High to Low)' },
+  { id: 'price', label: 'Price (Low to High)' },
+  { id: 'rating', label: 'Rating (High to Low)' }
+];
+const LIMITS = [50, 100, 250, 500];
+
+function formatCount(val) {
   if (!val) return '0';
-  if (val >= 1000000) {
-    return `${(val / 1000000).toFixed(1)}M`;
-  }
-  if (val >= 1000) {
-    return `${(val / 1000).toFixed(0)}K`;
-  }
+  if (val >= 1000000) return `${(val / 1000000).toFixed(1)}M`;
+  if (val >= 1000) return `${(val / 1000).toFixed(0)}K`;
   return val.toString();
 }
+
+const fmtCurrency = (n) => n ? `Rs.${Number(n).toLocaleString('en-IN')}` : '—';
 
 export default function CreatorSearch({ onSelectCreator, activeCampaign }) {
   const [creators, setCreators] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [query, setQuery] = useState('');
+  const [niche, setNiche] = useState('All');
+  const [platform, setPlatform] = useState('All');
+  const [sortBy, setSortBy] = useState('followers');
   
-  // Reach max up to 25M & Budget up to ₹1,50,000
-  const [reachMax, setReachMax] = useState(25000000);
-  const [budgetMax, setBudgetMax] = useState(150000);
-  const [selectedNiche, setSelectedNiche] = useState('All');
-  const [selectedPlatform, setSelectedPlatform] = useState('All');
-  const [searchQuery, setSearchQuery] = useState('');
+  // Pagination & Limits
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(100);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [latency, setLatency] = useState(0);
   
-  // Natural Language Search Bar
-  const [nlQuery, setNlQuery] = useState('');
+  const [selectedCreatorId, setSelectedCreatorId] = useState(null);
   
-  // Scrape State
-  const [instagramInput, setInstagramInput] = useState('');
-  const [scrapingIg, setScrapingIg] = useState(false);
-  
-  const [sentOutreachId, setSentOutreachId] = useState(null);
+  // Debounce ref
+  const debounceTimer = useRef(null);
 
-  // Profile Modal State
-  const [selectedProfileCreator, setSelectedProfileCreator] = useState(null);
-  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
-
-  const sampleNlPrompts = [
-    "Find me 30 Bangalore-based fitness creators who make funny Reels, have 18–30 male audiences, haven't promoted competing protein brands in 90 days, and charge under ₹20K.",
-    "Show me top Hindi tech unboxing creators on YouTube under ₹50,000 per post.",
-    "Find Mumbai fashion influencers with high engagement for D2C festive campaigns."
-  ];
-
-  useEffect(() => {
-    fetchCreators();
-  }, [reachMax, budgetMax, selectedNiche, selectedPlatform, searchQuery]);
-
-  const fetchCreators = async () => {
+  const fetchCreators = useCallback(async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams({
-        reachMax: reachMax.toString(),
-        budgetMax: budgetMax.toString(),
-        niche: selectedNiche,
-        platform: selectedPlatform,
-        query: searchQuery || nlQuery
+      const q = new URLSearchParams({
+        fts_query: query,
+        niche: niche,
+        platform: platform,
+        sortBy: sortBy,
+        sortOrder: sortBy === 'price' ? 'asc' : 'desc',
+        page: page.toString(),
+        limit: limit.toString()
       });
-      const res = await fetch(`/api/creators?${params.toString()}`);
-      const data = await res.json();
-      
-      let fetched = data.creators || [];
-
-      // If Natural Language query active, filter/sort intelligently
-      if (nlQuery.trim()) {
-        const lowerNL = nlQuery.toLowerCase();
-        if (lowerNL.includes("bangalore") || lowerNL.includes("fitness") || lowerNL.includes("20k") || lowerNL.includes("reels")) {
-          // Sort creators matching Bangalore / fitness / price under 20k to top
-          fetched = fetched.map(c => {
-            const matchesLocation = c.location?.toLowerCase().includes("bangalore") || c.city?.toLowerCase().includes("bangalore");
-            const matchesNiche = c.niche?.toLowerCase().includes("fitness") || c.bio?.toLowerCase().includes("fitness");
-            const matchesBudget = c.pricePerPost <= 20000;
-            const score = (matchesLocation ? 40 : 0) + (matchesNiche ? 40 : 0) + (matchesBudget ? 20 : 0);
-            return {
-              ...c,
-              matchScore: Math.min(98, 70 + score)
-            };
-          }).sort((a, b) => (b.matchScore || 0) - (a.matchScore || 0));
-        }
+      const res = await fetch(`/api/creators/search?${q.toString()}`);
+      if (res.ok) {
+        const data = await res.json();
+        setCreators(data.creators || []);
+        setTotal(data.total || 0);
+        setTotalPages(data.totalPages || 1);
+        setLatency(data.latencyMs || 0);
       }
-
-      setCreators(fetched);
-    } catch (err) {
-      console.error("Failed to fetch creators", err);
+    } catch (e) {
+      console.error('FTS search failed', e);
     } finally {
       setLoading(false);
     }
+  }, [query, niche, platform, sortBy, page, limit]);
+
+  // Execute search on mount and when filters change (with debounce for text input)
+  useEffect(() => {
+    if (debounceTimer.current) clearTimeout(debounceTimer.current);
+    debounceTimer.current = setTimeout(() => {
+      fetchCreators();
+    }, 300);
+    return () => clearTimeout(debounceTimer.current);
+  }, [fetchCreators]);
+
+  // Reset page to 1 on filter changes
+  const handleQueryChange = (val) => { setQuery(val); setPage(1); };
+  const handleNicheChange = (val) => { setNiche(val); setPage(1); };
+  const handlePlatformChange = (val) => { setPlatform(val); setPage(1); };
+  const handleSortChange = (val) => { setSortBy(val); setPage(1); };
+  const handleLimitChange = (val) => { setLimit(Number(val)); setPage(1); };
+
+  const handleSelect = (c) => {
+    if (onSelectCreator) onSelectCreator(c);
   };
 
-  // AI Search State
-  const [aiSearching, setAiSearching] = useState(false);
-  const [aiParsedResult, setAiParsedResult] = useState(null);
-  const [aiSearchError, setAiSearchError] = useState(null);
-
-  const handleNlSearch = async (e) => {
-    if (e) e.preventDefault();
-    if (!nlQuery.trim()) return;
-    
-    setAiSearching(true);
-    setAiSearchError(null);
-    try {
-      const res = await fetch('/api/creators/ai-search', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: nlQuery })
-      });
-
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || 'Failed to process AI Natural-Language Search');
-      }
-
-      if (data.creators) {
-        setCreators(data.creators);
-        setAiParsedResult(data.parsed);
-        if (data.parsed?.maxBudget) {
-          setBudgetMax(data.parsed.maxBudget);
-        }
-      }
-    } catch (err) {
-      console.error("AI Creator Search Error:", err);
-      setAiSearchError(err.message);
-    } finally {
-      setAiSearching(false);
-    }
+  const handleOpenProfile = (id) => {
+    setSelectedCreatorId(id);
   };
 
-  const handleScrapeInstagram = async () => {
-    if (!instagramInput.trim()) return;
-    setScrapingIg(true);
-    try {
-      const res = await fetch('/api/creators/scrape-instagram', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ handle: instagramInput })
-      });
-      const data = await res.json();
-      if (data.creator) {
-        setInstagramInput('');
-        fetchCreators();
-      }
-    } catch (err) {
-      console.error("Failed to scrape Instagram creator", err);
-    } finally {
-      setScrapingIg(false);
-    }
-  };
-
-  const handleOutreach = async (creator) => {
-    try {
-      const res = await fetch('/api/deals/outreach', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          creatorId: creator.id,
-          campaignId: activeCampaign?.id || 'camp_2026_in_01',
-          offeredPrice: creator.pricePerPost
-        })
-      });
-      const newDeal = await res.json();
-      setSentOutreachId(creator.id);
-      setTimeout(() => {
-        setSentOutreachId(null);
-        onSelectCreator(newDeal);
-      }, 1000);
-    } catch (err) {
-      console.error("Failed to initiate outreach", err);
-    }
-  };
-
-  const handleOpenProfileModal = (creator) => {
-    setSelectedProfileCreator(creator);
-    setIsProfileModalOpen(true);
-  };
-
-  const headers = [
-    { key: 'creator', header: 'Creator Profile' },
-    { key: 'platform', header: 'Platform & Niche' },
-    { key: 'reach', header: 'Audience Reach' },
-    { key: 'matchRationale', header: 'AI Match Rationale' },
-    { key: 'price', header: 'Est. Post Fee (₹)' },
-    { key: 'action', header: 'AI Outreach & Profile' }
-  ];
-
-  const rows = creators.map(c => ({
-    id: c.id,
-    creator: c,
-    platform: c.platform,
-    reach: c.reachText || `${formatCountInKAndM(c.subscribersRaw || c.followersRaw)} Followers`,
-    matchRationale: {
-      score: c.matchScore || c.aiScores?.brandFit || 95,
-      reason: c.aiMatchReason || c.aiMatchRationale || `${c.niche} creator with high engagement fitting target budget.`,
-      highlights: c.aiHighlights || [c.niche, c.platform]
-    },
-    price: c.pricePerPost,
-    action: c
-  }));
+  const startRecord = (page - 1) * limit + 1;
+  const endRecord = Math.min(page * limit, total);
 
   return (
-    <div className="creator-search-module">
-      {/* Title */}
-      <div style={{ marginBottom: '1.5rem' }}>
-        <h2 style={{ fontSize: '1.6rem', fontWeight: '400', marginBottom: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <Search size={24} style={{ color: '#0f62fe' }} /> Layer 1: Creator Discovery & AI Intelligence Profiles
-        </h2>
-        <p style={{ color: '#a8a8a8' }}>
-          Natural-language AI search across hundreds of Indian creator profiles. Evaluates audience demographics, content style, brand safety, fake follower signals, and competitor exclusivity.
-        </p>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      {/* Search Header */}
+      <div style={{ background: '#161616', borderBottom: '1px solid #393939', padding: '1.5rem', position: 'sticky', top: 0, zIndex: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'flex-end', gap: '1rem', flexWrap: 'wrap' }}>
+          <div style={{ flex: '2', minWidth: '280px' }}>
+            <TextInput
+              id="fts-search"
+              labelText="Global Search (FTS5 Index)"
+              placeholder="Search by name, handle, bio, location..."
+              value={query}
+              onChange={e => handleQueryChange(e.target.value)}
+              style={{ background: '#262626' }}
+            />
+          </div>
+          <div style={{ flex: '1', minWidth: '140px' }}>
+            <Select id="niche-select" labelText="Niche" value={niche} onChange={e => handleNicheChange(e.target.value)} style={{ background: '#262626' }}>
+              {NICHES.map(n => <SelectItem key={n} value={n} text={n} />)}
+            </Select>
+          </div>
+          <div style={{ flex: '1', minWidth: '120px' }}>
+            <Select id="platform-select" labelText="Platform" value={platform} onChange={e => handlePlatformChange(e.target.value)} style={{ background: '#262626' }}>
+              {PLATFORMS.map(p => <SelectItem key={p} value={p} text={p} />)}
+            </Select>
+          </div>
+          <div style={{ flex: '1', minWidth: '150px' }}>
+            <Select id="sort-select" labelText="Sort By" value={sortBy} onChange={e => handleSortChange(e.target.value)} style={{ background: '#262626' }}>
+              {SORTS.map(s => <SelectItem key={s.id} value={s.id} text={s.label} />)}
+            </Select>
+          </div>
+          <div style={{ flex: '0.8', minWidth: '110px' }}>
+            <Select id="limit-select" labelText="Per Page" value={limit} onChange={e => handleLimitChange(e.target.value)} style={{ background: '#262626' }}>
+              {LIMITS.map(l => <SelectItem key={l} value={l} text={`${l} / page`} />)}
+            </Select>
+          </div>
+        </div>
+        
+        <div style={{ marginTop: '0.75rem', fontSize: '0.75rem', color: '#8d8d8d', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span>
+            Showing {total > 0 ? `${startRecord}–${endRecord}` : 0} of <strong>{total.toLocaleString()}</strong> matched creators
+          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <span>FTS Query: {latency}ms</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <Button 
+                kind="ghost" 
+                size="sm" 
+                hasIconOnly 
+                renderIcon={ChevronLeft} 
+                iconDescription="Previous Page"
+                disabled={page <= 1 || loading}
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+              />
+              <span style={{ color: '#f4f4f4', fontWeight: '600' }}>Page {page} of {totalPages}</span>
+              <Button 
+                kind="ghost" 
+                size="sm" 
+                hasIconOnly 
+                renderIcon={ChevronRight} 
+                iconDescription="Next Page"
+                disabled={page >= totalPages || loading}
+                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+              />
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Natural Language Prompt Tile */}
-      <Tile style={{ padding: '1.5rem', marginBottom: '1.5rem', background: '#262626', borderLeft: '4px solid #0f62fe' }}>
-        <form onSubmit={handleNlSearch}>
-          <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', marginBottom: '0.75rem' }}>
-            <Idea size={22} style={{ color: '#0f62fe' }} />
-            <span style={{ fontWeight: '600', color: '#edf5ff', fontSize: '1rem' }}>
-              Natural-Language AI Creator Search Interface
-            </span>
+      {/* Grid Results */}
+      <div style={{ padding: '1.5rem', flex: 1, overflowY: 'auto', background: '#0f0f0f' }}>
+        {loading && creators.length === 0 ? (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.5rem' }}>
+            {[1,2,3,4,5,6].map(i => <SkeletonPlaceholder key={i} style={{ height: 280, width: '100%' }} />)}
           </div>
-
-          <div style={{ display: 'flex', gap: '0.75rem' }}>
-            <div style={{ flex: 1 }}>
-              <TextInput
-                id="nl-search-prompt"
-                labelText=""
-                placeholder='e.g. "Find me 30 Bangalore-based fitness creators who make funny Reels, have 18–30 male audiences, haven&#39;t promoted competing protein brands in 90 days, and charge under ₹20K."'
-                value={nlQuery}
-                onChange={(e) => setNlQuery(e.target.value)}
-                style={{ background: '#161616', border: '1px solid #393939' }}
-              />
-            </div>
-            <Button
-              size="md"
-              kind="primary"
-              type="submit"
-              disabled={aiSearching}
-              renderIcon={Idea}
-            >
-              {aiSearching ? 'Analyzing Prompt...' : 'Run AI Natural Search'}
-            </Button>
+        ) : creators.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '4rem', color: '#525252' }}>
+            No creators found matching search filter criteria.
           </div>
-        </form>
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.5rem' }}>
+            {creators.map(c => {
+              const authScore = c.authenticity_score || 0;
+              const isAuthentic = authScore >= 80;
+              const isRisky = authScore < 60;
+              
+              const isSyntheticHandle = /\d{3,}$/.test(c.handle || '');
+              const profileUrl = isSyntheticHandle
+                ? (c.platform === 'YouTube' 
+                    ? `https://www.youtube.com/results?search_query=${encodeURIComponent(c.name + ' ' + c.niche)}`
+                    : `https://www.instagram.com/explore/tags/${encodeURIComponent((c.niche || 'creator').toLowerCase().replace(/[^a-z0-9]/g, ''))}/`)
+                : (c.platform === 'YouTube'
+                    ? `https://youtube.com/${c.handle?.startsWith('@') ? c.handle : '@' + c.handle}`
+                    : `https://instagram.com/${c.handle?.replace('@', '')}`);
 
-        {aiSearching && (
-          <div style={{ marginTop: '1rem', display: 'flex', alignItems: 'center', gap: '0.75rem', background: '#161616', padding: '0.75rem 1rem', borderRadius: '4px', border: '1px solid #393939' }}>
-            <Loading small withOverlay={false} description="Google Gemini AI is parsing prompt and ranking creators..." />
-            <span style={{ fontSize: '0.85rem', color: '#4589ff' }}>
-              Google Gemini AI is analyzing prompt semantic intent, matching demographics, and ranking creators...
-            </span>
+              const avatarUrl = (!c.avatar || c.avatar.includes('unavatar.io'))
+                ? `https://ui-avatars.com/api/?name=${encodeURIComponent(c.name || 'Creator')}&background=0f62fe&color=ffffff&bold=true`
+                : c.avatar;
+
+              return (
+                <div key={c.id} style={{
+                  background: '#1c1c1c', border: '1px solid #393939', borderRadius: 8, overflow: 'hidden',
+                  display: 'flex', flexDirection: 'column', transition: 'transform 0.2s, box-shadow 0.2s',
+                  position: 'relative'
+                }}>
+                  {/* Auth Badge Overlay */}
+                  <div style={{
+                    position: 'absolute', top: 12, right: 12, display: 'flex', alignItems: 'center', gap: '0.25rem',
+                    background: isRisky ? '#da1e28' : isAuthentic ? '#24a148' : '#f1c21b',
+                    color: '#fff', padding: '0.25rem 0.5rem', borderRadius: 4, fontSize: '0.7rem', fontWeight: 'bold',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.5)'
+                  }}>
+                    {isRisky ? <WarningAlt size={14} /> : <CheckmarkOutline size={14} />}
+                    {authScore} Auth Score
+                  </div>
+
+                  {/* Header Profile */}
+                  <div style={{ padding: '1.25rem', borderBottom: '1px solid #262626', display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                    <img 
+                      src={avatarUrl} 
+                      alt={c.name} 
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(c.name)}&background=0f62fe&color=ffffff&bold=true`;
+                      }}
+                      style={{ width: 64, height: 64, borderRadius: '50%', objectFit: 'cover', background: '#393939', cursor: 'pointer' }}
+                      onClick={() => handleOpenProfile(c.id)}
+                    />
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <div 
+                        style={{ fontWeight: '600', fontSize: '1rem', color: '#f4f4f4', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', cursor: 'pointer' }}
+                        onClick={() => handleOpenProfile(c.id)}
+                      >
+                        {c.name}
+                      </div>
+                      
+                      {/* External Redirection Handle Link */}
+                      <a 
+                        href={profileUrl}
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        style={{ color: '#78a9ff', fontSize: '0.85rem', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.25rem', fontWeight: '500' }}
+                        title={`Open ${c.name}'s profile`}
+                      >
+                        {c.handle} <Launch size={12} />
+                      </a>
+
+                      <div style={{ color: '#a8a8a8', fontSize: '0.75rem', marginTop: '0.2rem' }}>{c.platform} • {c.location?.split(',')[0]}</div>
+                    </div>
+                  </div>
+
+                  {/* Stats Row */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1px', background: '#262626' }}>
+                    <div style={{ background: '#1c1c1c', padding: '0.75rem 1.25rem' }}>
+                      <div style={{ fontSize: '0.7rem', color: '#6f6f6f', display: 'flex', alignItems: 'center', gap: '0.25rem', marginBottom: '0.25rem' }}>
+                        <UserFollow size={14} /> FOLLOWERS
+                      </div>
+                      <div style={{ fontWeight: '600', color: '#f4f4f4' }}>{formatCount(c.followers_raw)}</div>
+                    </div>
+                    <div style={{ background: '#1c1c1c', padding: '0.75rem 1.25rem' }}>
+                      <div style={{ fontSize: '0.7rem', color: '#6f6f6f', display: 'flex', alignItems: 'center', gap: '0.25rem', marginBottom: '0.25rem' }}>
+                        <Currency size={14} /> EST. PRICE
+                      </div>
+                      <div style={{ fontWeight: '600', color: '#f4f4f4' }}>{fmtCurrency(c.price_per_post)}</div>
+                    </div>
+                  </div>
+
+                  {/* Bio, Niche & Email */}
+                  <div style={{ padding: '1rem 1.25rem', flex: 1, display: 'flex', flexDirection: 'column' }}>
+                    <Tag type="blue" size="sm" style={{ margin: '0 0 0.75rem 0', alignSelf: 'flex-start' }}>{c.niche}</Tag>
+                    <p style={{ fontSize: '0.8rem', color: '#c6c6c6', lineHeight: 1.4, flex: 1, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                      {c.bio}
+                    </p>
+                    
+                    {/* Business Email Contact Pill */}
+                    {c.email && (
+                      <div style={{ marginTop: '0.75rem', padding: '0.4rem 0.6rem', background: '#262626', borderRadius: '4px', display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.75rem', border: '1px solid #393939' }}>
+                        <Email size={14} style={{ color: '#4589ff', flexShrink: 0 }} />
+                        <span style={{ color: '#edf5ff', fontWeight: '500', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.email}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Action Button */}
+                  <div style={{ padding: '0.75rem', background: '#161616', borderTop: '1px solid #393939' }}>
+                    <Button 
+                      kind="primary" 
+                      size="sm" 
+                      renderIcon={Send}
+                      style={{ width: '100%', maxWidth: 'none', justifyContent: 'space-between' }}
+                      onClick={() => handleSelect(c)}
+                      disabled={isRisky}
+                    >
+                      {isRisky ? 'Blocked by Risk Policy' : 'Draft Outreach'}
+                    </Button>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
+      </div>
 
-        {aiSearchError && (
-          <InlineNotification
-            kind="error"
-            title="AI Search Error"
-            subtitle={aiSearchError}
-            style={{ marginTop: '1rem' }}
-          />
-        )}
-
-        {aiParsedResult && (
-          <div style={{ marginTop: '1rem', background: '#161616', padding: '1rem', borderRadius: '4px', border: '1px solid #0f62fe' }}>
-            <div style={{ fontSize: '0.85rem', fontWeight: '600', color: '#4589ff', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <Idea size={16} /> Google Gemini AI Intent Parsing Breakdown
-            </div>
-            <p style={{ fontSize: '0.85rem', color: '#edf5ff', marginBottom: '0.5rem', fontWeight: '500' }}>
-              "{aiParsedResult.parsedSummary}"
-            </p>
-            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-              {aiParsedResult.niche && <Tag type="blue" size="sm">Niche: {aiParsedResult.niche}</Tag>}
-              {aiParsedResult.platform && <Tag type="purple" size="sm">Platform: {aiParsedResult.platform}</Tag>}
-              {aiParsedResult.city && <Tag type="teal" size="sm">City: {aiParsedResult.city}</Tag>}
-              {aiParsedResult.maxBudget && <Tag type="green" size="sm">Max Budget: ≤ ₹{aiParsedResult.maxBudget.toLocaleString('en-IN')}</Tag>}
-            </div>
-          </div>
-        )}
-
-        {/* Quick Sample Presets */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.75rem', flexWrap: 'wrap' }}>
-          <span style={{ fontSize: '0.75rem', color: '#a8a8a8', fontWeight: '600' }}>Quick Prompt Presets:</span>
-          {sampleNlPrompts.map((promptText, idx) => (
-            <Tag 
-              key={idx} 
-              type="cool-gray" 
-              size="sm" 
-              style={{ cursor: 'pointer', background: '#393939', color: '#f4f4f4' }}
-              onClick={() => {
-                setNlQuery(promptText);
-                setTimeout(() => {
-                  handleNlSearch(null);
-                }, 100);
-              }}
-            >
-              Prompt {idx + 1}: {promptText.substring(0, 48)}...
-            </Tag>
-          ))}
+      {/* Pagination Footer */}
+      <div style={{ background: '#161616', borderTop: '1px solid #393939', padding: '0.75rem 1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <span style={{ fontSize: '0.85rem', color: '#a8a8a8' }}>
+          Showing <strong>{total > 0 ? startRecord : 0}–{endRecord}</strong> of <strong>{total.toLocaleString()}</strong> creators
+        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <Button 
+            kind="secondary" 
+            size="sm" 
+            disabled={page <= 1 || loading}
+            onClick={() => setPage(p => Math.max(1, p - 1))}
+            renderIcon={ChevronLeft}
+          >
+            Previous
+          </Button>
+          <span style={{ color: '#f4f4f4', fontSize: '0.875rem', fontWeight: '600' }}>
+            Page {page} of {totalPages}
+          </span>
+          <Button 
+            kind="secondary" 
+            size="sm" 
+            disabled={page >= totalPages || loading}
+            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+            renderIcon={ChevronRight}
+          >
+            Next
+          </Button>
         </div>
-      </Tile>
-
-      {/* Carbon Faceted Filter Tile */}
-      <Tile style={{ padding: '1.5rem', marginBottom: '2rem', background: '#262626' }}>
-        <Grid style={{ padding: 0, rowGap: '1.5rem', columnGap: '2rem' }}>
-          {/* Row 1: Sliders */}
-          <Column lg={8} md={4} sm={4}>
-            <div style={{ background: '#161616', padding: '1.25rem', borderRadius: '4px', border: '1px solid #393939' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontWeight: '600' }}>
-                <span>Max Reach / Audience Filter</span>
-                <Tag type="blue" size="md">{formatCountInKAndM(reachMax)}</Tag>
-              </div>
-              <Slider
-                id="reach-slider-clean"
-                labelText=""
-                min={100000}
-                max={25000000}
-                step={200000}
-                value={reachMax}
-                hideTextInput
-                formatLabel={(val) => `${formatCountInKAndM(val)}`}
-                onChange={({ value }) => setReachMax(value)}
-              />
-            </div>
-          </Column>
-
-          <Column lg={8} md={4} sm={4}>
-            <div style={{ background: '#161616', padding: '1.25rem', borderRadius: '4px', border: '1px solid #393939' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontWeight: '600' }}>
-                <span>Max Spend / Budget Filter</span>
-                <Tag type="green" size="md">₹{budgetMax.toLocaleString('en-IN')}</Tag>
-              </div>
-              <Slider
-                id="budget-slider-clean"
-                labelText=""
-                min={5000}
-                max={150000}
-                step={5000}
-                value={budgetMax}
-                hideTextInput
-                formatLabel={(val) => `₹${formatCountInKAndM(val)}`}
-                onChange={({ value }) => setBudgetMax(value)}
-              />
-            </div>
-          </Column>
-
-          {/* Row 2: Select Filters */}
-          <Column lg={8} md={4} sm={4}>
-            <Select 
-              id="platform-select" 
-              labelText="Platform Filter" 
-              value={selectedPlatform}
-              onChange={(e) => setSelectedPlatform(e.target.value)}
-            >
-              <SelectItem value="All" text="All Platforms (YouTube + Instagram)" />
-              <SelectItem value="YouTube" text="YouTube Channels" />
-              <SelectItem value="Instagram" text="Instagram Reels & Profiles" />
-            </Select>
-          </Column>
-
-          <Column lg={8} md={4} sm={4}>
-            <Select 
-              id="niche-select" 
-              labelText="Content Niche" 
-              value={selectedNiche}
-              onChange={(e) => setSelectedNiche(e.target.value)}
-            >
-              <SelectItem value="All" text="All Niches" />
-              <SelectItem value="Tech & Gadgets" text="Tech & Gadgets" />
-              <SelectItem value="Beauty & Fashion" text="Beauty & Fashion" />
-              <SelectItem value="Gaming & Esports" text="Gaming & BGMI" />
-              <SelectItem value="Fitness & Health" text="Fitness & Health" />
-              <SelectItem value="Finance & Productivity" text="Finance & Stocks" />
-              <SelectItem value="Food & Lifestyle" text="Food & Lifestyle" />
-            </Select>
-          </Column>
-
-          {/* Row 3: Live Scrape Inputs */}
-          <Column lg={8} md={4} sm={4}>
-            <TextInput
-              id="search-input"
-              labelText="Scrape Live YouTube Channel or Search Database"
-              placeholder="e.g. Technical Guruji, Fit Tuber, BGMI"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </Column>
-
-          <Column lg={8} md={4} sm={4}>
-            <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-end' }}>
-              <div style={{ flex: 1 }}>
-                <TextInput
-                  id="instagram-scrape-input"
-                  labelText="Scrape & Save Instagram Profile (@handle)"
-                  placeholder="e.g. @komalpandeyreal, @ranveer.allahbadia"
-                  value={instagramInput}
-                  onChange={(e) => setInstagramInput(e.target.value)}
-                />
-              </div>
-              <Button
-                size="md"
-                kind="tertiary"
-                renderIcon={LogoInstagram}
-                disabled={scrapingIg || !instagramInput.trim()}
-                onClick={handleScrapeInstagram}
-              >
-                {scrapingIg ? "Scraping..." : "Scrape Instagram"}
-              </Button>
-            </div>
-          </Column>
-        </Grid>
-      </Tile>
-
-      {/* Results Display: IBM Carbon DataTable */}
-      {loading ? (
-        <div style={{ padding: '3rem', textAlign: 'center' }}>
-          <Loading description="Searching creator database & evaluating AI match scores..." withOverlay={false} />
-        </div>
-      ) : (
-        <DataTable rows={rows} headers={headers}>
-          {({
-            rows,
-            headers,
-            getHeaderProps,
-            getRowProps,
-            getTableProps,
-            getTableContainerProps,
-            getExpandHeaderProps
-          }) => (
-            <TableContainer 
-              title={`Creator Database & Intelligence Profiles (${creators.length})`} 
-              description="Inspect AI creator match rationale, click 'Intelligence Profile' for full demographics and brand history, or select to launch AI outreach."
-              {...getTableContainerProps()}
-              style={{ background: '#262626' }}
-            >
-              <Table {...getTableProps()} isSortable>
-                <TableHead>
-                  <TableRow>
-                    <TableExpandHeader enableToggle {...getExpandHeaderProps()} />
-                    {headers.map((header) => (
-                      <TableHeader key={header.key} {...getHeaderProps({ header })}>
-                        {header.header}
-                      </TableHeader>
-                    ))}
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {rows.map((row) => {
-                    const creator = row.cells.find(c => c.info.header === 'creator')?.value;
-                    const isSent = sentOutreachId === creator?.id;
-                    const isWithinBudget = creator?.pricePerPost <= budgetMax;
-                    const formattedReach = creator?.reachText || `${formatCountInKAndM(creator?.subscribersRaw || creator?.followersRaw)} Followers`;
-                    const matchRationaleText = row.cells.find(c => c.info.header === 'matchRationale')?.value;
-
-                    return (
-                      <React.Fragment key={row.id}>
-                        <TableExpandRow {...getRowProps({ row })}>
-                          <TableCell>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                              <img 
-                                src={creator?.avatar} 
-                                alt={creator?.name} 
-                                style={{ width: '42px', height: '42px', borderRadius: '50%', objectFit: 'cover', border: '1px solid #0f62fe', cursor: 'pointer' }}
-                                onClick={() => handleOpenProfileModal(creator)}
-                              />
-                              <div>
-                                <div 
-                                  style={{ fontWeight: '600', color: '#f4f4f4', fontSize: '0.95rem', cursor: 'pointer' }}
-                                  onClick={() => handleOpenProfileModal(creator)}
-                                >
-                                  {creator?.name}
-                                </div>
-                                <div style={{ fontSize: '0.8rem', color: '#a8a8a8' }}>{creator?.handle} • {creator?.city || creator?.location || 'India'}</div>
-                              </div>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <Tag type={creator?.platform === 'YouTube' ? 'red' : 'purple'} size="sm">
-                              {creator?.platform}
-                            </Tag>
-                            <span style={{ fontSize: '0.75rem', color: '#c6c6c6', marginLeft: '0.5rem' }}>{creator?.niche}</span>
-                          </TableCell>
-                          <TableCell style={{ fontWeight: '600', color: '#edf5ff' }}>
-                            {formattedReach}
-                          </TableCell>
-                          <TableCell>
-                            <div style={{ background: '#161616', padding: '0.5rem', borderRadius: '4px', border: '1px solid #393939', maxWidth: '320px' }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
-                                <Tag type="green" size="sm" style={{ fontWeight: '700', margin: 0 }}>
-                                  {matchRationaleText?.score || 95}% AI Match
-                                </Tag>
-                              </div>
-                              <div style={{ fontSize: '0.78rem', color: '#c6c6c6', lineHeight: '1.25' }}>
-                                {matchRationaleText?.reason}
-                              </div>
-                              {Array.isArray(matchRationaleText?.highlights) && matchRationaleText.highlights.length > 0 && (
-                                <div style={{ display: 'flex', gap: '0.25rem', marginTop: '0.35rem', flexWrap: 'wrap' }}>
-                                  {matchRationaleText.highlights.map((h, i) => (
-                                    <Tag key={i} type="blue" size="sm" style={{ fontSize: '0.7rem', padding: '0 0.4rem' }}>
-                                      {h}
-                                    </Tag>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                          </TableCell>
-                          <TableCell style={{ fontWeight: '700', color: '#f1c21b' }}>
-                            ₹{creator?.pricePerPost?.toLocaleString('en-IN')}
-                          </TableCell>
-                          <TableCell>
-                            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                              <Button
-                                size="sm"
-                                kind="ghost"
-                                renderIcon={Information}
-                                onClick={() => handleOpenProfileModal(creator)}
-                              >
-                                Intelligence Profile
-                              </Button>
-                              {isSent ? (
-                                <Tag type="green" size="sm">Outreach Sent!</Tag>
-                              ) : (
-                                <Button
-                                  size="sm"
-                                  kind={isWithinBudget ? "primary" : "tertiary"}
-                                  renderIcon={Send}
-                                  onClick={() => handleOutreach(creator)}
-                                >
-                                  Invite
-                                </Button>
-                              )}
-                            </div>
-                          </TableCell>
-                        </TableExpandRow>
-                        <TableExpandedRow colSpan={headers.length + 1}>
-                          <div style={{ padding: '1.25rem', background: '#161616', borderRadius: '4px' }}>
-                            <Grid style={{ padding: 0, rowGap: '1.25rem' }}>
-                              <Column lg={8} md={4} sm={4}>
-                                <h5 style={{ fontSize: '0.9rem', color: '#0f62fe', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                  <Video size={16} /> Recent Scraped {creator?.platform === 'Instagram' ? 'Instagram Reels' : 'YouTube Videos'}:
-                                </h5>
-                                <ul style={{ listStyle: 'disc', paddingLeft: '1.25rem', fontSize: '0.85rem', color: '#c6c6c6' }}>
-                                  {creator?.recentVideos?.map((v, idx) => (
-                                    <li key={idx} style={{ marginBottom: '0.25rem' }}>{v}</li>
-                                  )) || <li>Latest Content Uploads</li>}
-                                </ul>
-                              </Column>
-                              <Column lg={8} md={4} sm={4}>
-                                <div style={{ fontSize: '0.85rem', color: '#c6c6c6', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                                  <div><strong>Location:</strong> {creator?.location || "India"}</div>
-                                  <div><strong>Average Views per Post:</strong> {formatCountInKAndM(creator?.avgViews)} ({creator?.avgViews?.toLocaleString('en-IN')} views)</div>
-                                  <div><strong>Bio:</strong> {creator?.bio}</div>
-                                </div>
-                              </Column>
-                            </Grid>
-                          </div>
-                        </TableExpandedRow>
-                      </React.Fragment>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          )}
-        </DataTable>
-      )}
-
-      {/* Creator Profile Intelligence Modal Drawer */}
+      </div>
+      
+      {/* Profile Modal */}
       <CreatorProfileModal
-        isOpen={isProfileModalOpen}
-        onClose={() => setIsProfileModalOpen(false)}
-        creator={selectedProfileCreator}
-        onSelectOutreach={(c) => handleOutreach(c)}
+        creatorId={selectedCreatorId}
+        isOpen={!!selectedCreatorId}
+        onClose={() => setSelectedCreatorId(null)}
       />
     </div>
   );

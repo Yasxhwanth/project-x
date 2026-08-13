@@ -15,7 +15,7 @@ export const TOP_INDIAN_INSTAGRAM_CREATORS = [
     price_per_post: 85000,
     min_price: 68000,
     email: "collabs@komalpandey.in",
-    avatar: "https://unavatar.io/instagram/komalpandeyreal",
+    avatar: "https://ui-avatars.com/api/?name=Komal+Pandey&background=0f62fe&color=ffffff&bold=true",
     rating: 4.95,
     location: "New Delhi, India",
     language: "Hinglish & English",
@@ -330,6 +330,7 @@ export async function seedInstagramCreatorsDatabase() {
 
   for (const c of TOP_INDIAN_INSTAGRAM_CREATORS) {
     try {
+      const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(c.name)}&background=0f62fe&color=ffffff&bold=true`;
       const existing = await getDbRow("SELECT id FROM creators WHERE handle = ?", [c.handle]);
       if (!existing) {
         await runDb(`
@@ -341,12 +342,12 @@ export async function seedInstagramCreatorsDatabase() {
         `, [
           c.id, c.name, c.handle, c.platform, c.niche, c.followers_raw, c.reach_text,
           c.avg_views, c.engagement_rate, c.price_per_post, c.min_price, c.email,
-          c.avatar, c.rating, c.location, c.language, c.recent_videos_json, c.bio
+          avatarUrl, c.rating, c.location, c.language, c.recent_videos_json, c.bio
         ]);
         count++;
       } else {
         // Update avatar PFP
-        await runDb("UPDATE creators SET avatar = ? WHERE handle = ?", [c.avatar, c.handle]);
+        await runDb("UPDATE creators SET avatar = ? WHERE handle = ?", [avatarUrl, c.handle]);
       }
     } catch (err) {
       console.error(`Error seeding ${c.handle}:`, err);

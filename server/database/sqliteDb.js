@@ -1,7 +1,7 @@
 import sqlite3 from 'sqlite3';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { seedInstagramCreatorsDatabase } from './seedInstagramCreators.js';
+import { seedFullCreatorDatabase } from './seedCreatorDatabase.js';
 import { seedE2EScenario } from '../data/e2eScenarioSeed.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -77,6 +77,8 @@ function initDatabaseSchema() {
         language TEXT,
         recent_videos_json TEXT,
         bio TEXT,
+        authenticity_score INTEGER,
+        fake_follower_pct INTEGER,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )
     `);
@@ -279,9 +281,11 @@ function initDatabaseSchema() {
       db.run(`ALTER TABLE deals ADD COLUMN organization_id TEXT`, () => {});
       db.run(`ALTER TABLE organizations ADD COLUMN google_refresh_token TEXT`, () => {});
       db.run(`ALTER TABLE creators ADD COLUMN memory_summary TEXT`, () => {});
+      db.run(`ALTER TABLE creators ADD COLUMN authenticity_score INTEGER`, () => {});
+      db.run(`ALTER TABLE creators ADD COLUMN fake_follower_pct INTEGER`, () => {});
       isInitialized = true;
-      seedDefaultAuthAndOrganization().catch(err => console.error("Auth seeding error:", err));
-      seedInstagramCreatorsDatabase().catch(err => console.error("Creator seeding error:", err));
+      seedDefaultAuthAndOrganization().catch(err => console.error('Auth seeding error:', err));
+      seedFullCreatorDatabase(10000).catch(err => console.error('Creator seeding error:', err));
       // Seed after a short delay to allow auth+creators to finish first
       setTimeout(() => {
         seedE2EScenario().catch(err => console.error("E2E scenario seeding error:", err));
@@ -299,6 +303,58 @@ function initDatabaseSchema() {
         PRIMARY KEY (organization_id, integration_key),
         FOREIGN KEY(organization_id) REFERENCES organizations(id)
       )
+    `);
+
+    // --- CREATOR DATABASE INDEXES (required for 100K+ scale) ---
+    // Single-column covering indexes for the most common filter dimensions
+    db.run(`CREATE INDEX IF NOT EXISTS idx_creators_niche      ON creators(niche)`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_creators_platform   ON creators(platform)`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_creators_followers  ON creators(followers_raw DESC)`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_creators_location   ON creators(location)`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_creators_language   ON creators(language)`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_creators_rating     ON creators(rating DESC)`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_creators_price      ON creators(price_per_post)`);
+    // Composite index for the most common combined query: niche + platform + followers
+    db.run(`CREATE INDEX IF NOT EXISTS idx_creators_niche_platform_followers ON creators(niche, platform, followers_raw DESC)`);
+    // Composite index for budget-filtered searches: price range + niche
+    db.run(`CREATE INDEX IF NOT EXISTS idx_creators_price_niche ON creators(price_per_post, niche)`);
+
+    // FTS5 Full-Text Search Virtual Table for natural language search across 100K+ creators
+    // Allows fast MATCH queries on name, handle, bio, niche, location
+    db.run(`
+      CREATE VIRTUAL TABLE IF NOT EXISTS creators_fts USING fts5(
+        creator_id UNINDEXED,
+        name,
+        handle,
+        bio,
+        niche,
+        location,
+        language,
+        content='creators',
+        content_rowid='rowid'
+      )
+    `);
+
+    // Triggers to keep FTS index in sync with creators table
+    db.run(`
+      CREATE TRIGGER IF NOT EXISTS creators_fts_insert AFTER INSERT ON creators BEGIN
+        INSERT INTO creators_fts(rowid, creator_id, name, handle, bio, niche, location, language)
+        VALUES (new.rowid, new.id, new.name, new.handle, new.bio, new.niche, new.location, new.language);
+      END
+    `);
+    db.run(`
+      CREATE TRIGGER IF NOT EXISTS creators_fts_delete AFTER DELETE ON creators BEGIN
+        INSERT INTO creators_fts(creators_fts, rowid, creator_id, name, handle, bio, niche, location, language)
+        VALUES ('delete', old.rowid, old.id, old.name, old.handle, old.bio, old.niche, old.location, old.language);
+      END
+    `);
+    db.run(`
+      CREATE TRIGGER IF NOT EXISTS creators_fts_update AFTER UPDATE ON creators BEGIN
+        INSERT INTO creators_fts(creators_fts, rowid, creator_id, name, handle, bio, niche, location, language)
+        VALUES ('delete', old.rowid, old.id, old.name, old.handle, old.bio, old.niche, old.location, old.language);
+        INSERT INTO creators_fts(rowid, creator_id, name, handle, bio, niche, location, language)
+        VALUES (new.rowid, new.id, new.name, new.handle, new.bio, new.niche, new.location, new.language);
+      END
     `);
   });
 }

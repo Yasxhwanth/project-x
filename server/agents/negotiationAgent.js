@@ -46,3 +46,6 @@ export async function evaluateCounterOffer({ dealId, requestedRate, campaignId }
 
   return { ...guardrailResult, riskLevel: risk.riskLevel };
 }
+
+// Alias for backward compatibility — directorAgent imports this name
+export const executeNegotiationCycle = evaluateCounterOffer;

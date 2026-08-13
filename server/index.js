@@ -587,22 +587,97 @@ app.post('/api/creators/trigger-auto-scraper', async (req, res) => {
 
 // 1b. GET /api/creators - Search & Scrape Creators via SDK
 app.get('/api/creators', async (req, res) => {
-
   const { reachMin, reachMax, budgetMin, budgetMax, niche, platform, query } = req.query;
-
   try {
-    const creators = await scraperSdk.searchCreators({
-      query,
-      platform,
-      reachMax,
-      budgetMax,
-      niche
-    });
-
+    const creators = await scraperSdk.searchCreators({ query, platform, reachMax, budgetMax, niche });
     res.json({ total: creators.length, creators });
   } catch (err) {
     console.error("SDK search error:", err);
     res.status(500).json({ error: "Failed to fetch creators via SDK" });
+  }
+});
+
+// Fast FTS5 Creator Search Endpoint
+app.get('/api/creators/search', async (req, res) => {
+  try {
+    const { 
+      fts_query, niche, platform, 
+      minFollowers, maxFollowers, 
+      minAuthenticity, sortBy, sortOrder,
+      limit: reqLimit, page: reqPage
+    } = req.query;
+
+    const limit = Math.min(Math.max(parseInt(reqLimit, 10) || 100, 10), 1000);
+    const page = Math.max(parseInt(reqPage, 10) || 1, 1);
+    const offset = (page - 1) * limit;
+
+    let baseSql = `FROM creators c`;
+    const params = [];
+    const conditions = [];
+
+    if (fts_query && fts_query.trim()) {
+      baseSql += ` INNER JOIN creators_fts fts ON fts.creator_id = c.id`;
+      conditions.push(`fts.creators_fts MATCH ?`);
+      // Use wildcard for prefix matching if query doesn't have it
+      const matchQuery = fts_query.trim().split(/\s+/).map(term => term + '*').join(' AND ');
+      params.push(matchQuery);
+    }
+
+    if (niche && niche !== 'All') {
+      conditions.push(`c.niche = ?`);
+      params.push(niche);
+    }
+    if (platform && platform !== 'All') {
+      conditions.push(`c.platform = ?`);
+      params.push(platform);
+    }
+    if (minFollowers) {
+      conditions.push(`c.followers_raw >= ?`);
+      params.push(parseInt(minFollowers, 10));
+    }
+    if (maxFollowers) {
+      conditions.push(`c.followers_raw <= ?`);
+      params.push(parseInt(maxFollowers, 10));
+    }
+    if (minAuthenticity) {
+      conditions.push(`c.authenticity_score >= ?`);
+      params.push(parseInt(minAuthenticity, 10));
+    }
+
+    const whereClause = conditions.length > 0 ? ` WHERE ${conditions.join(' AND ')}` : '';
+
+    const countSql = `SELECT COUNT(*) as total ${baseSql}${whereClause}`;
+
+    const orderMap = {
+      'followers': 'c.followers_raw',
+      'rating': 'c.rating',
+      'authenticity': 'c.authenticity_score',
+      'price': 'c.price_per_post'
+    };
+    const orderCol = orderMap[sortBy] || 'c.followers_raw';
+    const orderDir = (sortOrder === 'asc' || sortOrder === 'ASC') ? 'ASC' : 'DESC';
+
+    const dataSql = `SELECT c.* ${baseSql}${whereClause} ORDER BY ${orderCol} ${orderDir} LIMIT ? OFFSET ?`;
+
+    const start = Date.now();
+    const [countRow] = await queryDb(countSql, params);
+    const total = countRow?.total || 0;
+
+    const dataParams = [...params, limit, offset];
+    const rows = await queryDb(dataSql, dataParams);
+    const latencyMs = Date.now() - start;
+
+    res.json({ 
+      total, 
+      page, 
+      limit, 
+      totalPages: Math.ceil(total / limit),
+      creators: rows, 
+      latencyMs 
+    });
+  } catch (err) {
+    console.error("FTS Search Error:", err);
+    res.status(500).json({ error: "Failed to search creators" });
   }
 });
 
@@ -738,7 +813,13 @@ app.post('/api/campaigns', async (req, res) => {
 // 3. Deals API & Outreach
 app.get('/api/deals', async (req, res) => {
   try {
-    const rows = await queryDb("SELECT * FROM deals ORDER BY created_at DESC");
+    const { campaignId } = req.query;
+    let rows;
+    if (campaignId) {
+      rows = await queryDb("SELECT * FROM deals WHERE campaign_id = ? ORDER BY created_at DESC", [campaignId]);
+    } else {
+      rows = await queryDb("SELECT * FROM deals ORDER BY created_at DESC");
+    }
     const deals = rows.map(r => ({
       id: r.id,
       campaignId: r.campaign_id,
@@ -1063,6 +1144,7 @@ app.get('/api/agents/escalations', async (req, res) => {
 app.post('/api/agents/escalations/:id/approve', async (req, res) => {
   try {
     const { id } = req.params;
+    const { actorName } = req.body || {};
     const ticket = await getDbRow("SELECT * FROM escalation_queue WHERE id = ?", [id]);
     if (!ticket) return res.status(404).json({ error: "Escalation ticket not found" });
 
@@ -1073,33 +1155,59 @@ app.post('/api/agents/escalations/:id/approve', async (req, res) => {
 
     // Handle Payment Authorization Ticket vs Negotiation Ticket
     if (ticket.actor_agent === 'Payment Agent' || ticket.reason?.includes('Payment authorization')) {
-      // Transition to PAYMENT_APPROVED
       await transitionDealState({
         dealId: ticket.deal_id,
         triggerEvent: 'HUMAN_PAYMENT_AUTHORIZATION_GRANTED',
-        actorAgent: 'Human Brand Admin',
+        actorAgent: actorName || 'Human Brand Admin',
         targetStage: 'PAYMENT_APPROVED',
         bypassGuardrails: true,
-        payload: { humanApproved: true, rationale: `Human Admin authorized payment ₹${ticket.requested_rate?.toLocaleString('en-IN')}` }
+        payload: { humanApproved: true, rationale: `Human approved payment of Rs.${ticket.requested_rate?.toLocaleString('en-IN')}` }
       });
-      res.json({ success: true, message: "Payment authorized! Deal is now PAYMENT_APPROVED and ready for payout execution." });
+      res.json({ success: true, message: "Payment authorized. Deal is now PAYMENT_APPROVED and ready for payout.", type: 'payment' });
     } else {
-      // Negotiation rate approval -> transition to AGREED
       await transitionDealState({
         dealId: ticket.deal_id,
         triggerEvent: 'HUMAN_APPROVAL_GRANTED',
-        actorAgent: 'Human Brand Admin',
+        actorAgent: actorName || 'Human Brand Admin',
         targetStage: 'AGREED',
         bypassGuardrails: true,
-        payload: { agreedPrice: ticket.requested_rate, humanApproved: true, rationale: `Human Admin approved rate of ₹${ticket.requested_rate?.toLocaleString('en-IN')}` }
+        payload: { agreedPrice: ticket.requested_rate, humanApproved: true, rationale: `Human approved rate of Rs.${ticket.requested_rate?.toLocaleString('en-IN')}` }
       });
-      res.json({ success: true, message: "Escalation approved! Rate locked and transitioned to AGREED." });
+      res.json({ success: true, message: "Approved. Rate locked and deal transitioned to AGREED.", type: 'negotiation' });
     }
   } catch (err) {
     console.error("Escalation approval error:", err);
     res.status(500).json({ error: "Failed to approve escalation: " + err.message });
   }
 });
+
+app.post('/api/agents/escalations/:id/reject', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { reason, actorName } = req.body || {};
+    const ticket = await getDbRow("SELECT * FROM escalation_queue WHERE id = ?", [id]);
+    if (!ticket) return res.status(404).json({ error: "Escalation ticket not found" });
+
+    await runDb("UPDATE escalation_queue SET status = 'REJECTED' WHERE id = ?", [id]);
+
+    if (ticket.deal_id) {
+      await transitionDealState({
+        dealId: ticket.deal_id,
+        triggerEvent: 'HUMAN_REJECTION',
+        actorAgent: actorName || 'Human Brand Admin',
+        targetStage: 'NEGOTIATION_FAILED',
+        bypassGuardrails: true,
+        payload: { humanRejected: true, rationale: reason || 'Human Admin rejected this request' }
+      });
+    }
+
+    res.json({ success: true, message: "Rejected. Deal moved to NEGOTIATION_FAILED. Creator will not be contacted." });
+  } catch (err) {
+    console.error("Escalation rejection error:", err);
+    res.status(500).json({ error: "Failed to reject escalation: " + err.message });
+  }
+});
+
 
 app.get('/api/agents/audit-logs', async (req, res) => {
   try {
@@ -1302,6 +1410,11 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(clientDistPath, 'index.html'));
 });
 
-app.listen(PORT, () => {
-  console.log(`Project X Server running on port ${PORT}`);
-});
+if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`Project X Server running on port ${PORT}`);
+  });
+}
+
+export { app };
+export default app;

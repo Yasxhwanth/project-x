@@ -107,3 +107,6 @@ export async function executePayment({ dealId, campaignId }) {
 
   return result;
 }
+
+// Alias for directorAgent import compatibility — proposes payment for human authorization
+export const executePaymentAuthorization = proposePayment;

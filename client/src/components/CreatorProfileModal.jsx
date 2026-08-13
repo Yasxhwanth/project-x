@@ -19,7 +19,8 @@ import {
   Warning, 
   Security, 
   Star,
-  Send
+  Send,
+  Launch
 } from '@carbon/icons-react';
 
 export default function CreatorProfileModal({ isOpen, onClose, creator, onSelectOutreach }) {
@@ -77,6 +78,10 @@ export default function CreatorProfileModal({ isOpen, onClose, creator, onSelect
           <img 
             src={creator.avatar} 
             alt={creator.name} 
+            onError={(e) => {
+              e.target.onerror = null;
+              e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(creator.name)}&background=0f62fe&color=ffffff&bold=true`;
+            }}
             style={{ width: '72px', height: '72px', borderRadius: '50%', objectFit: 'cover', border: '2px solid #0f62fe' }}
           />
           <div style={{ flex: 1 }}>
@@ -92,8 +97,22 @@ export default function CreatorProfileModal({ isOpen, onClose, creator, onSelect
                 {creator.niche}
               </Tag>
             </div>
-            <div style={{ fontSize: '0.85rem', color: '#c6c6c6', display: 'flex', gap: '1rem' }}>
-              <span><strong>Handle:</strong> {creator.handle}</span>
+            <div style={{ fontSize: '0.85rem', color: '#c6c6c6', display: 'flex', gap: '1rem', alignItems: 'center' }}>
+              <span>
+                <strong>Handle:</strong>{' '}
+                <a 
+                  href={
+                    creator.platform === 'YouTube' 
+                      ? `https://youtube.com/${creator.handle?.startsWith('@') ? creator.handle : '@' + creator.handle}`
+                      : `https://instagram.com/${creator.handle?.replace('@', '')}`
+                  } 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  style={{ color: '#78a9ff', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}
+                >
+                  {creator.handle} <Launch size={12} />
+                </a>
+              </span>
               <span><strong>Location:</strong> {creator.location || creator.city || 'India'}</span>
               <span><strong>Reach:</strong> {creator.reachText || `${creator.followersRaw?.toLocaleString('en-IN')} Followers`}</span>
             </div>

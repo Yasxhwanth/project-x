@@ -24,7 +24,8 @@ import {
   Settings,
   Security,
   ShoppingBag,
-  Rocket
+  Rocket,
+  WarningAlt
 } from '@carbon/icons-react';
 
 import CreatorSearch from './components/CreatorSearch';
@@ -36,6 +37,7 @@ import EmailNegotiator from './components/EmailNegotiator';
 import VideoVerification from './components/VideoVerification';
 import PayoutDashboard from './components/PayoutDashboard';
 import AgentControlPlane from './components/AgentControlPlane';
+import HITLApprovalInbox from './components/HITLApprovalInbox';
 import AttributionDashboard from './components/AttributionDashboard';
 import AuthModal from './components/AuthModal';
 import OrgSettingsModal from './components/OrgSettingsModal';
@@ -57,10 +59,26 @@ export default function App() {
   const [session, setSession] = useState(null);
   const [workspaceMode, setWorkspaceMode] = useState('brand');
 
+  const [pendingApprovals, setPendingApprovals] = useState(0);
+  const [forceCreateNewCampaign, setForceCreateNewCampaign] = useState(false);
+
   useEffect(() => {
     fetchSession();
     fetchActiveCampaign();
+    fetchPendingCount();
+    const interval = setInterval(fetchPendingCount, 20000);
+    return () => clearInterval(interval);
   }, []);
+
+  const fetchPendingCount = async () => {
+    try {
+      const res = await fetch('/api/agents/escalations');
+      if (!res.ok) return;
+      const data = await res.json();
+      const pending = Array.isArray(data) ? data.filter(t => t.status === 'PENDING').length : 0;
+      setPendingApprovals(pending);
+    } catch (e) { /* silently fail */ }
+  };
 
   const fetchSession = async () => {
     try {
@@ -108,34 +126,36 @@ export default function App() {
 
   const navSections = [
     {
-      category: 'MAIN WORKSPACE',
+      category: 'WORKSPACE',
       items: [
-        { id: 'overview', label: 'Launchpad & Overview', icon: Rocket },
-        { id: 'discovery', label: 'Creator Discovery Engine', icon: Search },
-        { id: 'pipeline', label: 'CRM Deal Pipeline', icon: Application }
+        { id: 'overview', label: 'Dashboard', icon: Rocket },
       ]
     },
     {
-      category: 'AUTONOMOUS EXECUTION',
+      category: 'CAMPAIGNS',
       items: [
-        { id: 'negotiator', label: 'AI Email Negotiator', icon: Email },
-        { id: 'video_qa', label: 'VideoDB AI Multimodal Audit', icon: Video },
-        { id: 'payouts', label: 'Instant UPI & Tax Ledger', icon: Currency }
+        { id: 'portfolio', label: 'Campaigns', icon: Enterprise },
+        { id: 'discovery', label: 'Creator Discovery', icon: Search },
       ]
     },
     {
-      category: 'CAMPAIGNS & STRATEGY',
+      category: 'APPROVALS',
       items: [
-        { id: 'portfolio', label: 'Campaign Portfolio Studio', icon: Idea },
-        { id: 'strategy', label: 'AI Strategy Assistant', icon: Idea }
+        { id: 'approvals', label: 'Approval Inbox', icon: WarningAlt, badge: pendingApprovals },
       ]
     },
     {
-      category: 'MEASURE & GOVERN',
+      category: 'INSIGHTS',
       items: [
-        { id: 'attribution', label: 'Shopify Attribution & Orders', icon: ShoppingBag },
-        { id: 'analytics', label: 'ROI Analytics Dashboard', icon: ChartBar },
-        { id: 'control_plane', label: 'AI Governance Control Plane', icon: Security }
+        { id: 'analytics', label: 'Analytics', icon: ChartBar },
+        { id: 'attribution', label: 'Revenue Attribution', icon: ShoppingBag },
+      ]
+    },
+    {
+      category: 'SYSTEM',
+      items: [
+        { id: 'strategy', label: 'AI Strategy', icon: Idea },
+        { id: 'control_plane', label: 'AI Governance', icon: Security },
       ]
     }
   ];
@@ -150,14 +170,26 @@ export default function App() {
     }
   }
 
+  // Page titles for breadcrumb
+  const PAGE_TITLES = {
+    overview: 'Dashboard',
+    portfolio: 'Campaigns',
+    discovery: 'Creator Discovery',
+    approvals: 'Approval Inbox',
+    analytics: 'Analytics',
+    attribution: 'Revenue Attribution',
+    strategy: 'AI Strategy',
+    control_plane: 'AI Governance'
+  };
+
   return (
     <Theme theme="g100">
       <div className="cds--g100 creatorconnect-app" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
         
         {/* Carbon UI Clean Header */}
-        <Header aria-label="Project X Header">
+        <Header aria-label="Project X">
           <HeaderName href="#" prefix="" style={{ fontSize: '1rem', fontWeight: '600' }}>
-            Project X <span style={{ color: '#0f62fe', marginLeft: '0.25rem', fontWeight: '400' }}>Autonomous OS</span>
+            Project X <span style={{ color: '#0f62fe', marginLeft: '0.25rem', fontWeight: '400' }}>Platform</span>
           </HeaderName>
 
           <HeaderGlobalBar>
@@ -179,7 +211,7 @@ export default function App() {
               >
                 <Tag type="green" size="sm" style={{ margin: 0 }}>Active</Tag>
                 <span style={{ fontSize: '0.85rem', color: '#f4f4f4', fontWeight: '500' }}>
-                  {activeCampaign.brandName} ({activeCampaign.productName})
+                  {activeCampaign.brandName} — {activeCampaign.productName}
                 </span>
                 <Switcher size={16} style={{ color: '#a8a8a8' }} />
               </div>
@@ -243,12 +275,12 @@ export default function App() {
             expanded={true}
             isFixedNav
             className="workspace-sidenav"
-            style={{ width: '256px', top: '3rem', background: '#161616', borderRight: '1px solid #393939' }}
+            style={{ width: '240px', top: '3rem', background: '#161616', borderRight: '1px solid #262626', display: 'flex', flexDirection: 'column' }}
           >
             <SideNavItems>
               {navSections.map((sec) => (
-                <div key={sec.category} style={{ padding: '0.75rem 0 0.25rem 0' }}>
-                  <div style={{ fontSize: '0.7rem', fontWeight: '700', color: '#6f6f6f', padding: '0 1rem 0.5rem 1rem', letterSpacing: '0.5px' }}>
+                <div key={sec.category} style={{ padding: '0.5rem 0 0.25rem 0' }}>
+                  <div style={{ fontSize: '0.65rem', fontWeight: '700', color: '#525252', padding: '0 1rem 0.4rem 1rem', letterSpacing: '0.8px', textTransform: 'uppercase' }}>
                     {sec.category}
                   </div>
                   {sec.items.map((item) => {
@@ -261,37 +293,69 @@ export default function App() {
                         isActive={isActive}
                         onClick={() => setCurrentTab(item.id)}
                         style={{
-                          borderLeft: isActive ? '4px solid #0f62fe' : '4px solid transparent',
-                          background: isActive ? '#262626' : 'transparent',
-                          fontWeight: isActive ? '600' : '400'
+                          borderLeft: isActive ? '3px solid #0f62fe' : '3px solid transparent',
+                          background: isActive ? '#1c3a6e20' : 'transparent',
+                          color: isActive ? '#78a9ff' : '#c6c6c6',
+                          fontWeight: isActive ? '600' : '400',
+                          fontSize: '0.875rem'
                         }}
                       >
-                        {item.label}
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                          <span>{item.label}</span>
+                          {item.badge > 0 && (
+                            <span style={{ 
+                              background: '#da1e28', color: '#fff', 
+                              borderRadius: '10px', padding: '0 6px', 
+                              fontSize: '0.7rem', fontWeight: 'bold' 
+                            }}>
+                              {item.badge}
+                            </span>
+                          )}
+                        </div>
                       </SideNavLink>
                     );
                   })}
                 </div>
               ))}
             </SideNavItems>
+
+            {/* Signed-in user indicator at nav bottom */}
+            {session?.user && (
+              <div style={{
+                padding: '0.75rem 1rem', marginTop: 'auto',
+                borderTop: '1px solid #262626',
+                display: 'flex', alignItems: 'center', gap: '0.5rem'
+              }}>
+                <User size={14} style={{ color: '#4589ff', flexShrink: 0 }} />
+                <div style={{ fontSize: '0.75rem', minWidth: 0 }}>
+                  <div style={{ color: '#f4f4f4', fontWeight: '600', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{session.user.name}</div>
+                  <div style={{ color: '#525252', fontSize: '0.65rem' }}>{session.user.role || 'Brand Manager'}</div>
+                </div>
+              </div>
+            )}
           </SideNav>
 
           {/* Main Panel Content Area */}
-          <main style={{ marginLeft: '256px', flex: 1, padding: '2rem 2.5rem', width: 'calc(100% - 256px)', background: '#161616', minHeight: 'calc(100vh - 3rem)' }}>
+          <main style={{ marginLeft: '240px', flex: 1, padding: '1.75rem 2.5rem', width: 'calc(100% - 240px)', background: '#161616', minHeight: 'calc(100vh - 3rem)' }}>
             
             {/* Top Breadcrumb Header Bar */}
-            <div style={{ marginBottom: '1.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #262626', paddingBottom: '0.75rem' }}>
-              <div style={{ fontSize: '0.85rem', color: '#8d8d8d', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <Rocket size={14} style={{ color: '#0f62fe' }} />
-                <span>Project X</span>
-                <span>/</span>
-                <span>{activeNavItem?.category}</span>
-                <span>/</span>
-                <span style={{ color: '#ffffff', fontWeight: '600' }}>{activeNavItem?.label}</span>
+            <div style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #262626', paddingBottom: '0.75rem' }}>
+              <div style={{ fontSize: '0.8rem', color: '#525252', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span style={{ color: '#6f6f6f' }}>Project X</span>
+                <span style={{ color: '#393939' }}>/</span>
+                <span style={{ color: '#a8a8a8' }}>{activeNavItem?.category}</span>
+                <span style={{ color: '#393939' }}>/</span>
+                <span style={{ color: '#f4f4f4', fontWeight: '600' }}>{PAGE_TITLES[currentTab] || activeNavItem?.label}</span>
               </div>
 
-              {session?.user && (
-                <div style={{ fontSize: '0.8rem', color: '#a8a8a8' }}>
-                  Signed in as <span style={{ color: '#4589ff', fontWeight: '500' }}>{session.user.name}</span>
+              {activeCampaign && (
+                <div
+                  onClick={() => setIsCampaignModalOpen(true)}
+                  style={{ fontSize: '0.8rem', color: '#a8a8a8', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+                >
+                  <span style={{ color: '#42be65', fontWeight: '600' }}>Active:</span>
+                  <span>{activeCampaign.productName || activeCampaign.product_name}</span>
+                  <Switcher size={12} style={{ color: '#525252' }} />
                 </div>
               )}
             </div>
@@ -324,56 +388,18 @@ export default function App() {
               />
             )}
 
-            {currentTab === 'pipeline' && (
-              <CreatorCrmPipeline 
-                onSelectDealForNegotiation={(deal) => {
-                  setActiveDeal(deal);
-                  setCurrentTab('negotiator');
-                }}
-                onSelectDealForVideo={(deal) => {
-                  setActiveDeal(deal);
-                  setCurrentTab('video_qa');
-                }}
-                onSelectDealForPayout={(deal) => {
-                  setActiveDeal(deal);
-                  setCurrentTab('payouts');
-                }}
-              />
-            )}
-
             {currentTab === 'portfolio' && (
               <CampaignBuilder 
                 activeCampaign={activeCampaign}
+                forceCreateNew={forceCreateNewCampaign}
                 onCampaignSaved={(c) => {
                   setActiveCampaign(c);
                   fetchActiveCampaign();
+                  setForceCreateNewCampaign(false);
                 }}
                 onSwitchCampaign={(c) => {
                   setActiveCampaign(c);
                 }}
-              />
-            )}
-
-            {currentTab === 'negotiator' && (
-              <EmailNegotiator 
-                activeDeal={activeDeal}
-                activeCampaign={activeCampaign}
-                onDealUpdated={setActiveDeal}
-              />
-            )}
-
-            {currentTab === 'video_qa' && (
-              <VideoVerification 
-                activeDeal={activeDeal}
-                activeCampaign={activeCampaign}
-                onVerificationComplete={setActiveDeal}
-              />
-            )}
-
-            {currentTab === 'payouts' && (
-              <PayoutDashboard 
-                activeDeal={activeDeal}
-                activeCampaign={activeCampaign}
               />
             )}
 
@@ -389,7 +415,12 @@ export default function App() {
               <AgentControlPlane />
             )}
 
+            {currentTab === 'approvals' && (
+              <HITLApprovalInbox session={session} />
+            )}
+
             {currentTab === 'strategy' && (
+
               <CampaignStrategyGenerator 
                 onLaunchPortfolio={() => setCurrentTab('negotiator')}
               />
