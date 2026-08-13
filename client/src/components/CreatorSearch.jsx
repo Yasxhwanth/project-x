@@ -51,10 +51,22 @@ export default function CreatorSearch({ onSelectCreator, activeCampaign }) {
   const [offeredFee, setOfferedFee] = useState(25000);
   const [sendingOutreach, setSendingOutreach] = useState(false);
   const [outreachResult, setOutreachResult] = useState(null);
+  const [senderEmail, setSenderEmail] = useState('');
 
   useEffect(() => {
     fetchCampaignsList();
+    fetchSenderStatus();
   }, []);
+
+  const fetchSenderStatus = async () => {
+    try {
+      const res = await fetch('/api/integrations/gmail/status');
+      if (res.ok) {
+        const data = await res.json();
+        if (data.email) setSenderEmail(data.email);
+      }
+    } catch (e) {}
+  };
 
   const fetchCampaignsList = async () => {
     try {
@@ -437,9 +449,19 @@ export default function CreatorSearch({ onSelectCreator, activeCampaign }) {
                 </div>
                 <Tag type="blue" size="sm">{outreachCreator.niche}</Tag>
               </div>
-              <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid #393939', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: '#4589ff' }}>
-                <Email size={16} />
-                <span>Recipient Email: <strong>{outreachCreator.email}</strong></span>
+              <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid #393939', display: 'flex', flexDirection: 'column', gap: '0.4rem', fontSize: '0.85rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#161616', padding: '0.4rem 0.6rem', borderRadius: 4, border: '1px solid #393939' }}>
+                  <span style={{ color: '#a8a8a8' }}>From (Outbound Gmail):</span>
+                  <span style={{ color: '#42be65', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                    <CheckmarkFilled size={14} /> {senderEmail || 'yashwanthtm5@gmail.com'}
+                  </span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#161616', padding: '0.4rem 0.6rem', borderRadius: 4, border: '1px solid #393939' }}>
+                  <span style={{ color: '#a8a8a8' }}>To (Creator Inbox):</span>
+                  <span style={{ color: '#4589ff', fontWeight: '600' }}>
+                    {outreachCreator.email}
+                  </span>
+                </div>
               </div>
             </Tile>
 
