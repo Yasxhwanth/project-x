@@ -202,9 +202,11 @@ export default function App() {
       <div className="cds--g100 creatorconnect-app" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
         
         {/* Carbon UI Clean Header */}
-        <Header aria-label="Project X">
-          <HeaderName href="#" prefix="" style={{ fontSize: '1rem', fontWeight: '600' }}>
-            Project X <span style={{ color: '#0f62fe', marginLeft: '0.25rem', fontWeight: '400' }}>Platform</span>
+        <Header aria-label="Project X" style={{ background: 'rgba(20, 20, 20, 0.85)', backdropFilter: 'blur(16px)', borderBottom: '1px solid rgba(255, 255, 255, 0.08)' }}>
+          <HeaderName href="#" prefix="" style={{ fontSize: '1.05rem', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <span style={{ background: 'linear-gradient(135deg, #0f62fe 0%, #0043ce 100%)', width: '22px', height: '22px', borderRadius: '4px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: '800', color: '#ffffff' }}>X</span>
+            <span>Project X</span>
+            <span style={{ color: '#4589ff', marginLeft: '0.2rem', fontWeight: '400', fontSize: '0.85rem' }}>OS</span>
           </HeaderName>
 
           <HeaderGlobalBar>
@@ -216,19 +218,20 @@ export default function App() {
                   display: 'flex',
                   alignItems: 'center',
                   gap: '0.5rem',
-                  padding: '0.25rem 0.75rem',
-                  background: '#161616',
-                  borderRadius: '16px',
-                  border: '1px solid #393939',
+                  padding: '0.3rem 0.85rem',
+                  background: 'rgba(255, 255, 255, 0.04)',
+                  borderRadius: '20px',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
                   cursor: 'pointer',
-                  marginRight: '0.5rem'
+                  marginRight: '0.75rem',
+                  transition: 'all 0.2s ease'
                 }}
               >
-                <Tag type="green" size="sm" style={{ margin: 0 }}>Active</Tag>
-                <span style={{ fontSize: '0.85rem', color: '#f4f4f4', fontWeight: '500' }}>
-                  {activeCampaign.brandName} — {activeCampaign.productName}
+                <span className="live-indicator-dot" />
+                <span style={{ fontSize: '0.8rem', color: '#f4f4f4', fontWeight: '500' }}>
+                  {activeCampaign.brandName || activeCampaign.brand_name} — {activeCampaign.productName || activeCampaign.product_name}
                 </span>
-                <Switcher size={16} style={{ color: '#a8a8a8' }} />
+                <Switcher size={14} style={{ color: '#8d8d8d' }} />
               </div>
             )}
 

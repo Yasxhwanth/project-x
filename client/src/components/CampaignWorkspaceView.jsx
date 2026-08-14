@@ -64,36 +64,39 @@ export default function CampaignWorkspaceView({ campaign, onBack }) {
         <BreadcrumbItem isCurrentPage>{product}</BreadcrumbItem>
       </Breadcrumb>
 
-      {/* Campaign Header — Layer 01 Tile */}
-      <Tile style={{ background: '#262626', padding: '1.75rem', marginBottom: '1.5rem', borderTop: '3px solid #0f62fe' }}>
+      {/* Campaign Header — Glassmorphic Layer 01 Tile */}
+      <Tile style={{ background: 'linear-gradient(135deg, rgba(15, 98, 254, 0.08) 0%, rgba(26, 26, 26, 0.95) 100%)', border: '1px solid rgba(255, 255, 255, 0.08)', borderTop: '3px solid #0f62fe', padding: '1.75rem 2rem', marginBottom: '1.5rem', borderRadius: 8, backdropFilter: 'blur(8px)' }}>
         <Grid style={{ padding: 0 }}>
           {/* Left: Identity + Tags */}
           <Column lg={10} md={5} sm={4}>
-            <p style={{ fontSize: '0.7rem', letterSpacing: '1.5px', color: '#4589ff', textTransform: 'uppercase', fontWeight: '600', margin: '0 0 0.35rem 0' }}>
-              {brand}
-            </p>
-            <h1 style={{ fontSize: '1.75rem', fontWeight: '300', color: '#f4f4f4', margin: '0 0 0.75rem 0' }}>{product}</h1>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.4rem' }}>
+              <span className="live-indicator-dot" style={{ width: 6, height: 6 }} />
+              <p style={{ fontSize: '0.7rem', letterSpacing: '1.5px', color: '#4589ff', textTransform: 'uppercase', fontWeight: '700', margin: 0 }}>
+                {brand}
+              </p>
+            </div>
+            <h1 style={{ fontSize: '1.85rem', fontWeight: '400', color: '#f4f4f4', margin: '0 0 0.85rem 0', letterSpacing: '-0.02em' }}>{product}</h1>
             <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
               <Tag type="teal" size="sm">Promo: {promo}</Tag>
               <Tag type="blue" size="sm">Cap ₹{(budgetCap / 1000).toFixed(0)}K / creator</Tag>
-              <Tag type="green" size="sm">Active</Tag>
+              <Tag type="green" size="sm">Active Campaign</Tag>
             </div>
           </Column>
 
           {/* Right: Live Metrics */}
           <Column lg={6} md={3} sm={4}>
-            <Grid style={{ padding: 0, columnGap: '0.5rem' }}>
+            <Grid style={{ padding: 0, columnGap: '0.75rem' }}>
               {[
-                { label: 'DEALS', value: deals.length, color: '#f4f4f4' },
-                { label: 'OUTREACH', value: totalNegotiating, color: '#f1c21b' },
-                { label: 'AGREED', value: totalAgreed, color: '#42be65' },
-                { label: 'VIDEOS', value: totalVideos, color: '#78a9ff' },
+                { label: 'DEALS', value: deals.length, color: '#f4f4f4', glow: 'transparent' },
+                { label: 'OUTREACH', value: totalNegotiating, color: '#f1c21b', glow: 'rgba(241, 194, 27, 0.15)' },
+                { label: 'AGREED', value: totalAgreed, color: '#42be65', glow: 'rgba(66, 190, 101, 0.15)' },
+                { label: 'VIDEOS', value: totalVideos, color: '#78a9ff', glow: 'rgba(120, 169, 255, 0.15)' },
               ].map((m, i) => (
                 <Column key={i} lg={4} md={2} sm={2}>
-                  <Tile style={{ background: '#161616', padding: '0.75rem', textAlign: 'center' }}>
-                    <div style={{ fontSize: '1.35rem', fontWeight: '600', color: m.color, lineHeight: 1 }}>{m.value}</div>
-                    <div style={{ fontSize: '0.6rem', color: '#8d8d8d', letterSpacing: '0.8px', marginTop: '0.3rem', textTransform: 'uppercase' }}>{m.label}</div>
-                  </Tile>
+                  <div style={{ background: 'rgba(20, 20, 20, 0.8)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: 6, padding: '0.85rem 0.5rem', textAlign: 'center', transition: 'all 0.2s ease', boxShadow: `0 0 12px ${m.glow}` }}>
+                    <div style={{ fontSize: '1.45rem', fontWeight: '700', color: m.color, lineHeight: 1 }}>{m.value}</div>
+                    <div style={{ fontSize: '0.625rem', color: '#8d8d8d', letterSpacing: '0.8px', marginTop: '0.4rem', textTransform: 'uppercase', fontWeight: 600 }}>{m.label}</div>
+                  </div>
                 </Column>
               ))}
             </Grid>
@@ -101,9 +104,9 @@ export default function CampaignWorkspaceView({ campaign, onBack }) {
         </Grid>
 
         {/* Phase Progress */}
-        <div style={{ marginTop: '1.5rem', paddingTop: '1.25rem', borderTop: '1px solid #393939' }}>
-          <p style={{ fontSize: '0.65rem', letterSpacing: '1px', color: '#525252', textTransform: 'uppercase', margin: '0 0 1rem 0' }}>
-            Campaign Phase
+        <div style={{ marginTop: '1.5rem', paddingTop: '1.25rem', borderTop: '1px solid rgba(255, 255, 255, 0.08)' }}>
+          <p style={{ fontSize: '0.65rem', letterSpacing: '1px', color: '#8d8d8d', textTransform: 'uppercase', margin: '0 0 1rem 0', fontWeight: 600 }}>
+            CAMPAIGN LIFECYCLE PROGRESS
           </p>
           <ProgressIndicator currentIndex={currentStep} spaceEqually>
             <ProgressStep label="Brief Set" description="Campaign parameters configured" />

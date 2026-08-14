@@ -59,23 +59,25 @@ function TicketCard({ ticket, actorName, onApprove, onReject, loading }) {
   return (
     <div
       id={`ticket-${ticket.id}`}
+      className="interactive-card"
       style={{
-        background: '#1c1c1c',
-        border: '1px solid #393939',
-        borderLeft: `3px solid ${meta.color}`,
-        borderRadius: '4px',
-        marginBottom: '0.75rem',
+        background: 'rgba(26, 26, 26, 0.75)',
+        backdropFilter: 'blur(8px)',
+        border: '1px solid rgba(255, 255, 255, 0.08)',
+        borderLeft: `4px solid ${meta.color}`,
+        borderRadius: '6px',
+        marginBottom: '0.85rem',
         overflow: 'hidden',
-        transition: 'box-shadow 0.2s',
+        transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
       }}
     >
       {/* Card Header */}
       <div
         onClick={() => setExpanded(e => !e)}
         style={{
-          display: 'flex', alignItems: 'center', gap: '0.75rem',
-          padding: '0.875rem 1.25rem', cursor: 'pointer',
-          background: expanded ? '#222222' : 'transparent'
+          display: 'flex', alignItems: 'center', gap: '0.85rem',
+          padding: '1rem 1.25rem', cursor: 'pointer',
+          background: expanded ? 'rgba(255, 255, 255, 0.04)' : 'transparent'
         }}
       >
         {/* Type Icon */}

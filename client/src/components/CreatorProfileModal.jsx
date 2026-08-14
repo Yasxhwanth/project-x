@@ -74,7 +74,7 @@ export default function CreatorProfileModal({ isOpen, onClose, creator, onSelect
     >
       <div className="creator-profile-modal-content" style={{ padding: '0.5rem 0' }}>
         {/* Header Profile Summary */}
-        <div style={{ display: 'flex', gap: '1.25rem', alignItems: 'center', marginBottom: '1.5rem', borderBottom: '1px solid #393939', paddingBottom: '1.25rem' }}>
+        <div style={{ display: 'flex', gap: '1.25rem', alignItems: 'center', marginBottom: '1.5rem', borderBottom: '1px solid rgba(255, 255, 255, 0.08)', paddingBottom: '1.25rem' }}>
           <img 
             src={creator.avatar} 
             alt={creator.name} 
@@ -82,11 +82,11 @@ export default function CreatorProfileModal({ isOpen, onClose, creator, onSelect
               e.target.onerror = null;
               e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(creator.name)}&background=0f62fe&color=ffffff&bold=true`;
             }}
-            style={{ width: '72px', height: '72px', borderRadius: '50%', objectFit: 'cover', border: '2px solid #0f62fe' }}
+            style={{ width: '72px', height: '72px', borderRadius: '50%', objectFit: 'cover', border: '2px solid #0f62fe', boxShadow: '0 0 16px rgba(15, 98, 254, 0.3)' }}
           />
           <div style={{ flex: 1 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.25rem' }}>
-              <h3 style={{ fontSize: '1.35rem', fontWeight: '600', color: '#f4f4f4', margin: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.35rem' }}>
+              <h3 style={{ fontSize: '1.4rem', fontWeight: '600', color: '#f4f4f4', margin: 0, letterSpacing: '-0.01em' }}>
                 {creator.name}
               </h3>
               <Tag type={creator.platform === 'YouTube' ? 'red' : 'purple'} size="md">
@@ -97,9 +97,9 @@ export default function CreatorProfileModal({ isOpen, onClose, creator, onSelect
                 {creator.niche}
               </Tag>
             </div>
-            <div style={{ fontSize: '0.85rem', color: '#c6c6c6', display: 'flex', gap: '1rem', alignItems: 'center' }}>
+            <div style={{ fontSize: '0.85rem', color: '#a8a8a8', display: 'flex', gap: '1.25rem', alignItems: 'center', flexWrap: 'wrap' }}>
               <span>
-                <strong>Handle:</strong>{' '}
+                <strong style={{ color: '#d0d0d0' }}>Handle:</strong>{' '}
                 <a 
                   href={
                     creator.platform === 'YouTube' 
@@ -108,61 +108,61 @@ export default function CreatorProfileModal({ isOpen, onClose, creator, onSelect
                   } 
                   target="_blank" 
                   rel="noopener noreferrer"
-                  style={{ color: '#78a9ff', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}
+                  style={{ color: '#78a9ff', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.25rem', fontWeight: '500' }}
                 >
                   {creator.handle} <Launch size={12} />
                 </a>
               </span>
-              <span><strong>Location:</strong> {creator.location || creator.city || 'India'}</span>
-              <span><strong>Reach:</strong> {creator.reachText || `${creator.followersRaw?.toLocaleString('en-IN')} Followers`}</span>
+              <span><strong style={{ color: '#d0d0d0' }}>Location:</strong> {creator.location || creator.city || 'India'}</span>
+              <span><strong style={{ color: '#d0d0d0' }}>Reach:</strong> {creator.reachText || `${creator.followersRaw?.toLocaleString('en-IN')} Followers`}</span>
             </div>
           </div>
         </div>
 
         {/* AI Assessment Bar */}
-        <Tile style={{ background: '#262626', marginBottom: '1.5rem', padding: '1.25rem', borderLeft: '4px solid #0f62fe' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-            <span style={{ fontSize: '0.95rem', fontWeight: '600', color: '#edf5ff', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <Idea size={18} style={{ color: '#0f62fe' }} /> AI Creator Match Rationale Engine
+        <Tile style={{ background: 'linear-gradient(135deg, rgba(15, 98, 254, 0.08) 0%, rgba(26, 26, 26, 0.95) 100%)', marginBottom: '1.5rem', padding: '1.5rem', borderRadius: 8, border: '1px solid rgba(255, 255, 255, 0.08)', borderLeft: '4px solid #0f62fe' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+            <span style={{ fontSize: '1rem', fontWeight: '600', color: '#edf5ff', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <Idea size={18} style={{ color: '#78a9ff' }} /> AI Creator Match Rationale Engine
             </span>
             <Tag type="green" size="md" style={{ fontWeight: '700' }}>
               Overall AI Match Score: {aiScores.predictedFitScore}% / 100
             </Tag>
           </div>
 
-          <Grid style={{ padding: 0, rowGap: '0.75rem', columnGap: '1rem', marginBottom: '1rem' }}>
+          <Grid style={{ padding: 0, rowGap: '0.75rem', columnGap: '0.75rem', marginBottom: '1.25rem' }}>
             <Column lg={4} md={2} sm={2}>
-              <div style={{ background: '#161616', padding: '0.75rem', borderRadius: '4px', textAlign: 'center', border: '1px solid #393939' }}>
-                <div style={{ fontSize: '0.75rem', color: '#a8a8a8', marginBottom: '0.25rem' }}>🎯 Audience Fit</div>
-                <div style={{ fontSize: '1.25rem', fontWeight: '700', color: '#42be65' }}>{aiScores.audienceFit}%</div>
+              <div style={{ background: 'rgba(20, 20, 20, 0.8)', padding: '0.85rem 0.5rem', borderRadius: '6px', textAlign: 'center', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+                <div style={{ fontSize: '0.7rem', color: '#a8a8a8', marginBottom: '0.25rem', fontWeight: 500 }}>🎯 Audience Fit</div>
+                <div style={{ fontSize: '1.35rem', fontWeight: '700', color: '#42be65' }}>{aiScores.audienceFit}%</div>
               </div>
             </Column>
             <Column lg={4} md={2} sm={2}>
-              <div style={{ background: '#161616', padding: '0.75rem', borderRadius: '4px', textAlign: 'center', border: '1px solid #393939' }}>
-                <div style={{ fontSize: '0.75rem', color: '#a8a8a8', marginBottom: '0.25rem' }}>🛡️ Brand Safety & Exclusivity</div>
-                <div style={{ fontSize: '1.25rem', fontWeight: '700', color: '#0f62fe' }}>{aiScores.brandSafety}%</div>
+              <div style={{ background: 'rgba(20, 20, 20, 0.8)', padding: '0.85rem 0.5rem', borderRadius: '6px', textAlign: 'center', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+                <div style={{ fontSize: '0.7rem', color: '#a8a8a8', marginBottom: '0.25rem', fontWeight: 500 }}>🛡️ Brand Safety</div>
+                <div style={{ fontSize: '1.35rem', fontWeight: '700', color: '#78a9ff' }}>{aiScores.brandSafety}%</div>
               </div>
             </Column>
             <Column lg={4} md={2} sm={2}>
-              <div style={{ background: '#161616', padding: '0.75rem', borderRadius: '4px', textAlign: 'center', border: '1px solid #393939' }}>
-                <div style={{ fontSize: '0.75rem', color: '#a8a8a8', marginBottom: '0.25rem' }}>📈 Content & Engagement</div>
-                <div style={{ fontSize: '1.25rem', fontWeight: '700', color: '#42be65' }}>{aiScores.brandFit}%</div>
+              <div style={{ background: 'rgba(20, 20, 20, 0.8)', padding: '0.85rem 0.5rem', borderRadius: '6px', textAlign: 'center', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+                <div style={{ fontSize: '0.7rem', color: '#a8a8a8', marginBottom: '0.25rem', fontWeight: 500 }}>📈 Content Velocity</div>
+                <div style={{ fontSize: '1.35rem', fontWeight: '700', color: '#42be65' }}>{aiScores.brandFit}%</div>
               </div>
             </Column>
             <Column lg={4} md={2} sm={2}>
-              <div style={{ background: '#161616', padding: '0.75rem', borderRadius: '4px', textAlign: 'center', border: '1px solid #393939' }}>
-                <div style={{ fontSize: '0.75rem', color: '#a8a8a8', marginBottom: '0.25rem' }}>💰 Commercial ROI & Budget</div>
-                <div style={{ fontSize: '1.25rem', fontWeight: '700', color: '#f1c21b' }}>{aiScores.authenticity}%</div>
+              <div style={{ background: 'rgba(20, 20, 20, 0.8)', padding: '0.85rem 0.5rem', borderRadius: '6px', textAlign: 'center', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+                <div style={{ fontSize: '0.7rem', color: '#a8a8a8', marginBottom: '0.25rem', fontWeight: 500 }}>💰 Commercial Fit</div>
+                <div style={{ fontSize: '1.35rem', fontWeight: '700', color: '#f1c21b' }}>{aiScores.authenticity}%</div>
               </div>
             </Column>
           </Grid>
 
           {/* Detailed 4-Pillar Rationale Breakdown */}
-          <div style={{ background: '#161616', padding: '1rem', borderRadius: '4px', border: '1px solid #393939' }}>
-            <div style={{ fontSize: '0.85rem', fontWeight: '600', color: '#4589ff', marginBottom: '0.5rem' }}>
+          <div style={{ background: 'rgba(20, 20, 20, 0.7)', padding: '1rem 1.25rem', borderRadius: '6px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+            <div style={{ fontSize: '0.85rem', fontWeight: '600', color: '#78a9ff', marginBottom: '0.6rem' }}>
               Detailed AI Matching Rationale & Evidence:
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', fontSize: '0.8rem', color: '#c6c6c6' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.85rem', fontSize: '0.825rem', color: '#c6c6c6' }}>
               <div>
                 <strong style={{ color: '#ffffff' }}>1. Demographic Alignment:</strong> {demographics.gender} audience matching target age brackets ({demographics.age}) in {demographics.geography}.
               </div>
