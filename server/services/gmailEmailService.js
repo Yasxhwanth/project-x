@@ -46,19 +46,40 @@ async function sendViaGmailRestApi({ toEmail, creatorName, subject, body, sender
     throw new Error('No valid Google access token available for Gmail REST API');
   }
 
-  const utf8Subject = `=?utf-8?B?${Buffer.from(subject).toString('base64')}?=`;
+  // Clean subject: Remove leading emoji spam triggers if present
+  const cleanSubject = subject.replace(/^[^\w\s]+/, '').trim() || subject;
+  const utf8Subject = `=?utf-8?B?${Buffer.from(cleanSubject).toString('base64')}?=`;
+  
+  const boundary = `==_mime_part_${Date.now()}_${Math.random().toString(36).substring(2, 8)}==`;
+  const messageId = `<msg_${Date.now()}.${Math.random().toString(36).substring(2, 9)}@gmail.com>`;
+  const dateHeader = new Date().toUTCString();
+
+  // Construct RFC 5322 Compliant Multipart/Alternative Email
   const messageParts = [
+    `Date: ${dateHeader}`,
     `From: ${senderName} <${fromEmail}>`,
     `To: ${creatorName} <${toEmail}>`,
+    `Message-ID: ${messageId}`,
     `Subject: ${utf8Subject}`,
     'MIME-Version: 1.0',
-    'Content-Type: text/html; charset=utf-8',
-    'Content-Transfer-Encoding: 7bit',
+    `Content-Type: multipart/alternative; boundary="${boundary}"`,
     '',
-    `<div style="font-family:sans-serif;font-size:15px;line-height:1.6;color:#111;">${body.replace(/\n/g, '<br>')}</div>`
+    `--${boundary}`,
+    'Content-Type: text/plain; charset=utf-8',
+    'Content-Transfer-Encoding: 8bit',
+    '',
+    body,
+    '',
+    `--${boundary}`,
+    'Content-Type: text/html; charset=utf-8',
+    'Content-Transfer-Encoding: 8bit',
+    '',
+    `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 15px; line-height: 1.6; color: #222222; margin: 0; padding: 12px;"><div style="white-space: pre-line;">${body}</div></body></html>`,
+    '',
+    `--${boundary}--`
   ];
 
-  const rawMessage = messageParts.join('\n');
+  const rawMessage = messageParts.join('\r\n');
   const encoded = Buffer.from(rawMessage)
     .toString('base64')
     .replace(/\+/g, '-')
@@ -169,7 +190,7 @@ export async function sendCreatorEmail({ toEmail, creatorName, subject, body, or
   }
 
   const senderEmail = oauthData?.email || process.env.GMAIL_USER || (org?.sender_email && !org.sender_email.includes('boat-lifestyle.com') ? org.sender_email : null) || 'collabs@project-x.in';
-  const senderName  = org?.sender_name || 'boAt Marketing AI';
+  const senderName  = org?.sender_name && !org.sender_name.includes('AI') ? org.sender_name : 'Rajanna (boAt Creator Partnerships)';
 
   // Strategy A: Send via Google Gmail REST API if OAuth is connected
   if (oauthData?.accessToken || oauthData?.refreshToken) {
