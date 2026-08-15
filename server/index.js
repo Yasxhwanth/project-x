@@ -282,8 +282,7 @@ app.get('/api/integrations/gmail/connect', optionalAuth, (req, res) => {
 
 app.get('/api/integrations/gmail/callback', async (req, res) => {
   const { code, state, error } = req.query;
-  const host = req.get('host') || '';
-  const clientBaseUrl = process.env.CLIENT_URL || (host.includes('localhost') ? 'http://localhost:5173' : '');
+  const clientBaseUrl = process.env.CLIENT_URL || '';
 
   if (error || !code) {
     return res.redirect(`${clientBaseUrl}/?gmail_error=${encodeURIComponent(error || 'No authorization code returned')}`);
