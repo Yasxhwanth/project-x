@@ -292,6 +292,62 @@ function initDatabaseSchema() {
         relationship_notes             TEXT,
         updated_at                     DATETIME DEFAULT CURRENT_TIMESTAMP
       )
+    `);
+
+    // 16. VideoIntel SDK Indexed Videos Table (Our VideoDB Alternative)
+    db.run(`
+      CREATE TABLE IF NOT EXISTS indexed_videos (
+        id TEXT PRIMARY KEY,
+        video_url TEXT NOT NULL,
+        title TEXT,
+        creator_id TEXT,
+        creator_name TEXT,
+        campaign_id TEXT,
+        deal_id TEXT,
+        duration_seconds INTEGER DEFAULT 60,
+        platform TEXT DEFAULT 'Instagram',
+        status TEXT DEFAULT 'INDEXED',
+        transcript_text TEXT,
+        scenes_json TEXT,
+        audit_report_json TEXT,
+        compliance_score INTEGER DEFAULT 95,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // 17. VideoIntel Transcript Chunks Table (Timestamped perception layer)
+    db.run(`
+      CREATE TABLE IF NOT EXISTS video_transcript_chunks (
+        id TEXT PRIMARY KEY,
+        video_id TEXT NOT NULL,
+        start_time TEXT,
+        end_time TEXT,
+        start_seconds REAL,
+        end_seconds REAL,
+        speaker TEXT DEFAULT 'Creator',
+        text TEXT NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY(video_id) REFERENCES indexed_videos(id) ON DELETE CASCADE
+      )
+    `);
+
+    // 18. VideoIntel Video Scenes & Visual Elements Table
+    db.run(`
+      CREATE TABLE IF NOT EXISTS video_scenes (
+        id TEXT PRIMARY KEY,
+        video_id TEXT NOT NULL,
+        start_time TEXT,
+        end_time TEXT,
+        start_seconds REAL,
+        end_seconds REAL,
+        scene_type TEXT,
+        visual_description TEXT,
+        detected_elements_json TEXT,
+        ocr_text TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY(video_id) REFERENCES indexed_videos(id) ON DELETE CASCADE
+      )
     `, () => {
       // Run safe DB schema migrations
       db.run(`ALTER TABLE campaigns ADD COLUMN organization_id TEXT`, () => {});

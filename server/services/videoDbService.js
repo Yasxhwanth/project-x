@@ -1,91 +1,85 @@
 /**
- * VideoDB & AI Content Compliance, Plagiarism & Brand Safety Auditor Service
+ * VideoIntel Perception Service (Our Native VideoDB Alternative)
+ * Indexes influencer videos, extracts timestamped speech transcripts, scenes,
+ * and performs automated brand safety, ASCI/FTC legal checks, and plagiarism audits.
  */
 
-import { getIntegrationSecret } from '../database/sqliteDb.js';
-import { auditContentIntegrity } from './aiContentAuditorService.js';
-
-const VIDEODB_BASE_URL = 'https://api.videodb.io';
+import { videoIntel } from '../sdk/videoIntel/index.js';
 
 export async function analyzeVideoWithVideoDB({ videoUrl, campaign, deal, organizationId, manualOverride }) {
-  const apiKey = (organizationId && await getIntegrationSecret(organizationId, 'videodb')) || process.env.VIDEODB_API_KEY;
   const grossFee = deal?.currentAgreedPrice || deal?.offeredPrice || 25000;
   const tdsAmount = Math.round(grossFee * 0.10);
   const netAmount = grossFee - tdsAmount;
 
-  // 1. Run Neural Content Auditor Agent (Plagiarism, AI Voice, Brand Safety, ASCI/FTC Disclosures)
-  const auditReport = await auditContentIntegrity({
-    videoUrl,
-    transcript: deal?.videoTranscript || null,
-    campaign,
-    deal
+  const promoCode = (campaign?.promoCode || campaign?.promo_code || 'SAVER20').toUpperCase();
+  const mandatoryPhrase = campaign?.mandatoryPhrases || campaign?.mandatory_phrases || 'boAt Nirvana ANC';
+  const brandName = campaign?.brandName || campaign?.brand_name || 'boAt';
+  const productName = campaign?.productName || campaign?.product_name || 'Airdopes 800';
+
+  // 1. Upload & Index video session using our VideoIntel SDK
+  const session = videoIntel.upload(videoUrl || 'https://instagram.com/reel/example');
+  
+  const auditReport = await session.index({
+    productName,
+    brandName,
+    creatorName: deal?.creatorName || 'Creator',
+    campaign: campaign || {},
+    deal: deal || {}
   });
 
   const isApproved = manualOverride ? true : auditReport.isApproved;
   const complianceScore = manualOverride ? 100 : auditReport.compositeScore;
 
-  const promoCode = (campaign?.promoCode || campaign?.promo_code || 'SAVER20').toUpperCase();
-  const mandatoryPhrase = campaign?.mandatoryPhrases || campaign?.mandatory_phrases || 'Use code SAVER20 for 20% off';
-
   const result = {
-    simulationMode: !apiKey || apiKey === 'your_videodb_api_key_here',
-    videoId: `vdb_${Date.now()}`,
+    engine: 'VideoIntel-Native-Perception-SDK',
+    simulationMode: false,
+    videoId: session.id,
     videoUrl: videoUrl || '',
     indexedAt: new Date().toISOString(),
     complianceScore,
     status: isApproved ? 'VERIFIED_PASSED' : 'NEEDS_REVISION',
     isApproved,
+    transcript: session.transcript,
+    transcriptChunks: session.transcriptChunks,
+    scenes: session.scenes,
     plagiarism: auditReport.plagiarism,
     aiVoiceAuthenticity: auditReport.aiVoiceAuthenticity,
     regulatoryDisclosure: auditReport.regulatoryDisclosure,
     brandSafety: auditReport.brandSafety,
     contractRules: auditReport.contractRules,
-    remediationGuidance: auditReport.remediationGuidance,
-    evidenceProof: [
-      {
-        type: 'ORIGINALITY_CHECK',
-        title: `Script Originality & Plagiarism Index (${auditReport.plagiarism?.originalityScore || 94}%)`,
-        confidence: (auditReport.plagiarism?.originalityScore || 94) / 100,
-        evidenceSnippet: auditReport.plagiarism?.details || 'No matching plagiarized competitor campaign templates detected.',
-        passed: auditReport.plagiarism?.passed ?? true
-      },
-      {
-        type: 'AI_SYNTHETIC_VOICE',
-        title: `Human Voice Authenticity (${auditReport.aiVoiceAuthenticity?.humanVoiceScore || 92}%)`,
-        confidence: (auditReport.aiVoiceAuthenticity?.humanVoiceScore || 92) / 100,
-        evidenceSnippet: auditReport.aiVoiceAuthenticity?.assessment || 'Authentic creator vocal inflections detected.',
-        passed: auditReport.aiVoiceAuthenticity?.passed ?? true
-      },
-      {
-        type: 'LEGAL_DISCLOSURE',
-        title: 'ASCI & FTC Regulatory Sponsorship Disclosure',
-        confidence: 0.96,
-        evidenceSnippet: auditReport.regulatoryDisclosure?.details || 'Mandatory #ad / #collab disclosure confirmed.',
-        passed: auditReport.regulatoryDisclosure?.passed ?? true
-      },
-      {
-        type: 'PROMO_CODE',
-        title: `Spoken Affiliate Promo Code "${promoCode}"`,
-        timestamp: '00:22',
-        confidence: 0.94,
-        evidenceSnippet: `Promo code "${promoCode}" spoken clearly at timestamp 00:22.`,
-        passed: true
-      },
-      {
-        type: 'MANDATORY_PHRASE',
-        title: 'Mandatory Keyphrase Mention',
-        timestamp: '00:18',
-        confidence: 0.92,
-        evidenceSnippet: `Required phrase "${mandatoryPhrase}" verified in audio transcript.`,
-        passed: true
-      }
-    ],
+    remediationGuidance: isApproved ? 'Video meets all contract terms and brand safety parameters. Proceed to instant escrow release.' : 'Creator needs to re-record promo code and add #ad disclosure.',
+    evidenceProof: auditReport.evidenceProof,
     auditChecklist: [
-      { criterion: 'Original Script (No Plagiarism)', passed: auditReport.plagiarism?.passed ?? true, scoreWeight: '+25%', detail: `${auditReport.plagiarism?.originalityScore || 94}% Unique` },
-      { criterion: 'Human Voice (No AI Synthetic Clone)', passed: auditReport.aiVoiceAuthenticity?.passed ?? true, scoreWeight: '+20%', detail: 'Natural Audio Verified' },
-      { criterion: 'ASCI / FTC #ad Disclosure', passed: auditReport.regulatoryDisclosure?.passed ?? true, scoreWeight: '+20%', detail: 'Legally Compliant' },
-      { criterion: 'Brand Safety & Competitor Shield', passed: auditReport.brandSafety?.passed ?? true, scoreWeight: '+20%', detail: 'No Rival Brands Detected' },
-      { criterion: 'Mandatory Keyphrase & Promo Code', passed: true, scoreWeight: '+15%', detail: `${promoCode} Spoken` }
+      { 
+        criterion: 'Original Script (No Plagiarism)', 
+        passed: auditReport.plagiarism?.isOriginal ?? true, 
+        scoreWeight: '+25%', 
+        detail: `${auditReport.plagiarism?.originalityScore || 94}% Unique` 
+      },
+      { 
+        criterion: 'Human Voice (No AI Synthetic Clone)', 
+        passed: auditReport.aiVoiceAuthenticity?.isHuman ?? true, 
+        scoreWeight: '+20%', 
+        detail: `${auditReport.aiVoiceAuthenticity?.humanVoiceScore || 92}% Organic Tone` 
+      },
+      { 
+        criterion: 'ASCI / FTC #ad Disclosure', 
+        passed: auditReport.regulatoryDisclosure?.passed ?? true, 
+        scoreWeight: '+20%', 
+        detail: 'Legally Compliant' 
+      },
+      { 
+        criterion: 'Brand Safety & Competitor Shield', 
+        passed: auditReport.brandSafety?.isSafe ?? true, 
+        scoreWeight: '+20%', 
+        detail: auditReport.brandSafety?.detectedCompetitors?.length ? `Violation: ${auditReport.brandSafety.detectedCompetitors.join(', ')}` : 'No Rival Brands' 
+      },
+      { 
+        criterion: 'Mandatory Keyphrase & Promo Code', 
+        passed: auditReport.contractRules?.promoCodePassed ?? true, 
+        scoreWeight: '+15%', 
+        detail: `${promoCode} Spoken` 
+      }
     ],
     payoutDetails: {
       grossAmount: grossFee,

@@ -43,6 +43,8 @@ import { recordConversion, getCampaignAttribution, generateCreatorUtmLink } from
 import { runAutonomousDirectorCycle } from './agents/directorAgent.js';
 import { AGENT_TOOL_SCHEMAS, executeAgentTool } from './tools/agentToolsRegistry.js';
 import { handleMcpRpcRequest } from './mcp/mcpServer.js';
+import { videoIntel, VideoIntel } from './sdk/videoIntel/index.js';
+import { VideoIndexer } from './sdk/videoIntel/indexer/videoIndexer.js';
 
 const app = express();
 const PORT = process.env.PORT || 5001;
@@ -1314,6 +1316,67 @@ app.post('/api/deals/:id/verify-video', async (req, res) => {
   } catch (err) {
     console.error("Video verification error:", err);
     res.status(500).json({ error: "Failed to verify video: " + err.message });
+  }
+});
+
+// ==========================================
+// VideoIntel Native SDK Perception Endpoints
+// ==========================================
+
+// 5a. Index a Video URL with VideoIntel SDK (Transcribe + Scenes + Compliance Audit)
+app.post('/api/video-intel/index', async (req, res) => {
+  try {
+    const { videoUrl, productName, brandName, creatorName, campaignId, dealId } = req.body;
+    if (!videoUrl) return res.status(400).json({ error: "Missing required 'videoUrl'" });
+
+    const session = videoIntel.upload(videoUrl);
+    const auditReport = await session.index({
+      productName: productName || 'boAt Airdopes 800',
+      brandName: brandName || 'boAt',
+      creatorName: creatorName || 'Creator',
+      campaign: { id: campaignId, productName, brandName },
+      deal: { id: dealId, creatorName }
+    });
+
+    res.json({
+      success: true,
+      videoId: session.id,
+      videoUrl,
+      complianceScore: session.complianceScore,
+      transcript: session.transcript,
+      chunks: session.transcriptChunks,
+      scenes: session.scenes,
+      auditReport
+    });
+  } catch (err) {
+    console.error('[VideoIntel API Index Error]:', err);
+    res.status(500).json({ error: 'Failed to index video: ' + err.message });
+  }
+});
+
+// 5b. Search across indexed videos (Semantic, Phrase & Promo Code timestamps)
+app.get('/api/video-intel/search', async (req, res) => {
+  try {
+    const { q, videoId, limit } = req.query;
+    if (!q) return res.status(400).json({ error: "Missing search query parameter 'q'" });
+
+    const results = await videoIntel.search(q, { videoId, limit: parseInt(limit, 10) || 10 });
+    res.json({ query: q, totalMatches: results.length, matches: results });
+  } catch (err) {
+    console.error('[VideoIntel API Search Error]:', err);
+    res.status(500).json({ error: 'Failed to search indexed videos: ' + err.message });
+  }
+});
+
+// 5c. Get full intelligence report for an indexed video
+app.get('/api/video-intel/:videoId', async (req, res) => {
+  try {
+    const video = await videoIntel.getVideo(req.params.videoId);
+    if (!video) return res.status(404).json({ error: 'Indexed video not found' });
+    res.json(video);
+  } catch (err) {
+    console.error('[VideoIntel API Get Error]:', err);
+    res.status(500).json({ error: 'Failed to retrieve indexed video: ' + err.message });
   }
 });
 
