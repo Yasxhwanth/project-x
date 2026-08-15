@@ -30,10 +30,14 @@ export class VideoSession {
    * Run full multimodal perception indexing (Audio Speech-To-Text + Computer Vision Scenes).
    */
   async index(options = {}) {
+    if (!this.metadata || !this.metadata.title || this.metadata.title.includes('YouTube Video #')) {
+      this.metadata = await extractVideoMetadata(this.videoUrl);
+    }
+
     const { 
       productName = 'boAt Airdopes 800', 
       brandName = 'boAt', 
-      creatorName = 'Creator',
+      creatorName = this.metadata?.channelName || 'Creator',
       campaign = {},
       deal = {} 
     } = options;
