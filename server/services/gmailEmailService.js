@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { getDbRow, queryDb, runDb } from '../database/sqliteDb.js';
+import { buildBrandedEmailHtml } from './emailTemplateBuilder.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -14,7 +15,7 @@ dotenv.config();
  * Send real email via Google Gmail REST API (users/me/messages/send)
  * This uses OAuth2 access tokens natively and bypasses SMTP restrictions completely.
  */
-async function sendViaGmailRestApi({ toEmail, creatorName, subject, body, senderName, senderEmail, oauthData }) {
+async function sendViaGmailRestApi({ toEmail, creatorName, subject, body, senderName, senderEmail, oauthData, brandName, productName, offeredPrice, mandatoryPhrase, promoCode }) {
   let { accessToken, refreshToken, email } = oauthData;
   const fromEmail = email || senderEmail;
   const clientId = process.env.GOOGLE_CLIENT_ID;
@@ -54,6 +55,18 @@ async function sendViaGmailRestApi({ toEmail, creatorName, subject, body, sender
   const messageId = `<msg_${Date.now()}.${Math.random().toString(36).substring(2, 9)}@gmail.com>`;
   const dateHeader = new Date().toUTCString();
 
+  // Generate High-Converting Responsive Branded HTML Card
+  const brandedHtml = buildBrandedEmailHtml({
+    recipientName: creatorName,
+    senderName,
+    brandName: brandName || 'boAt Lifestyle',
+    productName: productName || 'boAt Airdopes Pro Max 500',
+    offeredPrice: offeredPrice || 25000,
+    mandatoryPhrase: mandatoryPhrase || 'Use code SAVER20 for 20% off',
+    promoCode: promoCode || 'SAVER20',
+    bodyText: body
+  });
+
   // Construct RFC 5322 Compliant Multipart/Alternative Email
   const messageParts = [
     `Date: ${dateHeader}`,
@@ -74,7 +87,7 @@ async function sendViaGmailRestApi({ toEmail, creatorName, subject, body, sender
     'Content-Type: text/html; charset=utf-8',
     'Content-Transfer-Encoding: 8bit',
     '',
-    `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 15px; line-height: 1.6; color: #222222; margin: 0; padding: 12px;"><div style="white-space: pre-line;">${body}</div></body></html>`,
+    brandedHtml,
     '',
     `--${boundary}--`
   ];
@@ -168,7 +181,7 @@ async function buildSmtpTransporter(org) {
   return null;
 }
 
-export async function sendCreatorEmail({ toEmail, creatorName, subject, body, organizationId }) {
+export async function sendCreatorEmail({ toEmail, creatorName, subject, body, organizationId, brandName, productName, offeredPrice, mandatoryPhrase, promoCode }) {
   let org = null;
   if (organizationId) {
     org = await getDbRow('SELECT * FROM organizations WHERE id = ?', [organizationId]);
@@ -202,7 +215,12 @@ export async function sendCreatorEmail({ toEmail, creatorName, subject, body, or
         body,
         senderName,
         senderEmail,
-        oauthData
+        oauthData,
+        brandName: brandName || org?.name || 'boAt Lifestyle',
+        productName: productName || 'boAt Airdopes Pro Max 500',
+        offeredPrice: offeredPrice || 25000,
+        mandatoryPhrase: mandatoryPhrase || 'Use code SAVER20 for 20% off',
+        promoCode: promoCode || 'SAVER20'
       });
     } catch (oauthErr) {
       console.warn('[Gmail REST API Warning] Attempting fallback:', oauthErr.message);
@@ -214,12 +232,23 @@ export async function sendCreatorEmail({ toEmail, creatorName, subject, body, or
 
   if (transporter) {
     try {
+      const brandedHtml = buildBrandedEmailHtml({
+        recipientName: creatorName,
+        senderName,
+        brandName: brandName || org?.name || 'boAt Lifestyle',
+        productName: productName || 'boAt Airdopes Pro Max 500',
+        offeredPrice: offeredPrice || 25000,
+        mandatoryPhrase: mandatoryPhrase || 'Use code SAVER20 for 20% off',
+        promoCode: promoCode || 'SAVER20',
+        bodyText: body
+      });
+
       const info = await transporter.sendMail({
         from:    `"${senderName}" <${senderEmail}>`,
         to:      `"${creatorName}" <${toEmail}>`,
         subject,
         text:    body,
-        html:    `<div style="font-family:sans-serif;white-space:pre-wrap;line-height:1.6">${body.replace(/\n/g, '<br>')}</div>`
+        html:    brandedHtml
       });
 
       console.log(`✉️  [Email Service (SMTP)] Real email delivered to ${toEmail} — ID: ${info.messageId}`);

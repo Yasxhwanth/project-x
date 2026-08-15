@@ -998,7 +998,12 @@ app.post(['/api/deals/outreach', '/api/deals'], async (req, res) => {
       creatorName: targetName,
       subject: `Collaboration Proposal: ${campaign.brand_name} x ${campaign.product_name}`,
       body: initialEmail.body,
-      organizationId: campaign.organization_id || 'org_boat_01'
+      organizationId: campaign.organization_id || 'org_boat_01',
+      brandName: campaign.brand_name,
+      productName: campaign.product_name,
+      offeredPrice: initialPrice,
+      mandatoryPhrase: campaign.mandatory_phrases,
+      promoCode: campaign.promo_code
     }).then(result => {
       console.log(`✉️  [Outreach API] Email dispatched to ${targetEmail}:`, result.messageId || 'SENT');
     }).catch(emailErr => {
