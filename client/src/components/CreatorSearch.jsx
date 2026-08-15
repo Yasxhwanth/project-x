@@ -463,14 +463,14 @@ export default function CreatorSearch({ onSelectCreator, onViewDeal, activeCampa
         open={!!outreachCreator}
         modalHeading={
           outreachResult?.success 
-            ? "Proposal Dispatched via Gmail" 
-            : "Draft & Send Collaboration Outreach Proposal"
+            ? "Proposal Dispatched Successfully" 
+            : "Draft & Launch Collaboration Proposal"
         }
-        modalLabel={outreachResult?.success ? "OUTREACH SUCCESS" : "AI OUTREACH DISPATCH"}
+        modalLabel={outreachResult?.success ? "OUTREACH ACTIVE" : "AUTONOMOUS OUTREACH"}
         primaryButtonText={
           outreachResult?.success
             ? "Open Live Negotiation Thread 💬"
-            : (sendingOutreach ? "Sending via Gmail..." : "🚀 Send Proposal Email (Gmail)")
+            : (sendingOutreach ? "Launching Proposal..." : "🚀 Send Proposal & Pitch")
         }
         secondaryButtonText={outreachResult?.success ? "Stay in Creator Discovery" : "Cancel"}
         primaryButtonDisabled={sendingOutreach}
@@ -500,10 +500,10 @@ export default function CreatorSearch({ onSelectCreator, onViewDeal, activeCampa
               }}>
                 <CheckmarkFilled size={44} style={{ color: '#42be65', marginBottom: '0.5rem' }} />
                 <h3 style={{ color: '#f4f4f4', fontSize: '1.25rem', margin: '0 0 0.35rem 0', fontWeight: '600' }}>
-                  Proposal Email Sent Successfully!
+                  Collaboration Pitch Dispatched!
                 </h3>
                 <p style={{ color: '#c6c6c6', fontSize: '0.875rem', margin: 0 }}>
-                  Sent from <strong style={{ color: '#42be65' }}>{senderEmail || 'yashwanthtm5@gmail.com'}</strong> to <strong style={{ color: '#4589ff' }}>{outreachResult.creatorEmail}</strong>
+                  Pitch successfully delivered to <strong style={{ color: '#4589ff' }}>{outreachResult.creatorName}</strong> ({outreachResult.creatorEmail}).
                 </p>
               </div>
 
@@ -518,17 +518,17 @@ export default function CreatorSearch({ onSelectCreator, onViewDeal, activeCampa
                   <span style={{ color: '#42be65', fontWeight: '700', fontSize: '1rem' }}>₹{Number(outreachResult.fee).toLocaleString('en-IN')}</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.85rem' }}>
-                  <span style={{ color: '#8d8d8d' }}>Pipeline Stage:</span>
-                  <Tag type="blue" size="sm">OUTREACH_SENT</Tag>
+                  <span style={{ color: '#8d8d8d' }}>Deal Pipeline Stage:</span>
+                  <Tag type="cyan" size="sm">INVITED / PITCH_SENT</Tag>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.85rem' }}>
-                  <span style={{ color: '#8d8d8d' }}>Autonomous Agent:</span>
-                  <span style={{ color: '#a8a8a8', fontSize: '0.8rem' }}>Listening for creator reply (Auto-negotiator ready)</span>
+                  <span style={{ color: '#8d8d8d' }}>Gemini AI Negotiator:</span>
+                  <span style={{ color: '#a8a8a8', fontSize: '0.8rem' }}>Active & Ready for responses</span>
                 </div>
               </Tile>
 
               <p style={{ color: '#8d8d8d', fontSize: '0.8rem', margin: 0, lineHeight: '1.4' }}>
-                💡 <strong>Next Step:</strong> When {outreachResult.creatorName} replies to this email, our AI Agent will automatically parse the response, check budget caps, and handle terms or counter-offers!
+                💡 Click <strong>"Open Live Negotiation Thread"</strong> below to view the message thread, simulate responses, or test AI auto-negotiation!
               </p>
             </div>
           ) : (
@@ -552,9 +552,9 @@ export default function CreatorSearch({ onSelectCreator, onViewDeal, activeCampa
                 </div>
                 <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid #393939', display: 'flex', flexDirection: 'column', gap: '0.4rem', fontSize: '0.85rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#161616', padding: '0.4rem 0.6rem', borderRadius: 4, border: '1px solid #393939' }}>
-                    <span style={{ color: '#a8a8a8' }}>From (Outbound Gmail):</span>
+                    <span style={{ color: '#a8a8a8' }}>Outbound Dispatcher:</span>
                     <span style={{ color: '#42be65', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                      <CheckmarkFilled size={14} /> {senderEmail || 'yashwanthtm5@gmail.com'}
+                      <CheckmarkFilled size={14} /> {senderEmail || 'Project X Cloud Mailer'}
                     </span>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#161616', padding: '0.4rem 0.6rem', borderRadius: 4, border: '1px solid #393939' }}>
