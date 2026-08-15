@@ -134,13 +134,12 @@ export default function App() {
         if (res.ok) {
           const camp = await res.json();
           setActiveCampaign(camp);
-          setSelectedWorkspaceCampaign(camp);
         }
       } catch (err) {
         console.error('Failed to load campaign for deal', err);
       }
     }
-    setCurrentTab('portfolio');
+    setCurrentTab('negotiator');
   };
 
   const navSections = [
@@ -155,6 +154,7 @@ export default function App() {
       items: [
         { id: 'portfolio', label: 'Campaigns', icon: Enterprise },
         { id: 'discovery', label: 'Creator Discovery', icon: Search },
+        { id: 'negotiator', label: 'Outreach & Deals', icon: Email },
       ]
     },
     {
@@ -194,6 +194,7 @@ export default function App() {
     overview: 'Dashboard',
     portfolio: 'Campaigns',
     discovery: 'Creator Discovery',
+    negotiator: 'Outreach & Deals',
     approvals: 'Approval Inbox',
     analytics: 'Analytics',
     attribution: 'Revenue Attribution',
@@ -408,6 +409,15 @@ export default function App() {
                 onSelectCreator={handleSelectCreatorForOutreach} 
                 onViewDeal={handleViewDeal}
                 activeCampaign={activeCampaign}
+              />
+            )}
+
+            {currentTab === 'negotiator' && (
+              <EmailNegotiator 
+                activeDeal={activeDeal}
+                campaignId={activeCampaign?.id}
+                onDealUpdated={() => fetchActiveCampaign()}
+                onNavigateToDiscovery={() => setCurrentTab('discovery')}
               />
             )}
 

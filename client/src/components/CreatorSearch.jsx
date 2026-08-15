@@ -469,10 +469,10 @@ export default function CreatorSearch({ onSelectCreator, onViewDeal, activeCampa
         modalLabel={outreachResult?.success ? "OUTREACH SUCCESS" : "AI OUTREACH DISPATCH"}
         primaryButtonText={
           outreachResult?.success
-            ? "View Deal in Campaign Workspace 🚀"
+            ? "Open Live Negotiation Thread 💬"
             : (sendingOutreach ? "Sending via Gmail..." : "🚀 Send Proposal Email (Gmail)")
         }
-        secondaryButtonText={outreachResult?.success ? "Reach Out to Another Creator" : "Cancel"}
+        secondaryButtonText={outreachResult?.success ? "Stay in Creator Discovery" : "Cancel"}
         primaryButtonDisabled={sendingOutreach}
         onRequestClose={() => {
           setOutreachCreator(null);
