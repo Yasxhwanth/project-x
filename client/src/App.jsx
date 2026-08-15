@@ -64,6 +64,12 @@ export default function App() {
   const [selectedWorkspaceCampaign, setSelectedWorkspaceCampaign] = useState(null);
 
   useEffect(() => {
+    if (window.location.search) {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('gmail_status') || params.get('gmail_error')) {
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+    }
     fetchSession();
     fetchActiveCampaign();
     fetchPendingCount();
