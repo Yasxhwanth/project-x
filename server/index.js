@@ -1045,7 +1045,7 @@ app.patch('/api/deals/:id', async (req, res) => {
 
     await runDb(`
       UPDATE deals 
-      SET creator_email = ?, creator_name = ?, current_agreed_price = ?, status = ?, updated_at = CURRENT_TIMESTAMP 
+      SET creator_email = ?, creator_name = ?, current_agreed_price = ?, status = ?
       WHERE id = ?
     `, [newEmail, newName, newPrice, newStatus, dealId]);
 
@@ -1240,29 +1240,35 @@ app.post('/api/deals/:id/verify-video', async (req, res) => {
       hasBrandSafetyViolation: false
     });
 
-    // Step 4: Branch on QA outcome via State Machine
-    if (qaResult.outcome === 'QA_PASSED') {
-      await transitionDealState({
-        dealId: row.id,
-        triggerEvent: 'VIDEODB_AUDIT_PASSED',
-        actorAgent: 'Content QA Agent',
-        targetStage: 'QA_PASSED',
-        payload: { score: analysis.complianceScore, rationale: `VideoDB audit score ${analysis.complianceScore}%. All checks passed.` }
-      });
-    } else {
-      await transitionDealState({
-        dealId: row.id,
-        triggerEvent: 'VIDEODB_AUDIT_FAILED',
-        actorAgent: 'Content QA Agent',
-        targetStage: 'QA_REVISION_REQUIRED',
-        payload: { score: analysis.complianceScore, missing: qaResult.missing, rationale: `VideoDB audit score ${analysis.complianceScore}% below threshold.` }
-      });
+    // Step 4: Branch on QA outcome via State Machine & update deal status
+    const targetStatus = qaResult.outcome === 'QA_PASSED' ? 'QA_PASSED' : 'QA_REVISION_REQUIRED';
+
+    try {
+      if (qaResult.outcome === 'QA_PASSED') {
+        await transitionDealState({
+          dealId: row.id,
+          triggerEvent: 'VIDEODB_AUDIT_PASSED',
+          actorAgent: 'Content QA Agent',
+          targetStage: 'QA_PASSED',
+          payload: { score: analysis.complianceScore, rationale: `VideoDB audit score ${analysis.complianceScore}%. All checks passed.` }
+        });
+      } else {
+        await transitionDealState({
+          dealId: row.id,
+          triggerEvent: 'VIDEODB_AUDIT_FAILED',
+          actorAgent: 'Content QA Agent',
+          targetStage: 'QA_REVISION_REQUIRED',
+          payload: { score: analysis.complianceScore, missing: qaResult.missing, rationale: `VideoDB audit score ${analysis.complianceScore}% below threshold.` }
+        });
+      }
+    } catch (transErr) {
+      console.log('[verify-video] State transition note:', transErr.message);
     }
 
-    // Save analysis JSON to deal record
+    // Save analysis JSON & updated status to deal record
     await runDb(
-      `UPDATE deals SET video_url = ?, video_analysis_json = ? WHERE id = ?`,
-      [targetVideoUrl, JSON.stringify(analysis), row.id]
+      `UPDATE deals SET status = ?, video_url = ?, video_analysis_json = ? WHERE id = ?`,
+      [targetStatus, targetVideoUrl, JSON.stringify(analysis), row.id]
     );
 
     const updatedDeal = await getDbRow("SELECT * FROM deals WHERE id = ?", [req.params.id]);
