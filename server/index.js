@@ -920,23 +920,39 @@ app.get('/api/deals', async (req, res) => {
     } else {
       rows = await queryDb("SELECT * FROM deals ORDER BY created_at DESC");
     }
-    const deals = rows.map(r => ({
-      id: r.id,
-      campaignId: r.campaign_id,
-      creatorId: r.creator_id,
-      creatorName: r.creator_name,
-      creatorEmail: r.creator_email,
-      creatorAvatar: r.creator_avatar,
-      platform: r.platform,
-      offeredPrice: r.offered_price,
-      currentAgreedPrice: r.current_agreed_price,
-      status: r.status,
-      videoUrl: r.video_url,
-      emailThread: r.email_thread_json ? JSON.parse(r.email_thread_json) : [],
-      videoAnalysis: r.video_analysis_json ? JSON.parse(r.video_analysis_json) : null,
-      payout: r.payout_json ? JSON.parse(r.payout_json) : null,
-      createdAt: r.created_at
-    }));
+    // Enrich each deal with its campaign's promo code + mandatory phrase
+    const dealCampaignIds = [...new Set(rows.map(r => r.campaign_id).filter(Boolean))];
+    const campaignLookup = {};
+    for (const cid of dealCampaignIds) {
+      const camp = await getDbRow('SELECT * FROM campaigns WHERE id = ?', [cid]).catch(() => null);
+      if (camp) campaignLookup[cid] = camp;
+    }
+
+    const deals = rows.map(r => {
+      const camp = campaignLookup[r.campaign_id] || {};
+      return {
+        id: r.id,
+        campaignId: r.campaign_id,
+        creatorId: r.creator_id,
+        creatorName: r.creator_name,
+        creatorEmail: r.creator_email,
+        creatorAvatar: r.creator_avatar,
+        platform: r.platform,
+        offeredPrice: r.offered_price,
+        currentAgreedPrice: r.current_agreed_price,
+        status: r.status,
+        videoUrl: r.video_url,
+        emailThread: r.email_thread_json ? JSON.parse(r.email_thread_json) : [],
+        videoAnalysis: r.video_analysis_json ? JSON.parse(r.video_analysis_json) : null,
+        payout: r.payout_json ? JSON.parse(r.payout_json) : null,
+        createdAt: r.created_at,
+        // Campaign context fields
+        brandName: camp.brand_name || null,
+        productName: camp.product_name || null,
+        promoCode: camp.promo_code || null,
+        mandatoryPhrases: camp.mandatory_phrases || null
+      };
+    });
     res.json(deals);
   } catch (err) {
     res.status(500).json({ error: "Failed to fetch deals" });
@@ -1036,7 +1052,12 @@ app.post(['/api/deals/outreach', '/api/deals'], async (req, res) => {
       videoUrl: "",
       emailThread: [initialEmail],
       videoAnalysis: null,
-      payout: null
+      payout: null,
+      // Campaign context — never hardcode these on the frontend
+      brandName: campaign.brand_name,
+      productName: campaign.product_name,
+      promoCode: campaign.promo_code || null,
+      mandatoryPhrases: campaign.mandatory_phrases || null
     };
 
     res.status(201).json(newDeal);

@@ -461,7 +461,7 @@ export default function EmailNegotiator({ campaignId, activeDeal, onDealUpdated,
 
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.4rem', fontSize: '0.75rem' }}>
                         <Tag type={getStatusColor(d.status)} size="sm">{d.status || 'INVITED'}</Tag>
-                        <span style={{ color: '#42be65', fontWeight: '600', fontFamily: 'monospace' }}>₹{Number(price).toLocaleString('en-IN')}</span>
+                        <span style={{ color: '#42be65', fontWeight: '600', fontFamily: 'monospace' }}>₹{Number(d.currentAgreedPrice || d.offeredPrice || 0).toLocaleString('en-IN')}</span>
                       </div>
 
                       {lastMsg && (
@@ -551,7 +551,7 @@ export default function EmailNegotiator({ campaignId, activeDeal, onDealUpdated,
                   <div style={{ textAlign: 'right' }}>
                     <span style={{ fontSize: '0.75rem', color: '#8d8d8d', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Agreed Fee</span>
                     <div style={{ fontSize: '1.25rem', fontWeight: '700', color: '#42be65', fontFamily: 'monospace' }}>
-                      ₹{Number(currentDeal.currentAgreedPrice || currentDeal.offeredPrice || 25000).toLocaleString('en-IN')}
+                      ₹{Number(currentDeal.currentAgreedPrice || currentDeal.offeredPrice || 0).toLocaleString('en-IN')}
                     </div>
                   </div>
 
@@ -656,7 +656,7 @@ export default function EmailNegotiator({ campaignId, activeDeal, onDealUpdated,
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem', fontSize: '0.75rem', gap: '1rem' }}>
                           <span style={{ fontWeight: '600', color: isBrand ? '#78a9ff' : '#42be65', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
                             {isBrand ? <Bot size={14} /> : <User size={14} />} 
-                            {isBrand ? 'Brand Partnerships' : currentDeal.creatorName}
+                            {isBrand ? (currentDeal.brandName || 'Brand Partnerships') : currentDeal.creatorName}
                           </span>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                             <Tag type={isBrand ? 'blue' : 'green'} size="sm">
@@ -675,20 +675,37 @@ export default function EmailNegotiator({ campaignId, activeDeal, onDealUpdated,
                           )}
                         </p>
 
-                        {/* Financial Terms Summary */}
-                        {isBrand && (
-                          <div style={{ marginTop: '0.75rem', background: '#161616', border: '1px solid #333333', padding: '0.5rem 0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', fontSize: '0.75rem' }}>
-                            <span style={{ color: '#8d8d8d' }}>
-                              Proposed Fee: <strong style={{ color: '#42be65', fontFamily: 'monospace' }}>₹{Number(currentDeal.currentAgreedPrice || currentDeal.offeredPrice || 25000).toLocaleString('en-IN')}</strong>
-                            </span>
-                            <span style={{ color: '#8d8d8d' }}>
-                              Net (10% TDS): <strong style={{ color: '#f4f4f4', fontFamily: 'monospace' }}>₹{Math.round(Number(currentDeal.currentAgreedPrice || currentDeal.offeredPrice || 25000) * 0.9).toLocaleString('en-IN')}</strong>
-                            </span>
-                            <span style={{ color: '#8d8d8d' }}>
-                              Promo: <code style={{ color: '#78a9ff' }}>SAVER20</code>
-                            </span>
-                          </div>
-                        )}
+                        {/* Financial Terms — sourced from actual deal/campaign data */}
+                        {isBrand && (() => {
+                          const fee = Number(msg.offeredPrice || currentDeal.currentAgreedPrice || currentDeal.offeredPrice || 0);
+                          const tdsNet = Math.round(fee * 0.9);
+                          const promo = currentDeal.promoCode || null;
+                          const phrase = currentDeal.mandatoryPhrases || null;
+                          return (
+                            <div style={{ marginTop: '0.75rem', background: '#161616', border: '1px solid #333333', padding: '0.5rem 0.75rem', display: 'flex', flexWrap: 'wrap', gap: '0.75rem', fontSize: '0.75rem' }}>
+                              {fee > 0 && (
+                                <span style={{ color: '#8d8d8d' }}>
+                                  Fee: <strong style={{ color: '#42be65', fontFamily: 'monospace' }}>₹{fee.toLocaleString('en-IN')}</strong>
+                                </span>
+                              )}
+                              {fee > 0 && (
+                                <span style={{ color: '#8d8d8d' }}>
+                                  Net after 10% TDS: <strong style={{ color: '#f4f4f4', fontFamily: 'monospace' }}>₹{tdsNet.toLocaleString('en-IN')}</strong>
+                                </span>
+                              )}
+                              {promo && (
+                                <span style={{ color: '#8d8d8d' }}>
+                                  Promo: <code style={{ color: '#78a9ff' }}>{promo}</code>
+                                </span>
+                              )}
+                              {phrase && (
+                                <span style={{ color: '#8d8d8d' }}>
+                                  Required phrase: <em style={{ color: '#c6c6c6' }}>"{phrase}"</em>
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })()}
                       </div>
                     );
                   })
