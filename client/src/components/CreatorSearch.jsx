@@ -113,19 +113,16 @@ export default function CreatorSearch({ onSelectCreator, onViewDeal, activeCampa
         const deal = await res.json();
         // Update local creator list email if changed
         setCreators(prev => prev.map(c => c.id === outreachCreator.id ? { ...c, email: targetEmail } : c));
-        setOutreachResult({ 
-          success: true, 
-          deal, 
-          creatorName: outreachCreator.name,
-          creatorEmail: targetEmail,
-          fee: offeredFee,
-          campaignId: targetCampaignId || 'camp_01'
-        });
-        setGlobalNotification({
-          kind: 'success',
-          title: 'Proposal Email Dispatched!',
-          subtitle: `Proposal successfully sent to ${outreachCreator.name} (${targetEmail}) for ₹${Number(offeredFee).toLocaleString('en-IN')}.`
-        });
+        
+        // Close modal and immediately redirect to chat/negotiator studio!
+        setOutreachCreator(null);
+        setOutreachResult(null);
+        
+        if (onViewDeal) {
+          onViewDeal(deal, targetCampaignId || 'camp_01');
+        } else if (onSelectCreator) {
+          onSelectCreator(deal);
+        }
       } else {
         const errData = await res.json();
         setOutreachResult({ success: false, error: errData.error || 'Failed to dispatch email' });

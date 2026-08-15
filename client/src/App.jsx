@@ -167,6 +167,7 @@ export default function App() {
 
   const handleSelectCreatorForOutreach = (deal) => {
     if (deal) setActiveDeal(deal);
+    setCurrentTab('negotiator');
   };
 
   const handleViewDeal = async (deal, campaignId) => {
