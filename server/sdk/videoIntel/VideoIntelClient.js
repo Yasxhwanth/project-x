@@ -167,14 +167,15 @@ export class VideoSession {
 
     // 4. Persist into SQLite Index
     await VideoIndexer.saveIndexedVideo({
+      id: this.id,
       videoUrl: this.videoUrl,
-      title: this.metadata.title,
+      title: this.metadata?.title || `${creatorName} - ${this.metadata?.platform || 'Video'}`,
       creatorId: deal.creatorId,
       creatorName,
       campaignId: campaign.id,
       dealId: deal.id,
-      durationSeconds: this.metadata.estimatedDurationSeconds,
-      platform: this.metadata.platform,
+      durationSeconds: this.metadata?.estimatedDurationSeconds || 60,
+      platform: this.metadata?.platform || 'Instagram',
       transcriptText: this.transcript,
       chunks: this.transcriptChunks,
       scenes: this.scenes,

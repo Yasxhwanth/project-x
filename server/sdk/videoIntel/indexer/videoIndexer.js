@@ -11,6 +11,7 @@ export class VideoIndexer {
    * Persist a fully indexed video with its transcript chunks and scene breakdown.
    */
   static async saveIndexedVideo({
+    id,
     videoUrl,
     title,
     creatorId,
@@ -25,7 +26,7 @@ export class VideoIndexer {
     auditReport = {},
     complianceScore = 95
   }) {
-    const videoId = `vintel_${Date.now()}_${uuidv4().substring(0, 6)}`;
+    const videoId = id || `vintel_${Date.now()}_${uuidv4().substring(0, 6)}`;
 
     // 1. Insert main video record
     await runDb(`
@@ -37,7 +38,7 @@ export class VideoIndexer {
     `, [
       videoId,
       videoUrl,
-      title || `Indexed Video ${videoId}`,
+      title || `${creatorName} - ${platform} Video`,
       creatorId || null,
       creatorName || 'Creator',
       campaignId || null,
