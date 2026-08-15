@@ -188,16 +188,29 @@ app.post('/api/organization/email-settings', async (req, res) => {
       UPDATE organizations
       SET sender_name = ?, sender_email = ?,
           gmail_api_key = CASE WHEN ? <> '' THEN ? ELSE gmail_api_key END,
-          smtp_host = ?, smtp_port = ?, smtp_user = ?, ai_tone = ?, auto_reply_enabled = ?
+          smtp_host = ?, smtp_port = ?, smtp_user = ?,
+          smtp_pass = CASE WHEN ? <> '' THEN ? ELSE smtp_pass END,
+          ai_tone = ?, auto_reply_enabled = ?
       WHERE slug = 'boat-lifestyle' OR id = 'org_boat_01'
-    `, [senderName, senderEmail, geminiApiKey || '', geminiApiKey || '', smtpHost, smtpPort, smtpUser, aiTone, autoReplyEnabled ? 1 : 0]);
+    `, [
+      senderName, senderEmail, 
+      geminiApiKey || '', geminiApiKey || '', 
+      smtpHost || 'smtp.gmail.com', smtpPort || 587, smtpUser || senderEmail, 
+      smtpPass || '', smtpPass || '',
+      aiTone, autoReplyEnabled ? 1 : 0
+    ]);
 
     if (geminiApiKey) {
       process.env.GEMINI_API_KEY = geminiApiKey;
     }
+    if (smtpPass) {
+      process.env.GMAIL_APP_PASSWORD = smtpPass;
+      process.env.GMAIL_USER = smtpUser || senderEmail;
+    }
 
     res.json({ success: true });
   } catch (err) {
+    console.error("Failed to save email settings", err);
     res.status(500).json({ error: "Failed to save email settings" });
   }
 });
@@ -816,6 +829,45 @@ app.post('/api/campaigns', async (req, res) => {
     res.status(201).json(newCamp);
   } catch (err) {
     res.status(500).json({ error: "Failed to save campaign" });
+  }
+});
+
+app.get('/api/campaigns', async (req, res) => {
+  try {
+    const rows = await queryDb("SELECT * FROM campaigns ORDER BY created_at DESC");
+    const campaigns = rows.map(r => ({
+      id: r.id,
+      brandName: r.brand_name,
+      productName: r.product_name,
+      maxBudgetPerCreator: r.max_budget_per_creator,
+      mandatoryPhrases: r.mandatory_phrases,
+      promoCode: r.promo_code,
+      guidelines: r.guidelines,
+      createdAt: r.created_at
+    }));
+    res.json({ campaigns });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch campaigns" });
+  }
+});
+
+app.get('/api/campaigns/:id', async (req, res) => {
+  try {
+    const r = await getDbRow("SELECT * FROM campaigns WHERE id = ?", [req.params.id]);
+    if (!r) return res.status(404).json({ error: "Campaign not found" });
+    const camp = {
+      id: r.id,
+      brandName: r.brand_name,
+      productName: r.product_name,
+      maxBudgetPerCreator: r.max_budget_per_creator,
+      mandatoryPhrases: r.mandatory_phrases,
+      promoCode: r.promo_code,
+      guidelines: r.guidelines,
+      createdAt: r.created_at
+    };
+    res.json(camp);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch campaign" });
   }
 });
 
