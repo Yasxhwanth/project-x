@@ -281,14 +281,16 @@ app.get('/api/integrations/gmail/connect', optionalAuth, (req, res) => {
 
 app.get('/api/integrations/gmail/callback', async (req, res) => {
   const { code, state, error } = req.query;
+  const host = req.get('host') || '';
+  const clientBaseUrl = process.env.CLIENT_URL || (host.includes('localhost') ? 'http://localhost:5173' : '');
+
   if (error || !code) {
-    return res.redirect('/?gmail_error=' + encodeURIComponent(error || 'No authorization code returned'));
+    return res.redirect(`${clientBaseUrl}/?gmail_error=${encodeURIComponent(error || 'No authorization code returned')}`);
   }
 
   try {
     const clientId = process.env.GOOGLE_CLIENT_ID;
     const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
-    const host = req.get('host');
     const protocol = req.protocol === 'https' || req.headers['x-forwarded-proto'] === 'https' ? 'https' : 'http';
     const redirectUri = `${protocol}://${host}/api/integrations/gmail/callback`;
     const orgId = state || 'org_boat_01';
@@ -329,10 +331,10 @@ app.get('/api/integrations/gmail/callback', async (req, res) => {
       DO UPDATE SET secret_value = excluded.secret_value, updated_at = CURRENT_TIMESTAMP
     `, [orgId, JSON.stringify({ email: connectedEmail, refreshToken: refresh_token, accessToken: access_token })]);
 
-    res.redirect('/?gmail_status=connected&email=' + encodeURIComponent(connectedEmail));
+    res.redirect(`${clientBaseUrl}/?gmail_status=connected&email=${encodeURIComponent(connectedEmail)}`);
   } catch (err) {
     console.error('[Gmail OAuth Callback Error]:', err);
-    res.redirect('/?gmail_error=' + encodeURIComponent(err.message));
+    res.redirect(`${clientBaseUrl}/?gmail_error=${encodeURIComponent(err.message)}`);
   }
 });
 
