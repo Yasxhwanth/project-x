@@ -99,6 +99,7 @@ export default function EmailNegotiator({ campaignId, activeDeal, onDealUpdated,
   // Inline Creator Email Editor State
   const [isEditingEmail, setIsEditingEmail] = useState(false);
   const [editedEmail, setEditedEmail] = useState('');
+  const [syncingInbox, setSyncingInbox] = useState(false);
 
   const thinkingSteps = [
     'Recalling creator episodic memory & past deal benchmarks...',
@@ -115,6 +116,28 @@ export default function EmailNegotiator({ campaignId, activeDeal, onDealUpdated,
       .then(d => { if (d.email) setSenderEmail(d.email); })
       .catch(() => {});
   }, []);
+
+  // Sync inbound creator replies from real Gmail inbox
+  const handleSyncInboundReplies = async () => {
+    setSyncingInbox(true);
+    setErrorMsg(null);
+    try {
+      const res = await fetch('/api/integrations/gmail/sync-replies', { method: 'POST' });
+      const data = await res.json();
+      if (data.newReplies > 0) {
+        setSuccessMsg(`📥 Synced ${data.newReplies} new creator reply from Gmail! AI processed counter-offers and updated terms.`);
+        await fetchDeals();
+      } else {
+        setSuccessMsg('Inbox checked: all creator email threads are currently up to date.');
+      }
+      setTimeout(() => setSuccessMsg(null), 5000);
+    } catch(err) {
+      console.error('[Sync Replies Error]:', err);
+      setErrorMsg('Failed to poll Gmail inbox: ' + err.message);
+    } finally {
+      setSyncingInbox(false);
+    }
+  };
 
   // Fetch campaign deals
   const fetchDeals = useCallback(async () => {
@@ -288,14 +311,25 @@ export default function EmailNegotiator({ campaignId, activeDeal, onDealUpdated,
           </p>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: '#161616', border: '1px solid #333', padding: '0.35rem 0.75rem', borderRadius: 4, fontSize: '0.8rem' }}>
             <span style={{ color: '#8d8d8d' }}>Outbound Sender:</span>
             <span style={{ color: '#42be65', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-              <CheckmarkFilled size={12} /> {senderEmail || 'yashwanthtm5@gmail.com'}
+              <CheckmarkFilled size={12} /> {senderEmail || 'tsrajanna1@gmail.com'}
             </span>
           </div>
-          <Button kind="ghost" size="sm" renderIcon={Renew} onClick={fetchDeals}>Sync Threads</Button>
+          <Button 
+            kind="primary" 
+            size="sm" 
+            renderIcon={Renew} 
+            disabled={syncingInbox} 
+            onClick={handleSyncInboundReplies}
+          >
+            {syncingInbox ? 'Checking Gmail...' : 'Check Creator Email Replies'}
+          </Button>
+          <Button kind="ghost" size="sm" renderIcon={Renew} onClick={fetchDeals}>
+            Refresh
+          </Button>
         </div>
       </div>
 

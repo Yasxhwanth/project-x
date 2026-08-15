@@ -23,6 +23,7 @@ import { loginUser, registerUserAndOrganization, getCurrentUserSession, getOrgan
 import { processRealAiNegotiation } from './services/realAiNegotiator.js';
 import { searchCreatorsWithNaturalLanguage } from './services/aiCreatorSearch.js';
 import { sendCreatorEmail, pollCreatorInbox } from './services/gmailEmailService.js';
+import { syncInboundCreatorReplies } from './services/inboundEmailSyncService.js';
 import { getCreatorMemoryProfile, recordCreatorMemory } from './services/creatorMemoryService.js';
 import { getTanoPricingMatrix, generateLlmsTxt, generateAgentCardJson } from './services/tanoServicesEngine.js';
 
@@ -360,6 +361,17 @@ app.get('/api/integrations/gmail/status', optionalAuth, async (req, res) => {
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+// Autonomous Inbound Creator Email Sync & Conversation Trigger
+app.post('/api/integrations/gmail/sync-replies', optionalAuth, async (req, res) => {
+  try {
+    const result = await syncInboundCreatorReplies({ autoReply: true });
+    res.json(result);
+  } catch (err) {
+    console.error('[Sync Replies Endpoint Error]:', err);
+    res.status(500).json({ error: err.message, newReplies: 0 });
   }
 });
 
@@ -1611,6 +1623,15 @@ app.get('*', (req, res) => {
 if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
   app.listen(PORT, () => {
     console.log(`Project X Server running on port ${PORT}`);
+
+    // Background Inbound Creator Reply Sync Loop (Every 25 seconds)
+    setInterval(async () => {
+      try {
+        await syncInboundCreatorReplies({ autoReply: true });
+      } catch (err) {
+        // Silent background catch
+      }
+    }, 25000);
   });
 }
 
