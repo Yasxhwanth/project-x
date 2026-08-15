@@ -89,12 +89,19 @@ export default function EmailNegotiator({ campaignId, activeDeal, onDealUpdated,
   const [errorMsg, setErrorMsg] = useState(null);
   const [successMsg, setSuccessMsg] = useState(null);
   const [senderEmail, setSenderEmail] = useState('');
+  
+  // 🧠 Creator Persistent Memory & Context Intelligence State
+  const [creatorMemory, setCreatorMemory] = useState(null);
+  const [loadingMemory, setLoadingMemory] = useState(false);
+  const [showAddNote, setShowAddNote] = useState(false);
+  const [newMemoryNote, setNewMemoryNote] = useState('');
 
   const thinkingSteps = [
+    'Recalling creator episodic memory & past deal benchmarks...',
     'Analyzing creator response and commercial parameters...',
     'Evaluating budget ceiling & Section 194J 10% TDS tax rule...',
-    'Invoking Google Gemini AI for contextual commercial reply...',
-    'Committing negotiated terms and updating deal pipeline...'
+    'Invoking Google Gemini AI with multi-turn conversation memory...',
+    'Committing negotiated terms and updating persistent creator memory...'
   ];
 
   // Fetch sender status
@@ -137,6 +144,23 @@ export default function EmailNegotiator({ campaignId, activeDeal, onDealUpdated,
       setSelectedDealId(activeDeal.id);
     }
   }, [activeDeal]);
+
+  // Fetch Creator Persistent Memory whenever selected deal changes
+  const activeSelectedDeal = deals.find(d => d.id === selectedDealId) || activeDeal || deals[0];
+  useEffect(() => {
+    if (!activeSelectedDeal) return;
+    const targetId = activeSelectedDeal.creatorId || activeSelectedDeal.creatorEmail;
+    if (!targetId) return;
+
+    setLoadingMemory(true);
+    fetch(`/api/creators/${encodeURIComponent(targetId)}/memory`)
+      .then(r => r.json())
+      .then(data => {
+        setCreatorMemory(data);
+      })
+      .catch(err => console.error('Failed to fetch creator memory:', err))
+      .finally(() => setLoadingMemory(false));
+  }, [activeSelectedDeal?.id, activeSelectedDeal?.creatorId, activeSelectedDeal?.creatorEmail]);
 
   const currentDeal = deals.find(d => d.id === selectedDealId) || activeDeal || deals[0];
 
@@ -193,6 +217,37 @@ export default function EmailNegotiator({ campaignId, activeDeal, onDealUpdated,
     } finally {
       clearInterval(stepInterval);
       setLoading(false);
+    }
+  };
+
+  const handleAddCustomMemoryNote = async (e) => {
+    e.preventDefault();
+    if (!newMemoryNote.trim() || !currentDeal) return;
+    try {
+      const targetId = currentDeal.creatorId || currentDeal.creatorEmail;
+      const res = await fetch(`/api/creators/${encodeURIComponent(targetId)}/memory`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          creatorEmail: currentDeal.creatorEmail,
+          creatorName: currentDeal.creatorName,
+          memoryCategory: 'STRATEGY_NOTE',
+          memoryKey: 'brand_manager_note',
+          memoryValue: newMemoryNote.trim(),
+          sourceDealId: currentDeal.id
+        })
+      });
+      if (res.ok) {
+        setNewMemoryNote('');
+        setShowAddNote(false);
+        // Refresh memory profile
+        fetch(`/api/creators/${encodeURIComponent(targetId)}/memory`)
+          .then(r => r.json())
+          .then(setCreatorMemory)
+          .catch(() => {});
+      }
+    } catch(err) {
+      console.error('Failed to record custom memory note:', err);
     }
   };
 
@@ -381,6 +436,82 @@ export default function EmailNegotiator({ campaignId, activeDeal, onDealUpdated,
                   <Tag type={getStatusColor(currentDeal.status)} size="md">
                     {currentDeal.status || 'INVITED'}
                   </Tag>
+                </div>
+              </Tile>
+
+              {/* 🧠 Creator Memory & Episodic Intelligence Bar */}
+              <Tile style={{ background: 'rgba(15, 98, 254, 0.06)', border: '1px solid rgba(15, 98, 254, 0.25)', padding: '0.85rem 1.25rem', borderRadius: 6 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <span style={{ fontSize: '0.95rem' }}>🧠</span>
+                    <span style={{ fontWeight: '600', color: '#78a9ff', fontSize: '0.875rem' }}>
+                      AI Persistent Creator Memory & Historical Profile
+                    </span>
+                    <Tag type="blue" size="sm">
+                      {creatorMemory?.stats?.totalInteractions || 1} Interaction{creatorMemory?.stats?.totalInteractions !== 1 ? 's' : ''}
+                    </Tag>
+                  </div>
+                  
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.75rem', color: '#a8a8a8' }}>
+                    <span>⚡ Thread Context: <strong style={{ color: '#42be65' }}>{currentDeal.emailThread?.length || 1} turns active</strong></span>
+                    <span>•</span>
+                    <span>📹 Historical VideoDB QA: <strong style={{ color: '#0f62fe' }}>{creatorMemory?.stats?.averageComplianceScore || 92}%</strong></span>
+                    <Button 
+                      kind="ghost" 
+                      size="sm" 
+                      onClick={() => setShowAddNote(!showAddNote)}
+                      style={{ padding: '0 0.5rem', minHeight: '24px', fontSize: '0.75rem' }}
+                    >
+                      {showAddNote ? '✕ Cancel' : '＋ Add Fact'}
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Quick Add Custom Fact Form */}
+                {showAddNote && (
+                  <form onSubmit={handleAddCustomMemoryNote} style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem', marginTop: '0.5rem' }}>
+                    <TextInput
+                      id="custom-memory-note"
+                      size="sm"
+                      labelText=""
+                      placeholder="e.g. Creator prefers Hindi voiceover and 3-day sample lead time..."
+                      value={newMemoryNote}
+                      onChange={e => setNewMemoryNote(e.target.value)}
+                      style={{ flex: 1 }}
+                    />
+                    <Button type="submit" size="sm" kind="primary" disabled={!newMemoryNote.trim()}>
+                      Save Memory
+                    </Button>
+                  </form>
+                )}
+
+                {/* Learned Trait Badges */}
+                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                  {creatorMemory?.memories && creatorMemory.memories.length > 0 ? (
+                    creatorMemory.memories.map(m => (
+                      <span 
+                        key={m.id} 
+                        style={{ 
+                          fontSize: '0.75rem', 
+                          padding: '0.2rem 0.55rem', 
+                          background: '#161616', 
+                          border: '1px solid #333333', 
+                          borderRadius: 4, 
+                          color: '#e0e0e0',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.35rem'
+                        }}
+                      >
+                        <span style={{ color: '#4589ff' }}>•</span>
+                        <strong>{m.memory_key.replace(/_/g, ' ')}:</strong> {m.memory_value}
+                      </span>
+                    ))
+                  ) : (
+                    <span style={{ fontSize: '0.75rem', color: '#8d8d8d', fontStyle: 'italic' }}>
+                      First collaboration with {currentDeal.creatorName}. Gemini AI is dynamically extracting negotiation traits, tone preferences, and delivery habits into persistent long-term memory.
+                    </span>
+                  )}
                 </div>
               </Tile>
 

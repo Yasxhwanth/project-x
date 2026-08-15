@@ -77,7 +77,12 @@ TASK:
 }
 `;
 
-  const modelsToTry = ['gemini-2.0-flash', 'gemini-2.5-flash', 'gemini-1.5-flash'];
+  const modelsToTry = [
+    'gemini-3.1-flash-lite-preview',
+    'gemini-2.5-flash',
+    'gemini-flash-latest',
+    'gemini-3.1-pro-preview'
+  ];
   let rawResponseText = '';
 
   for (const modelName of modelsToTry) {

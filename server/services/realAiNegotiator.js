@@ -1,8 +1,10 @@
 import { getIntegrationSecret } from '../database/sqliteDb.js';
 import { sanitizeAndAuditInput, sanitizeAiOutputResponse } from '../security/antiJailbreakShield.js';
+import { getCreatorMemoryProfile, autoExtractMemoriesFromThread } from './creatorMemoryService.js';
 
 /**
  * Real LLM AI Email Negotiation Engine (Powered by Google Gemini API & OpenAI fallback)
+ * Integrated with Persistent Creator Memory & Multi-turn Thread Intelligence.
  */
 export async function processRealAiNegotiation({ campaign, deal, creatorMessage, organization }) {
   // 🛡️ Security Check 1: Audit input for prompt injections & jailbreak attacks
@@ -37,6 +39,21 @@ export async function processRealAiNegotiation({ campaign, deal, creatorMessage,
   let newStatus = deal.status;
   let newAgreedPrice = currentPrice;
 
+  // 🧠 1. Load Long-term Persistent Creator Memory & Episodic Stats
+  const memoryProfile = await getCreatorMemoryProfile(deal.creatorId || deal.creatorEmail);
+  const memoryContextText = memoryProfile?.memories?.length > 0
+    ? memoryProfile.memories.map(m => `• [${m.memory_category}] ${m.memory_key}: ${m.memory_value}`).join('\n')
+    : "• First collaboration: No prior historical traits recorded.";
+
+  const pastStatsText = memoryProfile?.stats?.completedCollaborations > 0
+    ? `• Historical Completed Deals: ${memoryProfile.stats.completedCollaborations}, Benchmark Fee: ₹${memoryProfile.stats.averageAgreedFee?.toLocaleString('en-IN')}, Compliance Score: ${memoryProfile.stats.averageComplianceScore}%`
+    : "• New creator to workspace.";
+
+  // 🧠 2. Build Chronological Multi-Turn Conversation Thread Memory
+  const threadHistoryText = Array.isArray(deal.emailThread) && deal.emailThread.length > 0
+    ? deal.emailThread.map(m => `[${m.senderName || m.sender}]: ${m.body}`).join('\n---\n')
+    : "[Initial Outreach]";
+
   // Detect counter-offer numbers in creator message
   const numMatches = creatorMessage.match(/(\d+)\s*k|₹?\s*(\d{4,6})/gi);
   let requestedPrice = null;
@@ -58,10 +75,18 @@ export async function processRealAiNegotiation({ campaign, deal, creatorMessage,
   const promptText = `You are ${senderName}, the Executive AI Influencer Marketing Director for ${brandName}.
 Your goal is to negotiate a formal commercial influencer partnership with ${deal.creatorName} for promoting ${productName}.
 
+🧠 PERSISTENT CREATOR MEMORY & HISTORICAL PROFILE:
+${memoryContextText}
+${pastStatsText}
+
+📜 CHRONOLOGICAL CONVERSATION THREAD MEMORY (PREVIOUS EXCHANGES):
+${threadHistoryText}
+
 TONE & COMMUNICATION REQUIREMENTS:
 - Maintain a 100% polished, formal corporate executive tone in professional English.
 - Avoid informal greetings, slang, or colloquialisms. Always address the creator professionally (e.g. "Dear ${deal.creatorName}").
 - Present commercial figures clearly in INR (₹) with formal financial terminology.
+- Factor in prior messages and conversation context from the thread above.
 
 CRITICAL FINANCIAL CONFIDENTIALITY GUARDRAILS:
 - NEVER disclose, reveal, or mention internal campaign budget ceilings or maximum numbers (e.g. NEVER say "our max budget is ₹50,000" or "our internal cap is ₹X").
@@ -88,14 +113,15 @@ AGENT ACTIVE SKILLS SUITE:
 1. [SKILL: Confidential Negotiation Guardrails] Keep internal budget ceilings hidden. Negotiate tactfully using tier pricing & product gifting.
 2. [SKILL: Sec 194J Tax Calculation] Compute Gross Fee, 10% TDS withholding, and Net Instant UPI Transfer.
 3. [SKILL: VideoDB Multimodal Compliance Audit] Explain multimodal AI video audit requirements and instant UPI escrow release.
+4. [SKILL: Episodic Memory Recall] Recall prior terms, commitments, and historical performance seamlessly.
 
 TONE & FORMATTING POLICY:
 - ABSOLUTELY NO EMOJIS: Do NOT use any emojis anywhere in the email response body under any circumstances.
 - FORMAL CORPORATE TONE: Maintain a highly professional, crisp, executive corporate brand tone at all times.
 
-Creator's Incoming Message: "${creatorMessage}"
+Creator's Latest Incoming Message: "${creatorMessage}"
 
-Compose a formal, sleek, highly professional corporate email response without any emojis or disclosure of internal budget limits.`;
+Compose a formal, sleek, highly professional corporate email response referencing the conversation context and negotiation history without disclosing internal budget caps.`;
 
   // 1. Google Gemini API Call (Free Tier)
   if (geminiApiKey && geminiApiKey !== 'your_gemini_api_key_here') {
@@ -196,9 +222,22 @@ Compose a formal, sleek, highly professional corporate email response without an
     intent: isAcceptance ? "AGREEMENT_CONFIRMATION" : "AI_REPLY"
   };
 
+  // 🧠 3. Persist Extracted Memories to Long-Term Memory Store
+  try {
+    await autoExtractMemoriesFromThread({
+      deal,
+      creatorMessage,
+      agreedPrice: newAgreedPrice,
+      newStatus
+    });
+  } catch (memErr) {
+    console.error('Memory persistence warning:', memErr.message);
+  }
+
   return {
     replyMessage: replyMessageObj,
     newStatus,
-    newAgreedPrice
+    newAgreedPrice,
+    memoryProfile
   };
 }

@@ -23,6 +23,7 @@ import { loginUser, registerUserAndOrganization, getCurrentUserSession, getOrgan
 import { processRealAiNegotiation } from './services/realAiNegotiator.js';
 import { searchCreatorsWithNaturalLanguage } from './services/aiCreatorSearch.js';
 import { sendCreatorEmail, pollCreatorInbox } from './services/gmailEmailService.js';
+import { getCreatorMemoryProfile, recordCreatorMemory } from './services/creatorMemoryService.js';
 import { getTanoPricingMatrix, generateLlmsTxt, generateAgentCardJson } from './services/tanoServicesEngine.js';
 
 // v3: Autonomous Architecture Imports
@@ -733,6 +734,30 @@ app.post('/api/creators/scrape-instagram', async (req, res) => {
   } catch (err) {
     console.error("SDK Instagram scrape error:", err);
     res.status(500).json({ error: "Failed to scrape Instagram profile" });
+  }
+});
+
+// Creator Episodic Memory & Intelligence API
+app.get('/api/creators/:id/memory', async (req, res) => {
+  try {
+    const memoryProfile = await getCreatorMemoryProfile(req.params.id);
+    res.json(memoryProfile);
+  } catch (err) {
+    console.error("Fetch creator memory error:", err);
+    res.status(500).json({ error: "Failed to fetch creator memory: " + err.message });
+  }
+});
+
+app.post('/api/creators/:id/memory', async (req, res) => {
+  try {
+    const result = await recordCreatorMemory({
+      creatorId: req.params.id,
+      ...req.body
+    });
+    res.json(result);
+  } catch (err) {
+    console.error("Save creator memory error:", err);
+    res.status(500).json({ error: "Failed to record creator memory: " + err.message });
   }
 });
 

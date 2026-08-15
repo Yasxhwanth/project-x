@@ -248,6 +248,23 @@ function initDatabaseSchema() {
       )
     `);
 
+    // 14. Creator Memory & Episodic Intelligence Table
+    db.run(`
+      CREATE TABLE IF NOT EXISTS creator_memories (
+        id TEXT PRIMARY KEY,
+        creator_id TEXT,
+        creator_email TEXT,
+        creator_name TEXT,
+        memory_category TEXT,
+        memory_key TEXT NOT NULL,
+        memory_value TEXT NOT NULL,
+        confidence REAL DEFAULT 1.0,
+        source_deal_id TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
     // 14. OTP Verification Table (6-digit email & mobile login OTPs)
     db.run(`
       CREATE TABLE IF NOT EXISTS otps (
