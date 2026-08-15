@@ -21,20 +21,29 @@ export class VideoIndexer {
     durationSeconds = 60,
     platform = 'Instagram',
     transcriptText = '',
+    summaryText = '',
     chunks = [],
     scenes = [],
+    visualFrames = [],
+    sponsorshipSegments = [],
     auditReport = {},
     complianceScore = 95
   }) {
     const videoId = id || `vintel_${Date.now()}_${uuidv4().substring(0, 6)}`;
 
+    // Clean up any existing records for this videoId to ensure idempotency
+    await runDb(`DELETE FROM video_transcript_chunks WHERE video_id = ?`, [videoId]).catch(() => {});
+    await runDb(`DELETE FROM video_scenes WHERE video_id = ?`, [videoId]).catch(() => {});
+    await runDb(`DELETE FROM indexed_videos WHERE id = ?`, [videoId]).catch(() => {});
+
     // 1. Insert main video record
     await runDb(`
       INSERT INTO indexed_videos (
         id, video_url, title, creator_id, creator_name, campaign_id, deal_id,
-        duration_seconds, platform, status, transcript_text, scenes_json,
+        duration_seconds, platform, status, transcript_text, summary_text, scenes_json,
+        visual_frames_json, sponsorship_segments_json,
         audit_report_json, compliance_score, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'INDEXED', ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'INDEXED', ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
     `, [
       videoId,
       videoUrl,
@@ -46,7 +55,10 @@ export class VideoIndexer {
       durationSeconds,
       platform,
       transcriptText,
+      summaryText || '',
       JSON.stringify(scenes),
+      JSON.stringify(visualFrames),
+      JSON.stringify(sponsorshipSegments),
       JSON.stringify(auditReport),
       complianceScore
     ]);
@@ -156,6 +168,9 @@ export class VideoIndexer {
         ...s,
         detectedElements: s.detected_elements_json ? JSON.parse(s.detected_elements_json) : []
       })),
+      visualFrames: video.visual_frames_json ? JSON.parse(video.visual_frames_json) : [],
+      sponsorshipSegments: video.sponsorship_segments_json ? JSON.parse(video.sponsorship_segments_json) : [],
+      summaryText: video.summary_text || '',
       transcriptChunks: chunks,
       auditReport: video.audit_report_json ? JSON.parse(video.audit_report_json) : null
     };

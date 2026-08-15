@@ -37,6 +37,19 @@ export class VideoIntel {
   }
 }
 
+import { analyzeVideoFrames } from './extractors/frameAnalyzer.js';
+import { detectSponsorshipSegments } from './analyzers/sponsorshipDetector.js';
+import { generateExecutiveSummary } from './extractors/summarizer.js';
+import { videoJobQueue } from './indexer/jobQueue.js';
+
 // Singleton convenience export
 export const videoIntel = new VideoIntel();
+export { 
+  VideoIndexer, 
+  VideoSession, 
+  videoJobQueue, 
+  analyzeVideoFrames, 
+  detectSponsorshipSegments, 
+  generateExecutiveSummary 
+};
 export default VideoIntel;

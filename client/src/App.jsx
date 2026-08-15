@@ -46,11 +46,13 @@ import WorkspaceOverview from './components/WorkspaceOverview';
 import AgencyCommandCenter from './components/AgencyCommandCenter';
 import CampaignPortfolioModal from './components/CampaignPortfolioModal';
 
+import CampaignCloseoutReport from './components/CampaignCloseoutReport';
+
 export default function App() {
   // Restore active tab from URL hash or localStorage on page load/refresh
   const getInitialTab = () => {
     const hash = window.location.hash.replace('#', '').trim();
-    const validTabs = ['overview', 'campaigns', 'discovery', 'deals', 'approvals', 'analytics', 'attribution', 'strategy', 'governance', 'verification', 'payouts', 'crm', 'agency'];
+    const validTabs = ['overview', 'campaigns', 'portfolio', 'discovery', 'deals', 'negotiator', 'approvals', 'analytics', 'attribution', 'strategy', 'control_plane', 'verification', 'payouts', 'closeout', 'crm', 'agency'];
     if (hash && validTabs.includes(hash)) return hash;
     const saved = localStorage.getItem('cc_active_tab');
     if (saved && validTabs.includes(saved)) return saved;
@@ -151,6 +153,15 @@ export default function App() {
     setIsAuthModalOpen(true);
   };
 
+  const handleSetActiveCampaign = (c) => {
+    if (c) {
+      setActiveCampaign(c);
+      if (c.id) {
+        localStorage.setItem('cc_active_campaign_id', c.id);
+      }
+    }
+  };
+
   const fetchActiveCampaign = async () => {
     try {
       const res = await fetch('/api/campaigns');
@@ -158,7 +169,9 @@ export default function App() {
       const list = data?.campaigns || data;
       if (Array.isArray(list) && list.length > 0) {
         setCampaigns(list);
-        setActiveCampaign(list[0]);
+        const savedId = localStorage.getItem('cc_active_campaign_id');
+        const matched = savedId ? list.find(c => c.id === savedId) : null;
+        setActiveCampaign(matched || list[0]);
       }
     } catch (err) {
       console.error("Failed to load active campaign", err);
@@ -199,6 +212,8 @@ export default function App() {
         { id: 'portfolio', label: 'Campaigns', icon: Enterprise },
         { id: 'discovery', label: 'Creator Discovery', icon: Search },
         { id: 'negotiator', label: 'Outreach & Deals', icon: Email },
+        { id: 'verification', label: 'Video QA & ASCI', icon: Video },
+        { id: 'payouts', label: 'Payouts & TDS (194J)', icon: Currency },
       ]
     },
     {
@@ -210,8 +225,9 @@ export default function App() {
     {
       category: 'INSIGHTS',
       items: [
-        { id: 'analytics', label: 'Analytics', icon: ChartBar },
+        { id: 'closeout', label: 'Client Closeout Report', icon: DocumentDownload },
         { id: 'attribution', label: 'Revenue Attribution', icon: ShoppingBag },
+        { id: 'analytics', label: 'Analytics', icon: ChartBar },
       ]
     },
     {
@@ -239,9 +255,12 @@ export default function App() {
     portfolio: 'Campaigns',
     discovery: 'Creator Discovery',
     negotiator: 'Outreach & Deals',
+    verification: 'Video QA & ASCI Compliance',
+    payouts: 'Payouts & Section 194 TDS Settlement',
     approvals: 'Approval Inbox',
-    analytics: 'Analytics',
+    closeout: 'Branded Client Closeout Report',
     attribution: 'Revenue Attribution',
+    analytics: 'Analytics',
     strategy: 'AI Strategy',
     control_plane: 'AI Governance'
   };
@@ -310,8 +329,11 @@ export default function App() {
           onClose={() => setIsCampaignModalOpen(false)}
           campaigns={campaigns}
           activeCampaign={activeCampaign}
-          onSelectCampaign={(c) => setActiveCampaign(c)}
-          onCampaignCreated={(c) => setCampaigns([c, ...campaigns])}
+          onSelectCampaign={(c) => handleSetActiveCampaign(c)}
+          onCampaignCreated={(c) => {
+            setCampaigns([c, ...campaigns]);
+            handleSetActiveCampaign(c);
+          }}
         />
 
         {/* Organization Profile & AI Settings Modal */}
@@ -440,9 +462,13 @@ export default function App() {
                 <WorkspaceOverview
                   mode={workspaceMode}
                   session={session}
-                  onNavigate={(tabIdx) => {
-                    const tabMap = ['overview', 'discovery', 'pipeline', 'portfolio', 'negotiator', 'video_qa', 'attribution', 'analytics', 'control_plane', 'strategy', 'payouts'];
-                    setCurrentTab(tabMap[tabIdx] || 'overview');
+                  onNavigate={(tabTarget) => {
+                    if (typeof tabTarget === 'string') {
+                      setCurrentTab(tabTarget);
+                    } else {
+                      const tabMap = ['overview', 'discovery', 'pipeline', 'portfolio', 'negotiator', 'video_qa', 'attribution', 'analytics', 'control_plane', 'strategy', 'payouts'];
+                      setCurrentTab(tabMap[tabTarget] || 'overview');
+                    }
                   }}
                 />
               )
@@ -463,6 +489,18 @@ export default function App() {
                 onDealUpdated={() => fetchActiveCampaign()}
                 onNavigateToDiscovery={() => setCurrentTab('discovery')}
               />
+            )}
+
+            {currentTab === 'verification' && (
+              <VideoVerification activeDeal={activeDeal} />
+            )}
+
+            {currentTab === 'payouts' && (
+              <PayoutDashboard activeDeal={activeDeal} />
+            )}
+
+            {currentTab === 'closeout' && (
+              <CampaignCloseoutReport defaultCampaignId={activeCampaign?.id || 'camp_01'} />
             )}
 
             {currentTab === 'portfolio' && (

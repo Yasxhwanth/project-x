@@ -25,20 +25,31 @@ export default function CampaignBuilder({ activeCampaign, onCampaignSaved, onSwi
   }, [initialWorkspaceCampaign]);
 
   // Form state
-  const [brandName, setBrandName] = useState('boAt Lifestyle');
-  const [productName, setProductName] = useState('boAt Airdopes Pro Max 500');
-  const [totalBudget, setTotalBudget] = useState(1000000);
-  const [maxBudget, setMaxBudget] = useState(50000);
-  const [mandatoryPhrases, setMandatoryPhrases] = useState('Use code SAVER20 for 20% off on boAt-lifestyle.com');
-  const [promoCode, setPromoCode] = useState('SAVER20');
-  const [guidelines, setGuidelines] = useState('Show active noise cancellation test, battery life demo, link in description. Mention 1-year warranty.');
-  const [microCount, setMicroCount] = useState(20);
-  const [midCount, setMidCount] = useState(5);
+  const [brandName, setBrandName] = useState(activeCampaign?.brand_name || activeCampaign?.brandName || '');
+  const [productName, setProductName] = useState(activeCampaign?.product_name || activeCampaign?.productName || '');
+  const [totalBudget, setTotalBudget] = useState(500000);
+  const [maxBudget, setMaxBudget] = useState(activeCampaign?.max_budget_per_creator || 50000);
+  const [mandatoryPhrases, setMandatoryPhrases] = useState(activeCampaign?.mandatory_phrases || '');
+  const [promoCode, setPromoCode] = useState(activeCampaign?.promo_code || '');
+  const [guidelines, setGuidelines] = useState(activeCampaign?.guidelines || '');
+  const [microCount, setMicroCount] = useState(10);
+  const [midCount, setMidCount] = useState(3);
   const [macroCount, setMacroCount] = useState(1);
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => { if (forceCreateNew) setIsCreatingNew(true); }, [forceCreateNew]);
+  useEffect(() => {
+    if (activeCampaign && !isCreatingNew) {
+      setBrandName(activeCampaign.brand_name || activeCampaign.brandName || '');
+      setProductName(activeCampaign.product_name || activeCampaign.productName || '');
+      setMaxBudget(activeCampaign.max_budget_per_creator || 50000);
+      setMandatoryPhrases(activeCampaign.mandatory_phrases || '');
+      setPromoCode(activeCampaign.promo_code || '');
+      setGuidelines(activeCampaign.guidelines || '');
+    }
+  }, [activeCampaign, isCreatingNew]);
+
+  useEffect(() => { if (forceCreateNew) { setIsCreatingNew(true); setBrandName(''); setProductName(''); setMandatoryPhrases(''); setPromoCode(''); setGuidelines(''); } }, [forceCreateNew]);
   useEffect(() => { fetchCampaigns(); }, []);
 
   const fetchCampaigns = async () => {
@@ -236,10 +247,10 @@ export default function CampaignBuilder({ activeCampaign, onCampaignSaved, onSwi
               <p style={{ fontSize: '0.75rem', letterSpacing: '1px', color: '#4589ff', textTransform: 'uppercase', fontWeight: '600', margin: '0 0 1rem 0' }}>Brand & Product</p>
               <Grid style={{ padding: 0, marginBottom: '1.5rem', columnGap: '1rem' }}>
                 <Column lg={8} md={4} sm={4}>
-                  <TextInput id="brand-name" labelText="Brand / Company Name" value={brandName} onChange={e => setBrandName(e.target.value)} placeholder="e.g. boAt, Mamaearth, Lenskart" required />
+                  <TextInput id="brand-name" labelText="Brand / Company Name" value={brandName} onChange={e => setBrandName(e.target.value)} placeholder="e.g. Acme D2C, Nykaa, Zepto" required />
                 </Column>
                 <Column lg={8} md={4} sm={4}>
-                  <TextInput id="product-name" labelText="Product / Service Title" value={productName} onChange={e => setProductName(e.target.value)} placeholder="e.g. boAt Wave Smartwatch 2026" required />
+                  <TextInput id="product-name" labelText="Product / Service Title" value={productName} onChange={e => setProductName(e.target.value)} placeholder="e.g. Ultra Wireless Earbuds 2026" required />
                 </Column>
               </Grid>
 
@@ -274,10 +285,10 @@ export default function CampaignBuilder({ activeCampaign, onCampaignSaved, onSwi
               <p style={{ fontSize: '0.75rem', letterSpacing: '1px', color: '#4589ff', textTransform: 'uppercase', fontWeight: '600', margin: '0 0 1rem 0' }}>Campaign Guardrails</p>
               <Grid style={{ padding: 0, marginBottom: '1rem', columnGap: '1rem' }}>
                 <Column lg={11} md={5} sm={4}>
-                  <TextInput id="mandatory-phrase" labelText="Mandatory Spoken Phrase (AI-verified in video)" helperText="Creator MUST say this verbatim. Verified by transcript audit." value={mandatoryPhrases} onChange={e => setMandatoryPhrases(e.target.value)} required />
+                  <TextInput id="mandatory-phrase" labelText="Mandatory Spoken Phrase (AI-verified in video)" helperText="Creator MUST say this verbatim. Verified by transcript audit." placeholder="e.g. Use code LAUNCH20 for 20% off" value={mandatoryPhrases} onChange={e => setMandatoryPhrases(e.target.value)} required />
                 </Column>
                 <Column lg={5} md={3} sm={4}>
-                  <TextInput id="promo-code" labelText="Promo / Affiliate Code" value={promoCode} onChange={e => setPromoCode(e.target.value)} placeholder="e.g. SAVER20" />
+                  <TextInput id="promo-code" labelText="Promo / Affiliate Code" value={promoCode} onChange={e => setPromoCode(e.target.value)} placeholder="e.g. LAUNCH20" />
                 </Column>
               </Grid>
               <div style={{ marginBottom: '1.5rem' }}>

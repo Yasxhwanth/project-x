@@ -19,14 +19,14 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
   const [activeTab, setActiveTab] = useState(0);
 
   // OTP Form State
-  const [otpEmail, setOtpEmail] = useState('aman@boat-lifestyle.com');
+  const [otpEmail, setOtpEmail] = useState('');
   const [otpStep, setOtpStep] = useState(1); // 1 = Enter Email, 2 = Enter OTP
   const [otpCode, setOtpCode] = useState('');
   const [devOtpHint, setDevOtpHint] = useState(null);
 
   // Password Login Form
-  const [loginEmail, setLoginEmail] = useState('admin@boat-lifestyle.com');
-  const [loginPassword, setLoginPassword] = useState('password123');
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
 
   // Register Form
   const [regName, setRegName] = useState('');
@@ -98,13 +98,13 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
     setLoading(true);
     setErrorMsg(null);
     try {
-      const gEmail = otpEmail.includes('@') ? otpEmail : 'aman.gupta@gmail.com';
+      const gEmail = otpEmail.includes('@') ? otpEmail : (loginEmail.includes('@') ? loginEmail : 'demo.user@company.com');
       const res = await fetch('/api/auth/google', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email: gEmail,
-          name: gEmail.split('@')[0],
+          name: gEmail.split('@')[0].replace('.', ' '),
           avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=250&q=80',
           googleId: `google_${Date.now()}`
         })
@@ -220,7 +220,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
                   <TextInput
                     id="otp-email-input"
                     labelText="Email Address or Mobile Number"
-                    placeholder="e.g. aman@boat-lifestyle.com"
+                    placeholder="e.g. user@company.com or 9876543210"
                     value={otpEmail}
                     onChange={(e) => setOtpEmail(e.target.value)}
                     helperText="We will send a 6-digit verification code to your email."
@@ -266,6 +266,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
                 <TextInput
                   id="login-email"
                   labelText="Email Address"
+                  placeholder="e.g. name@company.com"
                   value={loginEmail}
                   onChange={(e) => setLoginEmail(e.target.value)}
                   required
@@ -274,6 +275,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
                   id="login-password"
                   labelText="Password"
                   type="password"
+                  placeholder="Enter your password"
                   value={loginPassword}
                   onChange={(e) => setLoginPassword(e.target.value)}
                   required
@@ -292,7 +294,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
                   labelText="Your Full Name"
                   value={regName}
                   onChange={(e) => setRegName(e.target.value)}
-                  placeholder="e.g. Aman Gupta"
+                  placeholder="e.g. Rahul Sharma"
                   required
                 />
                 <TextInput
@@ -300,7 +302,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
                   labelText="Work Email"
                   value={regEmail}
                   onChange={(e) => setRegEmail(e.target.value)}
-                  placeholder="aman@boat-lifestyle.com"
+                  placeholder="e.g. rahul@brand.com"
                   required
                 />
                 <TextInput
@@ -308,7 +310,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
                   labelText="Brand / Organization Name"
                   value={regOrgName}
                   onChange={(e) => setRegOrgName(e.target.value)}
-                  placeholder="e.g. boAt Lifestyle"
+                  placeholder="e.g. Acme Performance D2C"
                   required
                 />
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>

@@ -16,9 +16,13 @@ import { queryDb, getDbRow, runDb } from './database/sqliteDb.js';
 import { CreatorScraperSDK } from './sdk/creatorScraperSdk.js';
 import { processCreatorEmailResponse } from './services/aiNegotiatorService.js';
 import { analyzeVideoWithVideoDB } from './services/videoDbService.js';
+import { videoIntel, VideoIndexer, videoJobQueue } from './sdk/videoIntel/index.js';
 import { startBackgroundCronSchedule, runAutomatedScraperJob, getAutoScraperStatus } from './jobs/automatedScraperJob.js';
 import { generateCampaignStrategy } from './services/aiCampaignStrategyService.js';
 import { getCampaignAnalyticsSummary } from './services/analyticsService.js';
+import { getDashboardStats } from './services/dashboardService.js';
+import { buildBrandedEmailHtml } from './services/emailTemplateBuilder.js';
+import { getBrandTheme } from './services/brandThemeEngine.js';
 import { loginUser, registerUserAndOrganization, getCurrentUserSession, getOrganizationMembers, sendLoginOtp, verifyLoginOtp, loginWithGoogle } from './services/authService.js';
 import { processRealAiNegotiation } from './services/realAiNegotiator.js';
 import { searchCreatorsWithNaturalLanguage } from './services/aiCreatorSearch.js';
@@ -38,13 +42,14 @@ import { evaluateCounterOffer } from './agents/negotiationAgent.js';
 import { requireAuth, optionalAuth } from './middleware/authMiddleware.js';
 
 // Attribution & Order Conversion Service
-import { recordConversion, getCampaignAttribution, generateCreatorUtmLink } from './services/attributionService.js';
+import { recordConversion, getCampaignAttribution, generateCreatorUtmLink, verifyShopifyWebhookHmac, parseShopifyOrderPayload } from './services/attributionService.js';
+import { getCreatorKyc, submitCreatorKyc, updateKycStatus, listAllKycs, validatePanNumber, validateIfscCode, validateUpiId, calculateTdsWithholding } from './services/kycService.js';
+import { executeDealPayout, getDealPayoutReceipt, listPayoutLedger } from './services/payoutService.js';
+import { generateCampaignCloseoutReport, getCloseoutReport } from './services/closeoutReportService.js';
 
 import { runAutonomousDirectorCycle } from './agents/directorAgent.js';
 import { AGENT_TOOL_SCHEMAS, executeAgentTool } from './tools/agentToolsRegistry.js';
 import { handleMcpRpcRequest } from './mcp/mcpServer.js';
-import { videoIntel, VideoIntel } from './sdk/videoIntel/index.js';
-import { VideoIndexer } from './sdk/videoIntel/indexer/videoIndexer.js';
 
 const app = express();
 const PORT = process.env.PORT || 5001;
@@ -793,6 +798,49 @@ app.get('/api/analytics/summary', async (req, res) => {
   } catch (err) {
     console.error("Analytics error:", err);
     res.status(500).json({ error: "Failed to fetch analytics summary" });
+  }
+});
+
+// Live Role-Aware Dashboard KPIs & Chronological Activity Feed
+app.get('/api/dashboard/stats', optionalAuth, async (req, res) => {
+  try {
+    const mode = req.query.mode || 'brand';
+    const orgId = req.query.organizationId || req.user?.organizationId || null;
+    const stats = await getDashboardStats({ mode, organizationId: orgId });
+    res.json(stats);
+  } catch (err) {
+    console.error("Dashboard stats error:", err);
+    res.status(500).json({ error: "Failed to fetch dashboard stats: " + err.message });
+  }
+});
+
+// ─── Multi-Brand Responsive Email Card Preview API ───────────────────────────
+app.post('/api/email/preview-card', async (req, res) => {
+  try {
+    const { brandName, productName, offeredPrice, mandatoryPhrase, promoCode, bodyText, recipientName, senderName, dealId } = req.body;
+    
+    let deal = {};
+    if (dealId) {
+      deal = await getDbRow('SELECT * FROM deals WHERE id = ?', [dealId]) || {};
+    }
+
+    const resolvedBrand = brandName || deal.brandName || 'boAt Lifestyle';
+    const theme = getBrandTheme(resolvedBrand);
+
+    const html = buildBrandedEmailHtml({
+      recipientName: recipientName || deal.creator_name || 'Creator',
+      senderName: senderName || `${theme.brandName} Partnerships`,
+      brandName: resolvedBrand,
+      productName: productName || 'Creator Collaboration',
+      offeredPrice: offeredPrice || deal.current_agreed_price || deal.offered_price || 25000,
+      mandatoryPhrase: mandatoryPhrase || 'Use code SAVER20 for 20% off',
+      promoCode: promoCode || 'SAVER20',
+      bodyText: bodyText || ''
+    });
+
+    res.json({ success: true, brandName: resolvedBrand, theme, html });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to generate email preview: ' + err.message });
   }
 });
 
@@ -1693,6 +1741,306 @@ app.get('/api/mcp/sse', (req, res) => {
 
   res.write(`event: ${endpointNotice.event}\ndata: ${endpointNotice.data}\n\n`);
   console.log('🔌 [MCP Server] Client connected via SSE transport');
+});
+
+// ─── VideoIntel Sovereign Perception SDK Routes ───────────────────────────
+app.post('/api/videointel/index', async (req, res) => {
+  try {
+    const { videoUrl, campaignId, dealId, productName, brandName, creatorName } = req.body;
+    if (!videoUrl) return res.status(400).json({ error: 'videoUrl is required' });
+
+    let campaign = {};
+    let deal = {};
+    if (campaignId) campaign = await getDbRow('SELECT * FROM campaigns WHERE id = ?', [campaignId]) || {};
+    if (dealId) deal = await getDbRow('SELECT * FROM deals WHERE id = ?', [dealId]) || {};
+
+    const session = videoIntel.upload(videoUrl);
+    const auditReport = await session.index({
+      productName: productName || campaign.product_name || 'boAt Airdopes',
+      brandName: brandName || campaign.brand_name || 'boAt',
+      creatorName: creatorName || deal.creator_name || 'Creator',
+      campaign,
+      deal
+    });
+
+    res.json({
+      success: true,
+      videoId: session.id,
+      metadata: session.metadata,
+      summaryText: session.summaryText,
+      auditReport,
+      complianceScore: session.complianceScore,
+      visualFrames: session.visualFrames,
+      sponsorshipSegments: session.sponsorshipSegments,
+      totalChunks: session.transcriptChunks?.length || 0,
+      totalScenes: session.scenes?.length || 0
+    });
+  } catch (err) {
+    console.error('[VideoIntel API Index Error]:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Async Background Perception Job Routes
+app.post('/api/videointel/jobs', async (req, res) => {
+  try {
+    const { videoUrl, campaignId, dealId, productName, brandName, creatorName } = req.body;
+    if (!videoUrl) return res.status(400).json({ error: 'videoUrl is required' });
+
+    let campaign = {};
+    let deal = {};
+    if (campaignId) campaign = await getDbRow('SELECT * FROM campaigns WHERE id = ?', [campaignId]) || {};
+    if (dealId) deal = await getDbRow('SELECT * FROM deals WHERE id = ?', [dealId]) || {};
+
+    const job = videoJobQueue.enqueueJob({
+      videoUrl,
+      options: {
+        productName: productName || campaign.product_name || 'boAt Airdopes',
+        brandName: brandName || campaign.brand_name || 'boAt',
+        creatorName: creatorName || deal.creator_name || 'Creator',
+        campaign,
+        deal
+      }
+    });
+
+    res.json({ success: true, ...job });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/videointel/jobs/:id', (req, res) => {
+  const job = videoJobQueue.getJob(req.params.id);
+  if (!job) return res.status(404).json({ error: 'Job not found' });
+  res.json({ success: true, job });
+});
+
+app.get('/api/videointel/jobs', (req, res) => {
+  const jobs = videoJobQueue.listJobs(parseInt(req.query.limit || 20, 10));
+  res.json({ success: true, count: jobs.length, jobs });
+});
+
+app.get('/api/videointel/search', async (req, res) => {
+  try {
+    const { q, query, videoId, limit } = req.query;
+    const searchQuery = query || q;
+    if (!searchQuery) return res.status(400).json({ error: 'Search query is required (use ?query= or ?q=)' });
+    const results = await VideoIndexer.search({
+      query: searchQuery,
+      videoId: videoId || null,
+      limit: parseInt(limit || 20, 10)
+    });
+    res.json({ success: true, count: results.length, results });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/videointel/videos', async (req, res) => {
+  try {
+    const rows = await queryDb(`SELECT id, video_url, title, creator_name, duration_seconds, platform, status, compliance_score, created_at FROM indexed_videos ORDER BY created_at DESC LIMIT 50`);
+    res.json({ success: true, videos: rows });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/videointel/video/:id', async (req, res) => {
+  try {
+    const video = await VideoIndexer.getVideoById(req.params.id);
+    if (!video) return res.status(404).json({ error: 'Indexed video not found' });
+    res.json({ success: true, video });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ==========================================
+// CREATOR KYC & INDIAN TAX BANKING ENDPOINTS
+// ==========================================
+
+app.get('/api/creators/:id/kyc', async (req, res) => {
+  try {
+    const kyc = await getCreatorKyc(req.params.id);
+    if (!kyc) return res.status(404).json({ success: false, message: 'KYC not submitted yet' });
+    res.json({ success: true, kyc });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/creators/:id/kyc', async (req, res) => {
+  try {
+    const kyc = await submitCreatorKyc({
+      creatorId: req.params.id,
+      legalName: req.body.legalName,
+      panNumber: req.body.panNumber,
+      gstin: req.body.gstin,
+      payoutMethod: req.body.payoutMethod,
+      bankAccountName: req.body.bankAccountName,
+      bankAccountNumber: req.body.bankAccountNumber,
+      bankIfsc: req.body.bankIfsc,
+      upiId: req.body.upiId,
+      tdsSection: req.body.tdsSection
+    });
+    res.json({ success: true, message: 'KYC verified and saved successfully', kyc });
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/creators/:id/kyc/verify', async (req, res) => {
+  try {
+    const kyc = await updateKycStatus({
+      creatorId: req.params.id,
+      kycStatus: req.body.status || 'VERIFIED',
+      notes: req.body.notes
+    });
+    res.json({ success: true, kyc });
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/kyc/list', async (req, res) => {
+  try {
+    const list = await listAllKycs(req.query);
+    res.json({ success: true, count: list.length, kycs: list });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/kyc/validate-pan', (req, res) => {
+  const result = validatePanNumber(req.body.pan);
+  res.json(result);
+});
+
+app.post('/api/kyc/validate-ifsc', (req, res) => {
+  const result = validateIfscCode(req.body.ifsc);
+  res.json(result);
+});
+
+app.post('/api/kyc/validate-upi', (req, res) => {
+  const result = validateUpiId(req.body.upiId);
+  res.json(result);
+});
+
+// ==========================================
+// REAL PAYOUT & TDS WITHHOLDING ENDPOINTS
+// ==========================================
+
+app.post('/api/deals/:id/payout', async (req, res) => {
+  try {
+    const payout = await executeDealPayout({
+      dealId: req.params.id,
+      manualGrossFee: req.body.grossPrice || req.body.manualGrossFee,
+      overrideTdsSection: req.body.tdsSection,
+      payoutMethod: req.body.payoutMethod || (req.body.upiId ? 'UPI' : 'BANK_ACCOUNT'),
+      upiId: req.body.upiId,
+      bankAccountNumber: req.body.bankAccountNumber,
+      bankIfsc: req.body.bankIfsc,
+      executedBy: req.body.executedBy || 'Brand Manager / Finance'
+    });
+
+    const updatedDeal = await getDbRow('SELECT * FROM deals WHERE id = ?', [req.params.id]);
+    res.json({
+      success: true,
+      message: 'Instant payout executed successfully with statutory Section 194 TDS withholding',
+      payout,
+      deal: {
+        ...updatedDeal,
+        payout
+      }
+    });
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/deals/:id/payout/receipt', async (req, res) => {
+  try {
+    const receipt = await getDealPayoutReceipt(req.params.id);
+    if (!receipt) return res.status(404).json({ success: false, message: 'No payout record found for this deal' });
+    res.json({ success: true, receipt });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/payouts/ledger', async (req, res) => {
+  try {
+    const ledger = await listPayoutLedger(req.query);
+    res.json({ success: true, count: ledger.length, ledger });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ==========================================
+// SHOPIFY WEBHOOK ATTRIBUTION ENDPOINTS
+// ==========================================
+
+app.post('/api/webhooks/shopify/orders-create', async (req, res) => {
+  try {
+    const hmacHeader = req.get('x-shopify-hmac-sha256') || req.get('X-Shopify-Hmac-Sha256');
+    const secret = process.env.SHOPIFY_WEBHOOK_SECRET;
+
+    // Verify HMAC signature
+    const hmacCheck = verifyShopifyWebhookHmac(req.body, hmacHeader, secret);
+    if (!hmacCheck.verified) {
+      console.warn('[Shopify Webhook] Invalid HMAC signature rejected:', hmacCheck.error);
+      return res.status(401).json({ error: 'Unauthorized: Invalid Shopify webhook signature' });
+    }
+
+    // Parse Shopify order payload
+    const parsedOrder = parseShopifyOrderPayload(req.body);
+    if (!parsedOrder || !parsedOrder.orderId) {
+      return res.status(400).json({ error: 'Invalid order payload' });
+    }
+
+    // Record conversion & attribute to creator
+    const result = await recordConversion({
+      orderId: parsedOrder.orderId,
+      orderValue: parsedOrder.orderValue,
+      promoCode: parsedOrder.promoCode,
+      utmMedium: parsedOrder.utmMedium,
+      customerEmail: parsedOrder.customerEmail,
+      storeProvider: 'SHOPIFY_WEBHOOK'
+    });
+
+    res.json({
+      success: true,
+      message: 'Shopify order conversion processed & attributed successfully',
+      attribution: result,
+      hmacMode: hmacCheck.mode
+    });
+  } catch (err) {
+    console.error('[Shopify Webhook Error]:', err.message);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ==========================================
+// CLIENT CLOSEOUT REPORT ENDPOINTS
+// ==========================================
+
+app.get('/api/campaigns/:id/closeout-report', async (req, res) => {
+  try {
+    const report = await getCloseoutReport(req.params.id);
+    res.json({ success: true, report });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/campaigns/:id/closeout-report/generate', async (req, res) => {
+  try {
+    const report = await generateCampaignCloseoutReport(req.params.id, req.body);
+    res.json({ success: true, report });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
 });
 
 // Serve static client build files in production

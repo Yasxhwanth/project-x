@@ -15,8 +15,8 @@ import {
 import { Email, Settings, Checkmark, Enterprise, Locked, Bot } from '@carbon/icons-react';
 
 export default function OrgEmailSettings() {
-  const [senderName, setSenderName] = useState('boAt Marketing AI');
-  const [senderEmail, setSenderEmail] = useState('collabs@boat-lifestyle.com');
+  const [senderName, setSenderName] = useState('');
+  const [senderEmail, setSenderEmail] = useState('');
   const [geminiApiKey, setGeminiApiKey] = useState('');
   const [smtpHost, setSmtpHost] = useState('smtp.gmail.com');
   const [smtpPort, setSmtpPort] = useState(587);
@@ -38,13 +38,13 @@ export default function OrgEmailSettings() {
       const res = await fetch('/api/organization/email-settings');
       const data = await res.json();
       if (data) {
-        setSenderName(data.senderName || 'boAt Marketing AI');
-        setSenderEmail(data.senderEmail || 'collabs@boat-lifestyle.com');
+        setSenderName(data.senderName || '');
+        setSenderEmail(data.senderEmail || '');
         setGeminiApiKey(data.geminiApiKey || '');
         setSmtpHost(data.smtpHost || 'smtp.gmail.com');
         setSmtpPort(data.smtpPort || 587);
         setSmtpUser(data.smtpUser || '');
-        setAiTone(data.aiTone || 'Hinglish Casual & Professional');
+        setAiTone(data.aiTone || 'Professional Executive & Strategic');
         setAutoReplyEnabled(data.autoReplyEnabled ?? true);
       }
     } catch (err) {
@@ -174,7 +174,8 @@ export default function OrgEmailSettings() {
                 labelText="Brand Sender Name"
                 value={senderName}
                 onChange={(e) => setSenderName(e.target.value)}
-                helperText="Displays in creator's inbox (e.g. boAt Marketing AI)"
+                placeholder="e.g. Acme Marketing Team"
+                helperText="Displays in creator's inbox as the sender title"
                 required
               />
             </Column>
@@ -185,7 +186,8 @@ export default function OrgEmailSettings() {
                 labelText="Brand Contact Email Address"
                 value={senderEmail}
                 onChange={(e) => setSenderEmail(e.target.value)}
-                helperText="Official outreach email address (e.g. collabs@boat-lifestyle.com)"
+                placeholder="e.g. collabs@yourbrand.com"
+                helperText="Official outreach email address"
                 required
               />
             </Column>

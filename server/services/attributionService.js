@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import { v4 as uuidv4 } from 'uuid';
 import { runDb, queryDb, getDbRow } from '../database/sqliteDb.js';
 import { writeOutboxEvent } from '../engine/campaignStateMachine.js';
@@ -9,6 +10,91 @@ import { createAgentRun } from '../engine/orchestrator.js';
  * Connects Creator Content → Promo Code / UTM Click → Shopify Order → Verified GMV Revenue.
  * Calculates exact Return On Ad Spend (ROAS) per creator to power autonomous budget optimization.
  */
+
+/**
+ * Verifies Shopify Webhook HMAC-SHA256 signature.
+ * 
+ * @param {string|Buffer} rawBody - Raw unparsed webhook request payload
+ * @param {string} hmacHeader    - Value of 'x-shopify-hmac-sha256' header
+ * @param {string} secret        - Organization Shopify Webhook Secret
+ */
+export function verifyShopifyWebhookHmac(rawBody, hmacHeader, secret) {
+  if (!secret) {
+    // Sandbox development mode: allow verified pass-through if secret is not configured
+    return { verified: true, mode: 'SANDBOX_DEVELOPMENT' };
+  }
+  if (!hmacHeader) {
+    return { verified: false, error: 'Missing x-shopify-hmac-sha256 header' };
+  }
+
+  try {
+    const payload = typeof rawBody === 'string' ? rawBody : JSON.stringify(rawBody);
+    const generatedHash = crypto
+      .createHmac('sha256', secret)
+      .update(payload, 'utf8')
+      .digest('base64');
+
+    const verified = crypto.timingSafeEqual(
+      Buffer.from(generatedHash, 'utf8'),
+      Buffer.from(hmacHeader, 'utf8')
+    );
+
+    return { verified, mode: 'HMAC_SHA256_VERIFIED' };
+  } catch (err) {
+    return { verified: false, error: `HMAC verification failed: ${err.message}` };
+  }
+}
+
+/**
+ * Parses a standard Shopify 'orders/create' or 'orders/paid' webhook payload
+ * and extracts creator attribution signals.
+ */
+export function parseShopifyOrderPayload(order) {
+  if (!order) return null;
+
+  const orderId = order.name || (order.id ? `#${order.id}` : `ORD-${Date.now()}`);
+  const orderValue = parseFloat(order.total_price || order.current_total_price || 0);
+  const customerEmail = order.email || order.contact_email || (order.customer ? order.customer.email : null);
+
+  // Extract promo/discount code
+  let promoCode = null;
+  if (Array.isArray(order.discount_codes) && order.discount_codes.length > 0) {
+    promoCode = order.discount_codes[0].code;
+  }
+
+  // Extract UTM parameters from landing_site or note_attributes
+  let utmMedium = null;
+  let utmSource = null;
+  let utmCampaign = null;
+
+  if (order.landing_site) {
+    try {
+      const url = new URL(order.landing_site, 'https://store.myshopify.com');
+      utmMedium = url.searchParams.get('utm_medium');
+      utmSource = url.searchParams.get('utm_source');
+      utmCampaign = url.searchParams.get('utm_campaign');
+      if (!promoCode && url.searchParams.get('discount')) {
+        promoCode = url.searchParams.get('discount');
+      }
+    } catch (e) {}
+  }
+
+  if (!utmMedium && Array.isArray(order.note_attributes)) {
+    const utmAttr = order.note_attributes.find(a => a.name === 'utm_medium' || a.name === 'creator_handle');
+    if (utmAttr) utmMedium = utmAttr.value;
+  }
+
+  return {
+    orderId,
+    orderValue,
+    promoCode,
+    utmMedium,
+    utmSource,
+    utmCampaign,
+    customerEmail,
+    currency: order.currency || 'INR'
+  };
+}
 
 /**
  * Generate a creator-specific trackable UTM URL and promo code payload.

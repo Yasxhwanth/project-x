@@ -78,12 +78,14 @@ export async function extractTranscript({ videoUrl, metadata, creatorName, produ
         }
 
         const fullTranscript = rawTranscript.map(t => t.text.replace(/&amp;/g, '&').replace(/&#39;/g, "'").replace(/&quot;/g, '"').replace(/\n/g, ' ').trim()).join(' ');
+        const totalDurationSeconds = chunks.length > 0 ? chunks[chunks.length - 1].endSeconds : 0;
 
-        console.log(`[VideoIntel] Successfully extracted ${chunks.length} real chunks (${fullTranscript.split(/\s+/).length} words) from YouTube!`);
+        console.log(`[VideoIntel] Successfully extracted ${chunks.length} real chunks (${fullTranscript.split(/\s+/).length} words, ${totalDurationSeconds}s duration) from YouTube!`);
 
         return {
           fullTranscript,
-          chunks
+          chunks,
+          totalDurationSeconds
         };
       }
     } catch (err) {
@@ -103,6 +105,7 @@ export async function extractTranscript({ videoUrl, metadata, creatorName, produ
         speaker: name,
         text: `[Audio stream from ${url} ingested. Closed captions not published by uploader.]`
       }
-    ]
+    ],
+    totalDurationSeconds: 15
   };
 }

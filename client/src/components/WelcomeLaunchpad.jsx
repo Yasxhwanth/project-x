@@ -42,8 +42,8 @@ export default function WelcomeLaunchpad({ session, activeCampaign, onNavigate, 
     }
   };
 
-  const userName = session?.user?.name || 'Aman Gupta';
-  const orgName  = session?.organization?.name || 'boAt Lifestyle';
+  const userName = session?.user?.name || 'Creator Marketer';
+  const orgName  = session?.organization?.name || activeCampaign?.brand_name || 'Brand Workspace';
   const planName = session?.organization?.plan || 'Enterprise Plan';
 
   const kpi = stats?.kpiOverview;
@@ -62,7 +62,7 @@ export default function WelcomeLaunchpad({ session, activeCampaign, onNavigate, 
               Namaste, <strong style={{ fontWeight: '600', color: '#4589ff' }}>{userName}</strong> 👋
             </h1>
             <p style={{ color: '#c6c6c6', fontSize: '1rem', maxWidth: '750px', lineHeight: '1.5', margin: 0 }}>
-              Welcome to <strong style={{ color: '#ffffff' }}>Project X</strong> — the autonomous creator marketing operating system for <strong style={{ color: '#4589ff' }}>{orgName}</strong>. Run end-to-end campaigns from brief creation to VideoDB verification and instant Razorpay UPI payouts.
+              Welcome to <strong style={{ color: '#ffffff' }}>Project X</strong> — the verified creator campaign operating system for <strong style={{ color: '#4589ff' }}>{orgName}</strong>. Run end-to-end campaigns from brief creation to VideoIntel verification and instant Razorpay UPI payouts.
             </p>
           </div>
 
@@ -85,14 +85,16 @@ export default function WelcomeLaunchpad({ session, activeCampaign, onNavigate, 
             <div>
               <span style={{ fontSize: '0.75rem', color: '#a8a8a8', textTransform: 'uppercase' }}>Active Campaign Workspace</span>
               <div style={{ fontSize: '1.1rem', fontWeight: '600', color: '#ffffff' }}>
-                {activeCampaign?.productName || activeCampaign?.product_name || 'boAt Airdopes Pro Max 500'}
+                {activeCampaign ? (activeCampaign.productName || activeCampaign.product_name || activeCampaign.brand_name) : 'Select a Campaign from Campaigns Hub'}
               </div>
             </div>
           </div>
           <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-            <Tag type="teal" size="md">
-              Promo Code: {activeCampaign?.promoCode || activeCampaign?.promo_code || 'SAVER20'}
-            </Tag>
+            {activeCampaign?.promo_code || activeCampaign?.promoCode ? (
+              <Tag type="teal" size="md">
+                Promo Code: {activeCampaign?.promoCode || activeCampaign?.promo_code}
+              </Tag>
+            ) : null}
             <Tag type="purple" size="md">
               Max Creator Cap: ₹{(activeCampaign?.maxBudgetPerCreator || activeCampaign?.max_budget_per_creator || 50000).toLocaleString('en-IN')}
             </Tag>

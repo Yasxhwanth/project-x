@@ -9,7 +9,8 @@ import {
   Tag, 
   InlineNotification,
   Loading,
-  Search as SearchInput
+  Search as SearchInput,
+  Modal
 } from '@carbon/react';
 import { 
   Email, 
@@ -29,8 +30,121 @@ import {
   Add,
   SettingsAdjust,
   CheckmarkOutline,
-  Document
+  Document,
+  View,
+  Laptop,
+  Mobile
 } from '@carbon/icons-react';
+
+// Brand Design Theme Resolver for In-App UI
+const BRAND_PALETTES = {
+  'boat lifestyle': {
+    name: 'boAt Lifestyle',
+    primary: '#0f62fe',
+    secondary: '#ff003b',
+    badge: 'VERIFIED PROPOSAL • boAt NIRVANA',
+    tagline: 'Plug Into Nirvana • Audio & Wearables',
+    heroGradient: 'linear-gradient(180deg, #1c2b4a 0%, #161c28 100%)',
+    cardBg: '#1a2233',
+    cardBorder: '#28385e',
+    btnBg: '#0f62fe',
+    initials: 'boAt'
+  },
+  'boat': {
+    name: 'boAt Lifestyle',
+    primary: '#0f62fe',
+    secondary: '#ff003b',
+    badge: 'VERIFIED PROPOSAL • boAt NIRVANA',
+    tagline: 'Plug Into Nirvana • Audio & Wearables',
+    heroGradient: 'linear-gradient(180deg, #1c2b4a 0%, #161c28 100%)',
+    cardBg: '#1a2233',
+    cardBorder: '#28385e',
+    btnBg: '#0f62fe',
+    initials: 'boAt'
+  },
+  'mamaearth': {
+    name: 'Mamaearth',
+    primary: '#24a148',
+    secondary: '#00bfa5',
+    badge: 'PLANT A TREE • PLASTIC POSITIVE',
+    tagline: 'Goodness Inside • 100% Toxin-Free & Natural',
+    heroGradient: 'linear-gradient(180deg, #163321 0%, #112117 100%)',
+    cardBg: '#172e1f',
+    cardBorder: '#255234',
+    btnBg: '#24a148',
+    initials: 'ME'
+  },
+  'cult.fit': {
+    name: 'Cult.fit',
+    primary: '#ff3278',
+    secondary: '#ff0055',
+    badge: 'CULTPASS ELITE • ATHLETIC ROSTER',
+    tagline: 'We Are Cult • Be Better Everyday',
+    heroGradient: 'linear-gradient(180deg, #3d1424 0%, #210d15 100%)',
+    cardBg: '#2b101c',
+    cardBorder: '#5e1b38',
+    btnBg: '#ff3278',
+    initials: 'CULT'
+  },
+  'the daily upside': {
+    name: 'The Daily Upside',
+    primary: '#f1c21b',
+    secondary: '#1b365d',
+    badge: 'WALL STREET AUDITED • EDITORIAL PARTNER',
+    tagline: 'Financial Intelligence • Wall Street Media',
+    heroGradient: 'linear-gradient(180deg, #2b281b 0%, #171c24 100%)',
+    cardBg: '#1b222c',
+    cardBorder: '#384457',
+    btnBg: '#f1c21b',
+    initials: 'TDU'
+  },
+  'noise': {
+    name: 'Noise',
+    primary: '#8a3ffc',
+    secondary: '#00cec9',
+    badge: 'NOISE TECH PARTNERSHIP • OFFICIAL',
+    tagline: 'Listen to the Noise Within • Smart Wearables',
+    heroGradient: 'linear-gradient(180deg, #2d1b4a 0%, #191426 100%)',
+    cardBg: '#201930',
+    cardBorder: '#45326b',
+    btnBg: '#8a3ffc',
+    initials: 'NOISE'
+  },
+  'zepto': {
+    name: 'Zepto',
+    primary: '#8c14fc',
+    secondary: '#ff7043',
+    badge: 'EXPRESS Q-COMMERCE PARTNERSHIP',
+    tagline: '10-Minute Grocery Delivery Superfast',
+    heroGradient: 'linear-gradient(180deg, #32164f 0%, #1f122e 100%)',
+    cardBg: '#241438',
+    cardBorder: '#532a85',
+    btnBg: '#8c14fc',
+    initials: 'ZEPTO'
+  }
+};
+
+function getClientBrandTheme(brandName) {
+  if (!brandName) return BRAND_PALETTES['boat lifestyle'];
+  const key = brandName.toLowerCase().trim();
+  if (BRAND_PALETTES[key]) return BRAND_PALETTES[key];
+  for (const [k, v] of Object.entries(BRAND_PALETTES)) {
+    if (key.includes(k) || k.includes(key)) return v;
+  }
+  // Generic fallback
+  return {
+    name: brandName,
+    primary: '#0f62fe',
+    secondary: '#0043ce',
+    badge: 'VERIFIED PROPOSAL • ESCROW PROTECTED',
+    tagline: `Official Creator Collaboration • ${brandName}`,
+    heroGradient: 'linear-gradient(180deg, #1c2b4a 0%, #161c28 100%)',
+    cardBg: '#1f1f1f',
+    cardBorder: '#393939',
+    btnBg: '#0f62fe',
+    initials: brandName.substring(0, 3).toUpperCase()
+  };
+}
 
 // Typewriter Text Effect for live AI response
 function TypewriterText({ text, speed = 8 }) {
@@ -108,6 +222,12 @@ export default function EmailNegotiator({ campaignId, activeDeal, onDealUpdated,
   const [editedEmail, setEditedEmail] = useState('');
   const [syncingInbox, setSyncingInbox] = useState(false);
 
+  // Branded Email Preview Modal State
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [previewHtml, setPreviewHtml] = useState('');
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewViewport, setPreviewViewport] = useState('desktop');
+
   const thinkingSteps = [
     'Evaluating creator response and commercial parameters...',
     'Reviewing budget limits and TDS tax requirements...',
@@ -123,352 +243,405 @@ export default function EmailNegotiator({ campaignId, activeDeal, onDealUpdated,
       .catch(() => {});
   }, []);
 
-  // Sync inbound creator replies from real Gmail inbox
-  const handleSyncInboundReplies = async () => {
-    setSyncingInbox(true);
-    setErrorMsg(null);
-    try {
-      const res = await fetch('/api/integrations/gmail/sync-replies', { method: 'POST' });
-      const data = await res.json();
-      if (data.newReplies > 0) {
-        setSuccessMsg(`Received ${data.newReplies} new creator reply from Gmail. Deal terms updated.`);
-        await fetchDeals();
-      } else {
-        setSuccessMsg('Inbox is up to date. No new unread messages.');
-      }
-      setTimeout(() => setSuccessMsg(null), 5000);
-    } catch(err) {
-      console.error('[Sync Replies Error]:', err);
-      setErrorMsg('Failed to sync inbox: ' + err.message);
-    } finally {
-      setSyncingInbox(false);
-    }
-  };
-
-  // Sync activeDeal prop from parent immediately
-  useEffect(() => {
-    if (activeDeal?.id) {
-      setSelectedDealId(activeDeal.id);
-      setDeals(prev => {
-        if (!prev.find(d => d.id === activeDeal.id)) {
-          return [activeDeal, ...prev];
-        }
-        return prev;
-      });
-    }
-  }, [activeDeal]);
-
-  // Fetch campaign deals with graceful fallback
   const fetchDeals = useCallback(async () => {
-    setLoadingDeals(true);
     try {
-      let res = await fetch(campaignId ? `/api/deals?campaignId=${campaignId}` : '/api/deals');
-      let data = await res.json();
-      let rawDeals = Array.isArray(data) ? data : (data.deals || []);
-
-      // If no deals found for this specific campaign, fetch all deals across workspace
-      if (rawDeals.length === 0 && campaignId) {
-        res = await fetch('/api/deals');
-        data = await res.json();
-        rawDeals = Array.isArray(data) ? data : (data.deals || []);
-      }
-
-      // Deduplicate deals by creator_email / creator_name
-      const uniqueMap = new Map();
-      rawDeals.forEach(d => {
-        const key = (d.creatorEmail || d.creator_email || d.creatorName || d.id).toLowerCase();
-        if (!uniqueMap.has(key)) {
-          uniqueMap.set(key, d);
-        } else {
-          const existing = uniqueMap.get(key);
-          if ((d.emailThread?.length || 0) >= (existing.emailThread?.length || 0)) {
-            uniqueMap.set(key, d);
-          }
-        }
-      });
-
-      const cleanDeals = Array.from(uniqueMap.values());
-      setDeals(cleanDeals);
-      
-      if (activeDeal?.id) {
-        setSelectedDealId(activeDeal.id);
-      } else if (cleanDeals.length > 0 && !selectedDealId) {
-        setSelectedDealId(cleanDeals[0].id);
+      const url = campaignId ? `/api/deals?campaignId=${campaignId}` : '/api/deals';
+      const res = await fetch(url);
+      const data = await res.json();
+      const list = Array.isArray(data) ? data : data.deals || [];
+      setDeals(list);
+      if (!selectedDealId && list.length > 0) {
+        setSelectedDealId(list[0].id);
       }
     } catch (err) {
-      console.error("Failed to load deals", err);
+      console.error('Failed to load deals', err);
     } finally {
       setLoadingDeals(false);
     }
-  }, [campaignId, selectedDealId, activeDeal?.id]);
+  }, [campaignId, selectedDealId]);
 
   useEffect(() => {
     fetchDeals();
   }, [fetchDeals]);
 
-  // Find currently active deal
-  const currentDeal = deals.find(d => d.id === selectedDealId) || deals[0] || null;
+  // Load creator memory when selectedDeal changes
+  const currentDeal = deals.find(d => d.id === selectedDealId);
+  const activeBrandName = currentDeal?.brandName || currentDeal?.brand_name || 'boAt Lifestyle';
+  const brandTheme = getClientBrandTheme(activeBrandName);
 
-  // Load creator memory whenever selected deal changes
   useEffect(() => {
+    if (currentDeal?.creatorId) {
+      setLoadingMemory(true);
+      fetch(`/api/creators/${currentDeal.creatorId}/memory`)
+        .then(r => r.json())
+        .then(d => setCreatorMemory(d))
+        .catch(() => setCreatorMemory(null))
+        .finally(() => setLoadingMemory(false));
+    } else {
+      setCreatorMemory(null);
+    }
+  }, [currentDeal?.creatorId]);
+
+  const handleOpenBrandEmailPreview = async () => {
     if (!currentDeal) return;
-    setLoadingMemory(true);
-    const targetId = currentDeal.creatorId || currentDeal.creatorEmail || currentDeal.id;
-    fetch(`/api/creators/${encodeURIComponent(targetId)}/memory`)
-      .then(r => r.json())
-      .then(data => {
-        setCreatorMemory(data);
-      })
-      .catch(err => {
-        console.error('Failed to load creator memory:', err);
-      })
-      .finally(() => setLoadingMemory(false));
-  }, [currentDeal?.id, currentDeal?.creatorEmail]);
+    setIsPreviewOpen(true);
+    setPreviewLoading(true);
+    try {
+      const lastMessage = (currentDeal.emailThread && currentDeal.emailThread.length > 0)
+        ? currentDeal.emailThread[currentDeal.emailThread.length - 1].body
+        : 'We are extending a commercial proposal for our campaign.';
 
-  // Filter deals
-  const filteredDeals = deals.filter(d => 
-    (d.creatorName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (d.creatorEmail || '').toLowerCase().includes(searchQuery.toLowerCase())
-  );
+      const res = await fetch('/api/email/preview-card', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          brandName: activeBrandName,
+          productName: currentDeal.productName || 'Creator Campaign Deliverable',
+          offeredPrice: currentDeal.currentAgreedPrice || currentDeal.offeredPrice || 25000,
+          mandatoryPhrase: currentDeal.mandatoryPhrases || 'Use exclusive creator discount code',
+          promoCode: currentDeal.promoCode || 'PROMO20',
+          recipientName: currentDeal.creatorName || 'Creator',
+          bodyText: lastMessage,
+          dealId: currentDeal.id
+        })
+      });
 
-  // Send reply / negotiation turn
-  const handleSendCreatorReply = async (messageText = null) => {
-    const textToSend = messageText || creatorReplyInput;
+      const data = await res.json();
+      if (data.html) {
+        setPreviewHtml(data.html);
+      }
+    } catch (err) {
+      console.error('Failed to load email preview:', err);
+    } finally {
+      setPreviewLoading(false);
+    }
+  };
+
+  const handleSendCreatorReply = async (presetText = null) => {
+    const textToSend = presetText || creatorReplyInput;
     if (!textToSend.trim() || !currentDeal) return;
 
     setLoading(true);
-    setThinkingStep(0);
     setErrorMsg(null);
-    setSuccessMsg(null);
+    setThinkingStep(0);
 
     const stepInterval = setInterval(() => {
-      setThinkingStep(prev => (prev < thinkingSteps.length - 1 ? prev + 1 : prev));
-    }, 900);
+      setThinkingStep(prev => (prev + 1) % thinkingSteps.length);
+    }, 1200);
 
     try {
       const res = await fetch(`/api/deals/${currentDeal.id}/negotiate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          creatorMessage: textToSend,
+          creatorMessage: textToSend.trim(),
           manualPriceOverride: manualPriceOverride ? parseInt(manualPriceOverride, 10) : null
         })
       });
 
+      clearInterval(stepInterval);
       const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || "Negotiation request failed");
-      }
 
-      if (data.deal) {
-        setDeals(prev => prev.map(d => d.id === data.deal.id ? data.deal : d));
-        if (onDealUpdated) onDealUpdated(data.deal);
+      if (res.ok) {
         setCreatorReplyInput('');
         setManualPriceOverride('');
-        setSuccessMsg(`Response sent to ${data.deal.creatorName}. Deal stage: ${data.deal.status}`);
-        setTimeout(() => setSuccessMsg(null), 5000);
-        
-        // Refresh memory profile
-        const targetId = data.deal.creatorId || data.deal.creatorEmail;
-        fetch(`/api/creators/${encodeURIComponent(targetId)}/memory`)
-          .then(r => r.json())
-          .then(setCreatorMemory)
-          .catch(() => {});
+        await fetchDeals();
+        if (onDealUpdated) onDealUpdated();
+        setSuccessMsg(`Negotiation response sent for ${currentDeal.creatorName}. Rate updated.`);
+        setTimeout(() => setSuccessMsg(null), 4000);
+      } else {
+        setErrorMsg(data.error || 'Failed to process negotiation response');
       }
     } catch (err) {
-      console.error("Failed to process negotiation", err);
-      setErrorMsg(err.message);
-    } finally {
       clearInterval(stepInterval);
+      setErrorMsg('Network error while dispatching negotiation');
+    } finally {
       setLoading(false);
     }
   };
 
   const handleAddCustomMemoryNote = async (e) => {
     e.preventDefault();
-    if (!newMemoryNote.trim() || !currentDeal) return;
+    if (!newMemoryNote.trim() || !currentDeal?.creatorId) return;
+
     try {
-      const targetId = currentDeal.creatorId || currentDeal.creatorEmail;
-      const res = await fetch(`/api/creators/${encodeURIComponent(targetId)}/memory`, {
+      const res = await fetch(`/api/creators/${currentDeal.creatorId}/memory`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          creatorEmail: currentDeal.creatorEmail,
-          creatorName: currentDeal.creatorName,
-          memoryCategory: newMemoryCategory,
-          memoryKey: newMemoryCategory === 'PRICING_HISTORY' ? 'Rate Preference' : newMemoryCategory === 'LOGISTICS_PREFERENCE' ? 'Logistics Note' : 'General Note',
-          memoryValue: newMemoryNote.trim(),
+          category: newMemoryCategory,
+          key: 'ADMIN_PREFERENCE',
+          value: newMemoryNote.trim(),
           sourceDealId: currentDeal.id
         })
       });
+
       if (res.ok) {
         setNewMemoryNote('');
         setShowAddNote(false);
-        fetch(`/api/creators/${encodeURIComponent(targetId)}/memory`)
-          .then(r => r.json())
-          .then(setCreatorMemory)
-          .catch(() => {});
+        // Refresh memory
+        const memRes = await fetch(`/api/creators/${currentDeal.creatorId}/memory`);
+        const memData = await memRes.json();
+        setCreatorMemory(memData);
+        setSuccessMsg('Creator preference recorded in persistent memory');
+        setTimeout(() => setSuccessMsg(null), 3000);
       }
-    } catch(err) {
-      console.error('Failed to record memory note:', err);
+    } catch (e) {
+      console.error(e);
     }
   };
 
   const getStatusColor = (status) => {
-    switch ((status || '').toUpperCase()) {
+    switch (status) {
       case 'AGREED':
-      case 'ACCEPTED':
       case 'QA_PASSED':
+      case 'PAID':
         return 'green';
       case 'NEGOTIATING':
       case 'COUNTER_OFFER':
-        return 'magenta';
+        return 'purple';
       case 'INVITED':
-      case 'CONTACTED':
-        return 'cyan';
-      case 'VIDEO_SUBMITTED':
-      case 'PAID':
-        return 'teal';
+        return 'blue';
+      case 'ESCALATED':
+      case 'NEEDS_REVISION':
+        return 'magenta';
       default:
         return 'gray';
     }
   };
 
+  const filteredDeals = deals.filter(d => 
+    (d.creatorName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (d.creatorEmail || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (d.brandName || '').toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
-    <div className="email-negotiator-module" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+    <div style={{ color: '#fff' }}>
       
-      {/* Header Section */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
-        <div>
-          <h2 style={{ fontSize: '1.5rem', fontWeight: '400', color: '#f4f4f4', margin: '0 0 0.25rem 0', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-            <Email size={22} style={{ color: '#0f62fe' }} /> Outreach & Negotiations
-          </h2>
-          <p style={{ color: '#8d8d8d', fontSize: '0.875rem', margin: 0 }}>
-            Manage creator communications, proposal threads, and commercial terms in one place.
-          </p>
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: '#161616', border: '1px solid #393939', padding: '0.35rem 0.75rem', fontSize: '0.8rem' }}>
-            <span style={{ color: '#8d8d8d' }}>Connected Account:</span>
-            <span style={{ color: '#42be65', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-              <CheckmarkFilled size={12} /> {senderEmail || 'tsrajanna1@gmail.com'}
-            </span>
-          </div>
-          <Button 
-            kind="secondary" 
-            size="sm" 
-            renderIcon={Renew} 
-            disabled={syncingInbox} 
-            onClick={handleSyncInboundReplies}
-          >
-            {syncingInbox ? 'Syncing...' : 'Sync Email Replies'}
-          </Button>
-          <Button kind="ghost" size="sm" renderIcon={Renew} onClick={fetchDeals}>
-            Refresh
-          </Button>
-        </div>
-      </div>
-
+      {/* Notifications */}
       {errorMsg && (
         <InlineNotification
           kind="error"
           title="Error"
           subtitle={errorMsg}
           onCloseButtonClick={() => setErrorMsg(null)}
+          style={{ marginBottom: '1rem' }}
         />
       )}
-
       {successMsg && (
         <InlineNotification
           kind="success"
-          title="Updated"
+          title="Success"
           subtitle={successMsg}
           onCloseButtonClick={() => setSuccessMsg(null)}
+          style={{ marginBottom: '1rem' }}
         />
       )}
 
-      {/* Main Split Grid */}
-      <Grid style={{ padding: 0, margin: 0, gap: '1.25rem' }}>
-        
-        {/* LEFT COLUMN: Creator List */}
-        <Column lg={5} md={3} sm={4}>
-          <Tile style={{ background: '#161616', border: '1px solid #262626', padding: '1rem', display: 'flex', flexDirection: 'column', height: '100%', minHeight: '640px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-              <span style={{ color: '#f4f4f4', fontWeight: '600', fontSize: '0.875rem' }}>Creators</span>
-              <Tag type="blue" size="sm">{deals.length}</Tag>
+      {/* ─── LIVE BRANDED EMAIL CARD PREVIEW MODAL ───────────────────────── */}
+      <Modal
+        open={isPreviewOpen}
+        onRequestClose={() => setIsPreviewOpen(false)}
+        modalHeading={`${activeBrandName} — Branded Responsive Email Card Preview`}
+        primaryButtonText="Close Preview"
+        onRequestSubmit={() => setIsPreviewOpen(false)}
+        size="lg"
+        style={{ color: '#f4f4f4' }}
+      >
+        <div style={{ padding: '0.5rem 0' }}>
+          
+          {/* Viewport & Brand Palette Bar */}
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: 'center', 
+            background: '#1f1f1f', 
+            padding: '0.6rem 1rem', 
+            borderRadius: 6, 
+            marginBottom: '1rem',
+            border: '1px solid #333' 
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+              <span style={{ 
+                display: 'inline-block', 
+                width: 12, 
+                height: 12, 
+                borderRadius: '50%', 
+                background: brandTheme.primary,
+                boxShadow: `0 0 8px ${brandTheme.primary}` 
+              }} />
+              <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#ffffff' }}>
+                {brandTheme.name} Design System
+              </span>
+              <span style={{ fontSize: '0.75rem', color: '#8d8d8d' }}>
+                ({brandTheme.tagline})
+              </span>
             </div>
 
-            <div style={{ marginBottom: '0.75rem' }}>
-              <SearchInput
-                size="sm"
-                labelText="Search"
-                placeholder="Filter creators..."
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                style={{ background: '#262626' }}
+            <div style={{ display: 'flex', gap: '0.35rem' }}>
+              <button
+                onClick={() => setPreviewViewport('desktop')}
+                style={{
+                  background: previewViewport === 'desktop' ? '#0f62fe' : 'transparent',
+                  color: previewViewport === 'desktop' ? '#ffffff' : '#8d8d8d',
+                  border: '1px solid #393939',
+                  borderRadius: 4,
+                  padding: '0.25rem 0.65rem',
+                  fontSize: '0.75rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.35rem',
+                  cursor: 'pointer'
+                }}
+              >
+                <Laptop size={14} /> Desktop (600px)
+              </button>
+
+              <button
+                onClick={() => setPreviewViewport('mobile')}
+                style={{
+                  background: previewViewport === 'mobile' ? '#0f62fe' : 'transparent',
+                  color: previewViewport === 'mobile' ? '#ffffff' : '#8d8d8d',
+                  border: '1px solid #393939',
+                  borderRadius: 4,
+                  padding: '0.25rem 0.65rem',
+                  fontSize: '0.75rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.35rem',
+                  cursor: 'pointer'
+                }}
+              >
+                <Mobile size={14} /> Mobile (380px)
+              </button>
+            </div>
+          </div>
+
+          {/* Email Preview Frame Container */}
+          <div style={{
+            display: 'flex',
+            justifyContent: 'center',
+            background: '#0d0d0d',
+            padding: '1.5rem',
+            borderRadius: 8,
+            border: '1px solid #282828',
+            minHeight: '480px',
+            maxHeight: '620px',
+            overflowY: 'auto'
+          }}>
+            {previewLoading ? (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#8d8d8d', gap: '0.75rem' }}>
+                <Loading small withOverlay={false} />
+                <span>Compiling brand email HTML card...</span>
+              </div>
+            ) : (
+              <div style={{ 
+                width: previewViewport === 'mobile' ? '380px' : '100%', 
+                maxWidth: '600px',
+                transition: 'width 0.25s ease' 
+              }}>
+                <iframe
+                  title="Branded Email Preview"
+                  srcDoc={previewHtml}
+                  style={{
+                    width: '100%',
+                    minHeight: '520px',
+                    height: '560px',
+                    border: 'none',
+                    borderRadius: 4,
+                    background: '#121212'
+                  }}
+                />
+              </div>
+            )}
+          </div>
+        </div>
+      </Modal>
+
+      <Grid style={{ padding: 0 }}>
+        
+        {/* LEFT COLUMN: Deal Roster List */}
+        <Column lg={5} md={3} sm={4}>
+          <Tile style={{ background: '#161616', border: '1px solid #262626', padding: '1rem', height: 'calc(100vh - 12rem)', display: 'flex', flexDirection: 'column' }}>
+            
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Email size={18} style={{ color: '#0f62fe' }} />
+                <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: '600', color: '#f4f4f4' }}>
+                  Deal Negotiations ({deals.length})
+                </h3>
+              </div>
+              <Button 
+                kind="ghost" 
+                size="sm" 
+                hasIconOnly 
+                renderIcon={Renew} 
+                iconDescription="Refresh Deals"
+                onClick={fetchDeals}
+                style={{ padding: '0 0.5rem', minHeight: '24px' }}
               />
             </div>
 
-            <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '540px', paddingRight: '0.25rem' }}>
+            {/* Search Input */}
+            <div style={{ marginBottom: '0.75rem' }}>
+              <SearchInput
+                id="search-deals"
+                size="sm"
+                placeholder="Search creator or brand..."
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+              />
+            </div>
+
+            {/* List of Deals */}
+            <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
               {loadingDeals ? (
-                <div style={{ textAlign: 'center', padding: '2rem 0' }}>
+                <div style={{ textAlign: 'center', padding: '2rem', color: '#8d8d8d' }}>
                   <Loading small withOverlay={false} />
+                  <p style={{ marginTop: '0.5rem', fontSize: '0.8rem' }}>Loading creator threads...</p>
                 </div>
               ) : filteredDeals.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '2.5rem 1rem', color: '#6e6e6e' }}>
-                  <p style={{ fontSize: '0.85rem', marginBottom: '1rem' }}>No active creator deals found.</p>
-                  {onNavigateToDiscovery && (
-                    <Button kind="primary" size="sm" onClick={onNavigateToDiscovery} renderIcon={Launch}>
-                      Find Creators
-                    </Button>
-                  )}
+                <div style={{ textAlign: 'center', padding: '2rem', color: '#8d8d8d', fontSize: '0.85rem' }}>
+                  No deals found.
                 </div>
               ) : (
                 filteredDeals.map(d => {
-                  const isSelected = d.id === currentDeal?.id;
-                  const price = d.currentAgreedPrice || d.offeredPrice || 25000;
-                  const lastMsg = d.emailThread && d.emailThread.length > 0 ? d.emailThread[d.emailThread.length - 1] : null;
-
+                  const isSelected = d.id === selectedDealId;
+                  const itemTheme = getClientBrandTheme(d.brandName || d.brand_name || 'boAt Lifestyle');
+                  
                   return (
                     <div
                       key={d.id}
                       onClick={() => setSelectedDealId(d.id)}
                       style={{
-                        padding: '0.85rem',
+                        padding: '0.75rem',
+                        borderRadius: '4px',
+                        background: isSelected ? 'rgba(255, 255, 255, 0.08)' : 'rgba(255, 255, 255, 0.02)',
+                        border: isSelected ? `1px solid ${itemTheme.primary}` : '1px solid rgba(255, 255, 255, 0.05)',
+                        borderLeft: isSelected ? `3px solid ${itemTheme.primary}` : '3px solid transparent',
                         cursor: 'pointer',
-                        background: isSelected ? '#262626' : '#1f1f1f',
-                        borderLeft: isSelected ? '3px solid #0f62fe' : '3px solid transparent',
-                        borderBottom: '1px solid #262626',
-                        transition: 'background 0.15s ease'
+                        transition: 'all 0.15s ease'
                       }}
                     >
-                      <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', marginBottom: '0.35rem' }}>
-                        <img
-                          src={d.creatorAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(d.creatorName || 'Creator')}&background=0f62fe&color=ffffff`}
-                          alt={d.creatorName}
-                          style={{ width: 34, height: 34, borderRadius: '50%', objectFit: 'cover' }}
-                        />
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <h5 style={{ margin: 0, color: '#f4f4f4', fontSize: '0.875rem', fontWeight: '600', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                            {d.creatorName || 'Creator'}
-                          </h5>
-                          <span style={{ fontSize: '0.75rem', color: '#8d8d8d', display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                            {d.creatorEmail}
-                          </span>
-                        </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
+                        <span style={{ fontWeight: isSelected ? '600' : '400', color: isSelected ? '#ffffff' : '#e0e0e0', fontSize: '0.85rem' }}>
+                          {d.creatorName || 'Creator'}
+                        </span>
+                        <span style={{ fontSize: '0.75rem', fontWeight: '700', color: itemTheme.primary, fontFamily: 'monospace' }}>
+                          ₹{Number(d.currentAgreedPrice || d.offeredPrice || 0).toLocaleString('en-IN')}
+                        </span>
                       </div>
 
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.4rem', fontSize: '0.75rem' }}>
-                        <Tag type={getStatusColor(d.status)} size="sm">{d.status || 'INVITED'}</Tag>
-                        <span style={{ color: '#42be65', fontWeight: '600', fontFamily: 'monospace' }}>₹{Number(d.currentAgreedPrice || d.offeredPrice || 0).toLocaleString('en-IN')}</span>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.75rem' }}>
+                        <span style={{ color: '#8d8d8d', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                          <span style={{ width: 6, height: 6, borderRadius: '50%', background: itemTheme.primary }} />
+                          {d.brandName || d.brand_name || 'Brand'}
+                        </span>
+                        <Tag type={getStatusColor(d.status)} size="sm" style={{ padding: '0 0.35rem', height: '1.1rem', fontSize: '0.65rem' }}>
+                          {d.status || 'INVITED'}
+                        </Tag>
                       </div>
-
-                      {lastMsg && (
-                        <p style={{ margin: '0.4rem 0 0 0', fontSize: '0.75rem', color: '#8d8d8d', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                          {lastMsg.sender === 'CREATOR' ? 'Creator: ' : 'Brand: '}{lastMsg.body}
-                        </p>
-                      )}
                     </div>
                   );
                 })
@@ -477,13 +650,23 @@ export default function EmailNegotiator({ campaignId, activeDeal, onDealUpdated,
           </Tile>
         </Column>
 
-        {/* RIGHT COLUMN: Active Deal Workspace */}
+        {/* RIGHT COLUMN: Active Deal Workspace & Branded Message Stream */}
         <Column lg={11} md={5} sm={4}>
           {currentDeal ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               
-              {/* Header Details Tile */}
-              <Tile style={{ background: '#262626', border: '1px solid #393939', padding: '1rem 1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+              {/* Header Details Tile with Brand Identity Badge */}
+              <Tile style={{ 
+                background: '#262626', 
+                border: '1px solid #393939', 
+                borderTop: `3px solid ${brandTheme.primary}`,
+                padding: '1rem 1.25rem', 
+                display: 'flex', 
+                justifyContent: 'space-between', 
+                alignItems: 'center', 
+                flexWrap: 'wrap', 
+                gap: '1rem' 
+              }}>
                 <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
                   <img
                     src={currentDeal.creatorAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(currentDeal.creatorName || 'Creator')}&background=0f62fe&color=ffffff`}
@@ -491,9 +674,22 @@ export default function EmailNegotiator({ campaignId, activeDeal, onDealUpdated,
                     style={{ width: 44, height: 44, borderRadius: '50%', objectFit: 'cover' }}
                   />
                   <div>
-                    <h3 style={{ margin: 0, color: '#f4f4f4', fontSize: '1.1rem', fontWeight: '600' }}>
-                      {currentDeal.creatorName}
-                    </h3>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <h3 style={{ margin: 0, color: '#f4f4f4', fontSize: '1.1rem', fontWeight: '600' }}>
+                        {currentDeal.creatorName}
+                      </h3>
+                      <span style={{ 
+                        fontSize: '0.65rem', 
+                        fontWeight: 700, 
+                        color: brandTheme.primary, 
+                        background: 'rgba(255, 255, 255, 0.05)', 
+                        padding: '0.1rem 0.45rem', 
+                        borderRadius: 3, 
+                        border: `1px solid ${brandTheme.primary}40` 
+                      }}>
+                        {brandTheme.name}
+                      </span>
+                    </div>
                     
                     {isEditingEmail ? (
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginTop: '0.25rem' }}>
@@ -547,7 +743,19 @@ export default function EmailNegotiator({ campaignId, activeDeal, onDealUpdated,
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                  
+                  {/* PREVIEW BRANDED CARD BUTTON */}
+                  <Button
+                    kind="secondary"
+                    size="sm"
+                    renderIcon={View}
+                    onClick={handleOpenBrandEmailPreview}
+                    style={{ height: '2rem', fontSize: '0.75rem' }}
+                  >
+                    Preview Brand Email Card
+                  </Button>
+
                   <div style={{ textAlign: 'right' }}>
                     <span style={{ fontSize: '0.75rem', color: '#8d8d8d', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Agreed Fee</span>
                     <div style={{ fontSize: '1.25rem', fontWeight: '700', color: '#42be65', fontFamily: 'monospace' }}>
@@ -565,7 +773,7 @@ export default function EmailNegotiator({ campaignId, activeDeal, onDealUpdated,
               <Tile style={{ background: '#262626', border: '1px solid #393939', padding: '1rem 1.25rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <Document size={16} style={{ color: '#0f62fe' }} />
+                    <Document size={16} style={{ color: brandTheme.primary }} />
                     <span style={{ fontWeight: '600', color: '#f4f4f4', fontSize: '0.875rem' }}>
                       Creator Profile & Context Notes
                     </span>
@@ -627,7 +835,7 @@ export default function EmailNegotiator({ campaignId, activeDeal, onDealUpdated,
                 </div>
               </Tile>
 
-              {/* Message Timeline */}
+              {/* Message Timeline with Brand-Specific Styling */}
               <Tile style={{ background: '#161616', border: '1px solid #262626', padding: '1.25rem', minHeight: '380px', maxHeight: '460px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                 {(!currentDeal.emailThread || currentDeal.emailThread.length === 0) ? (
                   <div style={{ textAlign: 'center', padding: '3rem', color: '#6e6e6e' }}>
@@ -645,22 +853,24 @@ export default function EmailNegotiator({ campaignId, activeDeal, onDealUpdated,
                         style={{
                           maxWidth: '85%',
                           alignSelf: isBrand ? 'flex-start' : 'flex-end',
-                          background: isBrand ? '#262626' : '#1f2420',
-                          border: isBrand ? '1px solid #393939' : '1px solid #24a148',
-                          borderLeft: isBrand ? '3px solid #0f62fe' : undefined,
+                          background: isBrand ? brandTheme.cardBg : '#1f2420',
+                          border: isBrand ? `1px solid ${brandTheme.cardBorder}` : '1px solid #24a148',
+                          borderLeft: isBrand ? `3px solid ${brandTheme.primary}` : undefined,
                           borderRight: !isBrand ? '3px solid #24a148' : undefined,
-                          padding: '1rem'
+                          padding: '1rem',
+                          borderRadius: 4,
+                          boxShadow: isBrand ? `0 4px 16px rgba(0,0,0,0.25)` : 'none'
                         }}
                       >
                         {/* Header Bar */}
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem', fontSize: '0.75rem', gap: '1rem' }}>
-                          <span style={{ fontWeight: '600', color: isBrand ? '#78a9ff' : '#42be65', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                          <span style={{ fontWeight: '600', color: isBrand ? brandTheme.primary : '#42be65', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
                             {isBrand ? <Bot size={14} /> : <User size={14} />} 
-                            {isBrand ? (currentDeal.brandName || 'Brand Partnerships') : currentDeal.creatorName}
+                            {isBrand ? `${brandTheme.name} Partnerships` : currentDeal.creatorName}
                           </span>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                             <Tag type={isBrand ? 'blue' : 'green'} size="sm">
-                              {isBrand ? 'Sent' : 'Received'}
+                              {isBrand ? 'Sent Proposal' : 'Received'}
                             </Tag>
                             <span style={{ color: '#8d8d8d' }}>{msg.timestamp || 'Just now'}</span>
                           </div>
@@ -675,32 +885,42 @@ export default function EmailNegotiator({ campaignId, activeDeal, onDealUpdated,
                           )}
                         </p>
 
-                        {/* Financial Terms — sourced from actual deal/campaign data */}
+                        {/* Financial Terms & Deliverables Breakdown */}
                         {isBrand && (() => {
                           const fee = Number(msg.offeredPrice || currentDeal.currentAgreedPrice || currentDeal.offeredPrice || 0);
                           const tdsNet = Math.round(fee * 0.9);
                           const promo = currentDeal.promoCode || null;
                           const phrase = currentDeal.mandatoryPhrases || null;
                           return (
-                            <div style={{ marginTop: '0.75rem', background: '#161616', border: '1px solid #333333', padding: '0.5rem 0.75rem', display: 'flex', flexWrap: 'wrap', gap: '0.75rem', fontSize: '0.75rem' }}>
+                            <div style={{ 
+                              marginTop: '0.75rem', 
+                              background: '#121212', 
+                              border: `1px solid ${brandTheme.cardBorder}`, 
+                              padding: '0.6rem 0.85rem', 
+                              display: 'flex', 
+                              flexWrap: 'wrap', 
+                              gap: '0.85rem', 
+                              fontSize: '0.75rem',
+                              borderRadius: 4
+                            }}>
                               {fee > 0 && (
                                 <span style={{ color: '#8d8d8d' }}>
-                                  Fee: <strong style={{ color: '#42be65', fontFamily: 'monospace' }}>₹{fee.toLocaleString('en-IN')}</strong>
+                                  Gross Fee: <strong style={{ color: '#42be65', fontFamily: 'monospace' }}>₹{fee.toLocaleString('en-IN')}</strong>
                                 </span>
                               )}
                               {fee > 0 && (
                                 <span style={{ color: '#8d8d8d' }}>
-                                  Net after 10% TDS: <strong style={{ color: '#f4f4f4', fontFamily: 'monospace' }}>₹{tdsNet.toLocaleString('en-IN')}</strong>
+                                  Net Escrow (10% TDS): <strong style={{ color: '#f4f4f4', fontFamily: 'monospace' }}>₹{tdsNet.toLocaleString('en-IN')}</strong>
                                 </span>
                               )}
                               {promo && (
                                 <span style={{ color: '#8d8d8d' }}>
-                                  Promo: <code style={{ color: '#78a9ff' }}>{promo}</code>
+                                  Promo: <code style={{ color: brandTheme.primary }}>{promo}</code>
                                 </span>
                               )}
                               {phrase && (
                                 <span style={{ color: '#8d8d8d' }}>
-                                  Required phrase: <em style={{ color: '#c6c6c6' }}>"{phrase}"</em>
+                                  Keyphrase: <em style={{ color: '#c6c6c6' }}>"{phrase}"</em>
                                 </span>
                               )}
                             </div>
@@ -717,19 +937,20 @@ export default function EmailNegotiator({ campaignId, activeDeal, onDealUpdated,
                     style={{
                       maxWidth: '85%',
                       alignSelf: 'flex-start',
-                      background: '#262626',
-                      border: '1px solid #393939',
-                      borderLeft: '3px solid #0f62fe',
+                      background: brandTheme.cardBg,
+                      border: `1px solid ${brandTheme.cardBorder}`,
+                      borderLeft: `3px solid ${brandTheme.primary}`,
                       padding: '0.85rem 1rem',
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '0.75rem'
+                      gap: '0.75rem',
+                      borderRadius: 4
                     }}
                   >
                     <Loading small withOverlay={false} />
                     <div>
-                      <div style={{ color: '#78a9ff', fontWeight: '600', fontSize: '0.8rem' }}>
-                        Formulating response...
+                      <div style={{ color: brandTheme.primary, fontWeight: '600', fontSize: '0.8rem' }}>
+                        Formulating {brandTheme.name} response...
                       </div>
                       <div style={{ color: '#8d8d8d', fontSize: '0.75rem' }}>
                         {thinkingSteps[thinkingStep]}
@@ -767,7 +988,7 @@ export default function EmailNegotiator({ campaignId, activeDeal, onDealUpdated,
                           alignItems: 'center',
                           transition: 'all 0.15s ease'
                         }}
-                        onMouseEnter={e => { e.currentTarget.style.borderColor = '#0f62fe'; e.currentTarget.style.color = '#f4f4f4'; }}
+                        onMouseEnter={e => { e.currentTarget.style.borderColor = brandTheme.primary; e.currentTarget.style.color = '#f4f4f4'; }}
                         onMouseLeave={e => { e.currentTarget.style.borderColor = '#393939'; e.currentTarget.style.color = '#c6c6c6'; }}
                       >
                         {preset.label}
@@ -809,6 +1030,7 @@ export default function EmailNegotiator({ campaignId, activeDeal, onDealUpdated,
                       renderIcon={Send}
                       disabled={loading || !creatorReplyInput.trim()}
                       onClick={() => handleSendCreatorReply()}
+                      style={{ background: brandTheme.primary }}
                     >
                       {loading ? 'Processing...' : 'Send Reply'}
                     </Button>

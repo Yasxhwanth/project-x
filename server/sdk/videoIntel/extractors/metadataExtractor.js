@@ -1,7 +1,17 @@
 /**
  * VideoIntel SDK - Metadata Extractor
- * Fetches real title, channel author, thumbnail, and duration using oEmbed & platform APIs.
+ * Fetches real title, channel author, thumbnail, tags, and duration using YouTube Data API v3, oEmbed & platform APIs.
  */
+
+function parseIsoDuration(duration) {
+  if (!duration || typeof duration !== 'string') return 0;
+  const match = duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+  if (!match) return 0;
+  const hours = parseInt(match[1] || '0', 10);
+  const minutes = parseInt(match[2] || '0', 10);
+  const seconds = parseInt(match[3] || '0', 10);
+  return (hours * 3600) + (minutes * 60) + seconds;
+}
 
 export async function extractVideoMetadata(videoUrl) {
   if (!videoUrl || typeof videoUrl !== 'string') {
@@ -17,8 +27,10 @@ export async function extractVideoMetadata(videoUrl) {
   }
 
   const url = videoUrl.trim();
+  const ytApiKey = process.env.YOUTUBE_API_KEY;
+  const hasValidYtKey = ytApiKey && ytApiKey !== 'your_youtube_api_key_here' && ytApiKey.length > 10;
   
-  // 1. YouTube Detection & Real oEmbed Lookup
+  // 1. YouTube Detection & Real Data Extraction
   const ytMatch = url.match(/(?:youtube\.com\/(?:watch\?v=|shorts\/|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
   if (ytMatch) {
     const videoId = ytMatch[1];
@@ -29,17 +41,57 @@ export async function extractVideoMetadata(videoUrl) {
     let title = isShort ? `YouTube Short #${videoId}` : `YouTube Video #${videoId}`;
     let channelName = 'Creator';
     let thumbnailUrl = defaultThumbnail;
+    let durationSeconds = null;
+    let description = '';
+    let tags = [];
+    let viewCount = null;
+    let publishedAt = null;
 
-    try {
-      const oembedRes = await fetch(`https://www.youtube.com/oembed?url=${encodeURIComponent(normalizedUrl)}&format=json`);
-      if (oembedRes.ok) {
-        const oembed = await oembedRes.json();
-        if (oembed.title) title = oembed.title;
-        if (oembed.author_name) channelName = oembed.author_name;
-        if (oembed.thumbnail_url) thumbnailUrl = oembed.thumbnail_url;
+    // A. Attempt YouTube Data API v3 (Official & High Fidelity)
+    if (hasValidYtKey) {
+      try {
+        const apiUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails,statistics&id=${videoId}&key=${ytApiKey}`;
+        const res = await fetch(apiUrl);
+        if (res.ok) {
+          const data = await res.json();
+          const item = data.items?.[0];
+          if (item) {
+            title = item.snippet?.title || title;
+            channelName = item.snippet?.channelTitle || channelName;
+            description = item.snippet?.description || '';
+            tags = item.snippet?.tags || [];
+            publishedAt = item.snippet?.publishedAt || null;
+            thumbnailUrl = item.snippet?.thumbnails?.maxres?.url || 
+                           item.snippet?.thumbnails?.high?.url || 
+                           item.snippet?.thumbnails?.medium?.url || 
+                           defaultThumbnail;
+            
+            if (item.contentDetails?.duration) {
+              durationSeconds = parseIsoDuration(item.contentDetails.duration);
+            }
+            if (item.statistics?.viewCount) {
+              viewCount = parseInt(item.statistics.viewCount, 10);
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('[VideoIntel Metadata] YouTube Data API v3 error:', err.message);
       }
-    } catch (err) {
-      console.warn('[VideoIntel Metadata] oEmbed fetch warning:', err.message);
+    }
+
+    // B. Fallback to oEmbed if title / channelName not resolved
+    if (!title || title.startsWith('YouTube Video #') || title.startsWith('YouTube Short #')) {
+      try {
+        const oembedRes = await fetch(`https://www.youtube.com/oembed?url=${encodeURIComponent(normalizedUrl)}&format=json`);
+        if (oembedRes.ok) {
+          const oembed = await oembedRes.json();
+          if (oembed.title) title = oembed.title;
+          if (oembed.author_name) channelName = oembed.author_name;
+          if (oembed.thumbnail_url) thumbnailUrl = oembed.thumbnail_url;
+        }
+      } catch (err) {
+        console.warn('[VideoIntel Metadata] oEmbed fetch warning:', err.message);
+      }
     }
 
     return {
@@ -49,8 +101,12 @@ export async function extractVideoMetadata(videoUrl) {
       thumbnailUrl,
       title,
       channelName,
-      estimatedDurationSeconds: isShort ? 60 : 600,
-      isShortForm: isShort
+      description,
+      tags,
+      viewCount,
+      publishedAt,
+      estimatedDurationSeconds: durationSeconds || (isShort ? 60 : null),
+      isShortForm: isShort || (durationSeconds && durationSeconds <= 90)
     };
   }
 

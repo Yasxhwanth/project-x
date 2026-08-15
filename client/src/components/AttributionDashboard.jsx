@@ -30,15 +30,17 @@ export default function AttributionDashboard({ campaignId = 'campaign_e2e_bangal
     try {
       const orderNum = Math.floor(10000 + Math.random() * 90000);
       const val = Math.floor(2499 + Math.random() * 8500);
+      const brandPrefix = (attribution?.brandName || 'ORD').toUpperCase().replace(/[^A-Z]/g, '').slice(0, 4) || 'D2C';
+      const sampleCreator = breakdown.length > 0 ? breakdown[0] : null;
 
       const res = await fetch('/api/conversions/webhook', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          orderId: `#BOAT-${orderNum}`,
+          orderId: `#${brandPrefix}-${orderNum}`,
           orderValue: val,
-          promoCode: 'BOAT30',
-          utmMedium: 'creator_fitwithpriya',
+          promoCode: attribution?.promoCode || 'PROMO20',
+          utmMedium: sampleCreator ? `creator_${(sampleCreator.creatorName || 'partner').toLowerCase().replace(/\s+/g, '')}` : 'creator_partner',
           customerEmail: `customer${orderNum}@d2c.in`,
           storeProvider: 'SHOPIFY_WEBHOOK'
         })
@@ -46,7 +48,7 @@ export default function AttributionDashboard({ campaignId = 'campaign_e2e_bangal
 
       const data = await res.json();
       if (data.success) {
-        setWebhookMessage(`Simulated Shopify Order ${data.orderId || `#BOAT-${orderNum}`} (₹${val.toLocaleString('en-IN')}) attributed to ${data.creatorName || 'FitWithPriya'}!`);
+        setWebhookMessage(`Simulated Shopify Order ${data.orderId || `#${brandPrefix}-${orderNum}`} (₹${val.toLocaleString('en-IN')}) attributed to ${data.creatorName || sampleCreator?.creatorName || 'Creator Partner'}!`);
         fetchAttribution();
         setTimeout(() => setWebhookMessage(null), 5000);
       }

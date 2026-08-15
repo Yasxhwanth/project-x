@@ -308,13 +308,21 @@ function initDatabaseSchema() {
         platform TEXT DEFAULT 'Instagram',
         status TEXT DEFAULT 'INDEXED',
         transcript_text TEXT,
+        summary_text TEXT,
         scenes_json TEXT,
+        visual_frames_json TEXT,
+        sponsorship_segments_json TEXT,
         audit_report_json TEXT,
         compliance_score INTEGER DEFAULT 95,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )
     `);
+
+    // Migration guards for existing databases
+    db.run(`ALTER TABLE indexed_videos ADD COLUMN summary_text TEXT`, () => {});
+    db.run(`ALTER TABLE indexed_videos ADD COLUMN visual_frames_json TEXT`, () => {});
+    db.run(`ALTER TABLE indexed_videos ADD COLUMN sponsorship_segments_json TEXT`, () => {});
 
     // 17. VideoIntel Transcript Chunks Table (Timestamped perception layer)
     db.run(`
@@ -348,6 +356,78 @@ function initDatabaseSchema() {
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY(video_id) REFERENCES indexed_videos(id) ON DELETE CASCADE
       )
+    `);
+
+    // 19. Creator KYC & Indian Tax Banking Details Table
+    db.run(`
+      CREATE TABLE IF NOT EXISTS creator_kyc (
+        id TEXT PRIMARY KEY,
+        creator_id TEXT UNIQUE NOT NULL,
+        legal_name TEXT NOT NULL,
+        pan_number TEXT NOT NULL,
+        pan_type TEXT DEFAULT 'Individual (P)',
+        pan_status TEXT DEFAULT 'VERIFIED',
+        gstin TEXT,
+        gstin_status TEXT DEFAULT 'NOT_APPLICABLE',
+        payout_method TEXT DEFAULT 'UPI',
+        bank_account_name TEXT,
+        bank_account_number TEXT,
+        bank_ifsc TEXT,
+        bank_name TEXT,
+        upi_id TEXT,
+        upi_status TEXT DEFAULT 'VERIFIED',
+        tds_section TEXT DEFAULT '194J',
+        tds_rate REAL DEFAULT 10.0,
+        kyc_status TEXT DEFAULT 'VERIFIED',
+        verification_notes TEXT,
+        verified_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY(creator_id) REFERENCES creators(id)
+      )
+    `);
+
+    // 20. Immutable Payout Ledger & Section 194 Form 16A Table
+    db.run(`
+      CREATE TABLE IF NOT EXISTS payout_ledger (
+        id TEXT PRIMARY KEY,
+        deal_id TEXT NOT NULL,
+        campaign_id TEXT,
+        creator_id TEXT NOT NULL,
+        creator_name TEXT,
+        gross_amount INTEGER NOT NULL,
+        tds_section TEXT DEFAULT '194J',
+        tds_rate REAL DEFAULT 10.0,
+        tds_amount INTEGER NOT NULL,
+        net_amount INTEGER NOT NULL,
+        payout_method TEXT DEFAULT 'UPI',
+        beneficiary_details_json TEXT,
+        razorpay_payout_id TEXT,
+        receipt_ref TEXT NOT NULL,
+        form_16a_voucher_id TEXT,
+        status TEXT DEFAULT 'SUCCESS',
+        executed_by TEXT DEFAULT 'Payment Agent / HITL',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // 21. Shareable Branded Client Closeout Reports Table
+    db.run(`
+      CREATE TABLE IF NOT EXISTS closeout_reports (
+        id TEXT PRIMARY KEY,
+        campaign_id TEXT UNIQUE NOT NULL,
+        organization_id TEXT,
+        share_token TEXT UNIQUE NOT NULL,
+        report_title TEXT NOT NULL,
+        brand_name TEXT,
+        executive_summary_json TEXT,
+        financial_audit_json TEXT,
+        content_compliance_json TEXT,
+        attribution_roas_json TEXT,
+        is_public INTEGER DEFAULT 1,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
     `, () => {
       // Run safe DB schema migrations
       db.run(`ALTER TABLE campaigns ADD COLUMN organization_id TEXT`, () => {});
@@ -356,9 +436,13 @@ function initDatabaseSchema() {
       db.run(`ALTER TABLE creators ADD COLUMN memory_summary TEXT`, () => {});
       db.run(`ALTER TABLE creators ADD COLUMN authenticity_score INTEGER`, () => {});
       db.run(`ALTER TABLE creators ADD COLUMN fake_follower_pct INTEGER`, () => {});
+      db.run(`ALTER TABLE creator_kyc ADD COLUMN pan_type TEXT DEFAULT 'Individual (P)'`, () => {});
+      db.run(`ALTER TABLE creator_kyc ADD COLUMN tds_section TEXT DEFAULT '194J'`, () => {});
+      db.run(`ALTER TABLE creator_kyc ADD COLUMN tds_rate REAL DEFAULT 10.0`, () => {});
       isInitialized = true;
       seedDefaultAuthAndOrganization().catch(err => console.error('Auth seeding error:', err));
       seedFullCreatorDatabase(10000).catch(err => console.error('Creator seeding error:', err));
+      seedKycPresets().catch(err => console.error('KYC preset seeding error:', err));
       // Seed after a short delay to allow auth+creators to finish first
       setTimeout(() => {
         seedE2EScenario().catch(err => console.error("E2E scenario seeding error:", err));
@@ -484,6 +568,97 @@ async function seedDefaultAuthAndOrganization() {
     }
   } catch (err) {
     console.error("Error seeding default auth & organization:", err);
+  }
+}
+
+async function seedKycPresets() {
+  try {
+    const kycSeeds = [
+      {
+        id: 'kyc_fittuber',
+        creator_id: 'cr_yt_fittuber',
+        legal_name: 'Vivek Mittal',
+        pan_number: 'AABPM1234F',
+        pan_type: 'Individual (P)',
+        pan_status: 'VERIFIED',
+        gstin: '07AABPM1234F1Z5',
+        gstin_status: 'ACTIVE_VERIFIED',
+        payout_method: 'UPI',
+        bank_account_name: 'Vivek Mittal Fitness Enterprise',
+        bank_account_number: '50200012345678',
+        bank_ifsc: 'HDFC0000123',
+        bank_name: 'HDFC Bank Ltd',
+        upi_id: 'vivek@upi',
+        upi_status: 'VERIFIED',
+        tds_section: '194J',
+        tds_rate: 10.0,
+        kyc_status: 'VERIFIED',
+        verification_notes: 'Automated CBDT PAN-Aadhaar Link & Bank Penny Drop Verified'
+      },
+      {
+        id: 'kyc_ranveer',
+        creator_id: 'cr_01',
+        legal_name: 'Ranveer Allahbadia',
+        pan_number: 'ABCPA5678K',
+        pan_type: 'Individual (P)',
+        pan_status: 'VERIFIED',
+        gstin: '27ABCPA5678K1Z9',
+        gstin_status: 'ACTIVE_VERIFIED',
+        payout_method: 'BANK_ACCOUNT',
+        bank_account_name: 'Monk Entertainment LLP',
+        bank_account_number: '001105001234',
+        bank_ifsc: 'ICIC0000011',
+        bank_name: 'ICICI Bank Ltd',
+        upi_id: 'ranveer@okhdfcbank',
+        upi_status: 'VERIFIED',
+        tds_section: '194J',
+        tds_rate: 10.0,
+        kyc_status: 'VERIFIED',
+        verification_notes: 'Corporate Media Entity KYC Verified via NSDL'
+      },
+      {
+        id: 'kyc_yashwanth',
+        creator_id: 'cr_yashwanth_01',
+        legal_name: 'Yashwanth Creator Lab',
+        pan_number: 'XYZPY9876Q',
+        pan_type: 'Individual (P)',
+        pan_status: 'VERIFIED',
+        gstin: '29XYZPY9876Q1Z3',
+        gstin_status: 'ACTIVE_VERIFIED',
+        payout_method: 'UPI',
+        bank_account_name: 'Yashwanth',
+        bank_account_number: '9180123456789',
+        bank_ifsc: 'SBIN0001234',
+        bank_name: 'State Bank of India',
+        upi_id: 'yashwanth@ybl',
+        upi_status: 'VERIFIED',
+        tds_section: '194J',
+        tds_rate: 10.0,
+        kyc_status: 'VERIFIED',
+        verification_notes: 'Real Gmail Collab Account KYC Approved'
+      }
+    ];
+
+    for (const kyc of kycSeeds) {
+      const existing = await getDbRow('SELECT id FROM creator_kyc WHERE creator_id = ?', [kyc.creator_id]);
+      if (!existing) {
+        await runDb(
+          `INSERT INTO creator_kyc (
+            id, creator_id, legal_name, pan_number, pan_type, pan_status, gstin, gstin_status,
+            payout_method, bank_account_name, bank_account_number, bank_ifsc, bank_name,
+            upi_id, upi_status, tds_section, tds_rate, kyc_status, verification_notes
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            kyc.id, kyc.creator_id, kyc.legal_name, kyc.pan_number, kyc.pan_type, kyc.pan_status,
+            kyc.gstin, kyc.gstin_status, kyc.payout_method, kyc.bank_account_name, kyc.bank_account_number,
+            kyc.bank_ifsc, kyc.bank_name, kyc.upi_id, kyc.upi_status, kyc.tds_section, kyc.tds_rate,
+            kyc.kyc_status, kyc.verification_notes
+          ]
+        );
+      }
+    }
+  } catch (err) {
+    console.error('Error seeding KYC presets:', err);
   }
 }
 
