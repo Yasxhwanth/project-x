@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { 
   Search as SearchInput, Select, SelectItem, Button, Tag, Loading,
-  SkeletonPlaceholder, Pagination, Modal, NumberInput, InlineNotification, Tile, Grid, Column
+  SkeletonPlaceholder, Pagination, Modal, NumberInput, InlineNotification, Tile, Grid, Column, InlineLoading
 } from '@carbon/react';
 import { 
-  Search, CheckmarkOutline, WarningAlt, Send, Currency, UserFollow, Launch, ChevronLeft, ChevronRight, Email, CheckmarkFilled
+  Search, CheckmarkOutline, WarningAlt, Send, Currency, UserFollow, Launch, ChevronLeft, ChevronRight, Email, CheckmarkFilled, ArrowRight
 } from '@carbon/icons-react';
 import CreatorProfileModal from './CreatorProfileModal';
 
@@ -27,7 +27,7 @@ function formatCount(val) {
 
 const fmtCurrency = (n) => n ? `Rs.${Number(n).toLocaleString('en-IN')}` : '—';
 
-export default function CreatorSearch({ onSelectCreator, activeCampaign }) {
+export default function CreatorSearch({ onSelectCreator, onViewDeal, activeCampaign }) {
   const [creators, setCreators] = useState([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('');
@@ -52,6 +52,7 @@ export default function CreatorSearch({ onSelectCreator, activeCampaign }) {
   const [sendingOutreach, setSendingOutreach] = useState(false);
   const [outreachResult, setOutreachResult] = useState(null);
   const [senderEmail, setSenderEmail] = useState('');
+  const [globalNotification, setGlobalNotification] = useState(null);
 
   useEffect(() => {
     fetchCampaignsList();
@@ -107,8 +108,19 @@ export default function CreatorSearch({ onSelectCreator, activeCampaign }) {
       });
       if (res.ok) {
         const deal = await res.json();
-        setOutreachResult({ success: true, deal });
-        if (onSelectCreator) onSelectCreator(deal);
+        setOutreachResult({ 
+          success: true, 
+          deal, 
+          creatorName: outreachCreator.name,
+          creatorEmail: outreachCreator.email,
+          fee: offeredFee,
+          campaignId: targetCampaignId || 'camp_01'
+        });
+        setGlobalNotification({
+          kind: 'success',
+          title: 'Proposal Email Dispatched!',
+          subtitle: `Proposal successfully sent to ${outreachCreator.name} (${outreachCreator.email}) for ₹${Number(offeredFee).toLocaleString('en-IN')}.`
+        });
       } else {
         const errData = await res.json();
         setOutreachResult({ success: false, error: errData.error || 'Failed to dispatch email' });
@@ -117,6 +129,16 @@ export default function CreatorSearch({ onSelectCreator, activeCampaign }) {
       setOutreachResult({ success: false, error: err.message });
     } finally {
       setSendingOutreach(false);
+    }
+  };
+
+  const handleViewDeal = (deal, campaignId) => {
+    setOutreachCreator(null);
+    setOutreachResult(null);
+    if (onViewDeal) {
+      onViewDeal(deal, campaignId);
+    } else if (onSelectCreator) {
+      onSelectCreator(deal);
     }
   };
 
@@ -412,6 +434,19 @@ export default function CreatorSearch({ onSelectCreator, activeCampaign }) {
         </div>
       </div>
       
+      {/* Global Notification Banner */}
+      {globalNotification && (
+        <div style={{ padding: '0.75rem 1.5rem 0 1.5rem' }}>
+          <InlineNotification
+            kind={globalNotification.kind}
+            title={globalNotification.title}
+            subtitle={globalNotification.subtitle}
+            onClose={() => setGlobalNotification(null)}
+            onCloseButtonClick={() => setGlobalNotification(null)}
+          />
+        </div>
+      )}
+
       {/* Profile Detail Modal */}
       <CreatorProfileModal
         creatorId={selectedCreatorId}
@@ -422,101 +457,165 @@ export default function CreatorSearch({ onSelectCreator, activeCampaign }) {
       {/* Outreach Proposal Carbon Modal */}
       <Modal
         open={!!outreachCreator}
-        modalHeading="Draft & Send Collaboration Outreach Proposal"
-        modalLabel="AI OUTREACH DISPATCH"
-        primaryButtonText={sendingOutreach ? "Sending via Gmail..." : "🚀 Send Proposal Email (Gmail)"}
-        secondaryButtonText="Cancel"
+        modalHeading={
+          outreachResult?.success 
+            ? "Proposal Dispatched via Gmail" 
+            : "Draft & Send Collaboration Outreach Proposal"
+        }
+        modalLabel={outreachResult?.success ? "OUTREACH SUCCESS" : "AI OUTREACH DISPATCH"}
+        primaryButtonText={
+          outreachResult?.success
+            ? "View Deal in Campaign Workspace 🚀"
+            : (sendingOutreach ? "Sending via Gmail..." : "🚀 Send Proposal Email (Gmail)")
+        }
+        secondaryButtonText={outreachResult?.success ? "Reach Out to Another Creator" : "Cancel"}
         primaryButtonDisabled={sendingOutreach}
-        onRequestClose={() => setOutreachCreator(null)}
-        onRequestSubmit={handleSendOutreachSubmit}
+        onRequestClose={() => {
+          setOutreachCreator(null);
+          setOutreachResult(null);
+        }}
+        onRequestSubmit={() => {
+          if (outreachResult?.success) {
+            handleViewDeal(outreachResult.deal, outreachResult.campaignId);
+          } else {
+            handleSendOutreachSubmit();
+          }
+        }}
         size="md"
       >
         {outreachCreator && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', paddingTop: '0.5rem' }}>
-            {/* Creator Summary Header Tile */}
-            <Tile style={{ background: '#262626', border: '1px solid #393939', padding: '1rem', borderRadius: 6 }}>
-              <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                <img 
-                  src={outreachCreator.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(outreachCreator.name)}&background=0f62fe&color=ffffff`} 
-                  alt={outreachCreator.name} 
-                  style={{ width: 52, height: 52, borderRadius: '50%', objectFit: 'cover' }} 
-                />
-                <div style={{ flex: 1 }}>
-                  <h4 style={{ margin: 0, color: '#f4f4f4', fontSize: '1.1rem', fontWeight: '600' }}>{outreachCreator.name}</h4>
-                  <p style={{ margin: '0.2rem 0 0 0', color: '#a8a8a8', fontSize: '0.85rem' }}>
-                    {outreachCreator.handle} • {outreachCreator.platform} • {outreachCreator.location}
-                  </p>
-                </div>
-                <Tag type="blue" size="sm">{outreachCreator.niche}</Tag>
+          outreachResult?.success ? (
+            /* --- SUCCESS CONFIRMATION VIEW --- */
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', paddingTop: '0.5rem' }}>
+              <div style={{ 
+                textAlign: 'center', 
+                padding: '1.5rem 1rem', 
+                background: 'linear-gradient(180deg, rgba(66, 190, 101, 0.12) 0%, rgba(66, 190, 101, 0.03) 100%)', 
+                borderRadius: 8, 
+                border: '1px solid rgba(66, 190, 101, 0.35)' 
+              }}>
+                <CheckmarkFilled size={44} style={{ color: '#42be65', marginBottom: '0.5rem' }} />
+                <h3 style={{ color: '#f4f4f4', fontSize: '1.25rem', margin: '0 0 0.35rem 0', fontWeight: '600' }}>
+                  Proposal Email Sent Successfully!
+                </h3>
+                <p style={{ color: '#c6c6c6', fontSize: '0.875rem', margin: 0 }}>
+                  Sent from <strong style={{ color: '#42be65' }}>{senderEmail || 'yashwanthtm5@gmail.com'}</strong> to <strong style={{ color: '#4589ff' }}>{outreachResult.creatorEmail}</strong>
+                </p>
               </div>
-              <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid #393939', display: 'flex', flexDirection: 'column', gap: '0.4rem', fontSize: '0.85rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#161616', padding: '0.4rem 0.6rem', borderRadius: 4, border: '1px solid #393939' }}>
-                  <span style={{ color: '#a8a8a8' }}>From (Outbound Gmail):</span>
-                  <span style={{ color: '#42be65', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                    <CheckmarkFilled size={14} /> {senderEmail || 'yashwanthtm5@gmail.com'}
-                  </span>
+
+              {/* Deal Summary Tile */}
+              <Tile style={{ background: '#1e1e1e', border: '1px solid #333', padding: '1rem', borderRadius: 6, display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.85rem' }}>
+                  <span style={{ color: '#8d8d8d' }}>Creator:</span>
+                  <span style={{ color: '#f4f4f4', fontWeight: '600' }}>{outreachResult.creatorName}</span>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#161616', padding: '0.4rem 0.6rem', borderRadius: 4, border: '1px solid #393939' }}>
-                  <span style={{ color: '#a8a8a8' }}>To (Creator Inbox):</span>
-                  <span style={{ color: '#4589ff', fontWeight: '600' }}>
-                    {outreachCreator.email}
-                  </span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.85rem' }}>
+                  <span style={{ color: '#8d8d8d' }}>Offered Collaboration Fee:</span>
+                  <span style={{ color: '#42be65', fontWeight: '700', fontSize: '1rem' }}>₹{Number(outreachResult.fee).toLocaleString('en-IN')}</span>
                 </div>
-              </div>
-            </Tile>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.85rem' }}>
+                  <span style={{ color: '#8d8d8d' }}>Pipeline Stage:</span>
+                  <Tag type="blue" size="sm">OUTREACH_SENT</Tag>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.85rem' }}>
+                  <span style={{ color: '#8d8d8d' }}>Autonomous Agent:</span>
+                  <span style={{ color: '#a8a8a8', fontSize: '0.8rem' }}>Listening for creator reply (Auto-negotiator ready)</span>
+                </div>
+              </Tile>
 
-            {/* Campaign Selection */}
-            <Select 
-              id="outreach-target-campaign" 
-              labelText="Target Campaign" 
-              value={targetCampaignId} 
-              onChange={e => setTargetCampaignId(e.target.value)}
-              style={{ background: '#262626' }}
-            >
-              {campaignsList.map(c => (
-                <SelectItem key={c.id} value={c.id} text={`${c.brandName || c.brand_name} — ${c.productName || c.product_name}`} />
-              ))}
-            </Select>
-
-            {/* Proposed Fee */}
-            <NumberInput
-              id="outreach-fee-input"
-              label="Offered Collaboration Fee (₹)"
-              value={offeredFee}
-              onChange={(e, { value }) => setOfferedFee(Number(value || 0))}
-              min={1000}
-              max={1000000}
-              step={1000}
-              style={{ background: '#262626' }}
-            />
-
-            {/* Email Preview */}
-            <div>
-              <p style={{ fontSize: '0.8rem', color: '#c6c6c6', marginBottom: '0.4rem', fontWeight: '600' }}>Email Preview (Sent via Gmail OAuth):</p>
-              <div style={{ background: '#161616', border: '1px solid #393939', padding: '1rem', borderRadius: 4, fontSize: '0.85rem', color: '#dcdcdc', fontFamily: 'monospace', whiteSpace: 'pre-wrap', maxHeight: '140px', overflowY: 'auto' }}>
-                {`Namaste ${outreachCreator.name},\n\nWe love your content! We'd like to invite you to collaborate on our upcoming campaign.\n\n- Proposed Fee: ₹${Number(offeredFee).toLocaleString('en-IN')}\n\nPlease reply directly to confirm your interest so our AI agent can send contract terms!`}
-              </div>
+              <p style={{ color: '#8d8d8d', fontSize: '0.8rem', margin: 0, lineHeight: '1.4' }}>
+                💡 <strong>Next Step:</strong> When {outreachResult.creatorName} replies to this email, our AI Agent will automatically parse the response, check budget caps, and handle terms or counter-offers!
+              </p>
             </div>
+          ) : (
+            /* --- DRAFT PROPOSAL VIEW --- */
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', paddingTop: '0.5rem' }}>
+              {/* Creator Summary Header Tile */}
+              <Tile style={{ background: '#262626', border: '1px solid #393939', padding: '1rem', borderRadius: 6 }}>
+                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                  <img 
+                    src={outreachCreator.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(outreachCreator.name)}&background=0f62fe&color=ffffff`} 
+                    alt={outreachCreator.name} 
+                    style={{ width: 52, height: 52, borderRadius: '50%', objectFit: 'cover' }} 
+                  />
+                  <div style={{ flex: 1 }}>
+                    <h4 style={{ margin: 0, color: '#f4f4f4', fontSize: '1.1rem', fontWeight: '600' }}>{outreachCreator.name}</h4>
+                    <p style={{ margin: '0.2rem 0 0 0', color: '#a8a8a8', fontSize: '0.85rem' }}>
+                      {outreachCreator.handle} • {outreachCreator.platform} • {outreachCreator.location}
+                    </p>
+                  </div>
+                  <Tag type="blue" size="sm">{outreachCreator.niche}</Tag>
+                </div>
+                <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid #393939', display: 'flex', flexDirection: 'column', gap: '0.4rem', fontSize: '0.85rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#161616', padding: '0.4rem 0.6rem', borderRadius: 4, border: '1px solid #393939' }}>
+                    <span style={{ color: '#a8a8a8' }}>From (Outbound Gmail):</span>
+                    <span style={{ color: '#42be65', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                      <CheckmarkFilled size={14} /> {senderEmail || 'yashwanthtm5@gmail.com'}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#161616', padding: '0.4rem 0.6rem', borderRadius: 4, border: '1px solid #393939' }}>
+                    <span style={{ color: '#a8a8a8' }}>To (Creator Inbox):</span>
+                    <span style={{ color: '#4589ff', fontWeight: '600' }}>
+                      {outreachCreator.email}
+                    </span>
+                  </div>
+                </div>
+              </Tile>
 
-            {/* Result Notification */}
-            {outreachResult && (
-              outreachResult.success ? (
-                <InlineNotification
-                  kind="success"
-                  title="Proposal Email Dispatched!"
-                  subtitle={`Outreach email successfully sent to ${outreachCreator.email}.`}
-                  hideCloseButton
-                />
-              ) : (
+              {/* Campaign Selection */}
+              <Select 
+                id="outreach-target-campaign" 
+                labelText="Target Campaign" 
+                value={targetCampaignId} 
+                onChange={e => setTargetCampaignId(e.target.value)}
+                style={{ background: '#262626' }}
+              >
+                {campaignsList.map(c => (
+                  <SelectItem key={c.id} value={c.id} text={`${c.brandName || c.brand_name} — ${c.productName || c.product_name}`} />
+                ))}
+              </Select>
+
+              {/* Proposed Fee */}
+              <NumberInput
+                id="outreach-fee-input"
+                label="Offered Collaboration Fee (₹)"
+                value={offeredFee}
+                onChange={(e, { value }) => setOfferedFee(Number(value || 0))}
+                min={1000}
+                max={1000000}
+                step={1000}
+                style={{ background: '#262626' }}
+              />
+
+              {/* Email Preview */}
+              <div>
+                <p style={{ fontSize: '0.8rem', color: '#c6c6c6', marginBottom: '0.4rem', fontWeight: '600' }}>Email Preview (Sent via Gmail OAuth):</p>
+                <div style={{ background: '#161616', border: '1px solid #393939', padding: '1rem', borderRadius: 4, fontSize: '0.85rem', color: '#dcdcdc', fontFamily: 'monospace', whiteSpace: 'pre-wrap', maxHeight: '140px', overflowY: 'auto' }}>
+                  {`Namaste ${outreachCreator.name},\n\nWe love your content! We'd like to invite you to collaborate on our upcoming campaign.\n\n- Proposed Fee: ₹${Number(offeredFee).toLocaleString('en-IN')}\n\nPlease reply directly to confirm your interest so our AI agent can send contract terms!`}
+                </div>
+              </div>
+
+              {/* Sending Loading State */}
+              {sendingOutreach && (
+                <div style={{ padding: '0.75rem', background: '#161616', border: '1px solid #393939', borderRadius: 4 }}>
+                  <InlineLoading
+                    status="active"
+                    description="Dispatching proposal email via Gmail OAuth and initializing deal state..."
+                  />
+                </div>
+              )}
+
+              {/* Error Notification */}
+              {outreachResult && !outreachResult.success && (
                 <InlineNotification
                   kind="error"
                   title="Outreach Failed"
                   subtitle={outreachResult.error}
                   hideCloseButton
                 />
-              )
-            )}
-          </div>
+              )}
+            </div>
+          )
         )}
       </Modal>
     </div>

@@ -12,11 +12,17 @@ import {
 } from '@carbon/icons-react';
 import CampaignWorkspaceView from './CampaignWorkspaceView';
 
-export default function CampaignBuilder({ activeCampaign, onCampaignSaved, onSwitchCampaign, forceCreateNew }) {
+export default function CampaignBuilder({ activeCampaign, onCampaignSaved, onSwitchCampaign, forceCreateNew, initialWorkspaceCampaign }) {
   const [campaignsList, setCampaignsList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isCreatingNew, setIsCreatingNew] = useState(false);
-  const [selectedWorkspaceCampaign, setSelectedWorkspaceCampaign] = useState(null);
+  const [selectedWorkspaceCampaign, setSelectedWorkspaceCampaign] = useState(initialWorkspaceCampaign || null);
+
+  useEffect(() => {
+    if (initialWorkspaceCampaign) {
+      setSelectedWorkspaceCampaign(initialWorkspaceCampaign);
+    }
+  }, [initialWorkspaceCampaign]);
 
   // Form state
   const [brandName, setBrandName] = useState('boAt Lifestyle');

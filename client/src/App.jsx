@@ -61,6 +61,7 @@ export default function App() {
 
   const [pendingApprovals, setPendingApprovals] = useState(0);
   const [forceCreateNewCampaign, setForceCreateNewCampaign] = useState(false);
+  const [selectedWorkspaceCampaign, setSelectedWorkspaceCampaign] = useState(null);
 
   useEffect(() => {
     fetchSession();
@@ -83,10 +84,12 @@ export default function App() {
   const fetchSession = async () => {
     try {
       const token = localStorage.getItem('cc_token');
-      const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
-      const res = await fetch('/api/auth/me', { headers });
-      const data = await res.json();
-      if (data && data.user) {
+      if (!token) return;
+      const res = await fetch('/api/auth/session', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
         setSession(data);
         if (data.user.role === 'Agency Admin') setWorkspaceMode('agency');
         if (data.user.role === 'Creator') setWorkspaceMode('creator');
@@ -119,24 +122,25 @@ export default function App() {
     }
   };
 
-  const handleSelectCreatorForOutreach = async (creator) => {
-    if (!creator) return;
-    try {
-      const campaignId = activeCampaign?.id || 'camp_01';
-      const res = await fetch('/api/deals/outreach', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ creatorId: creator.id, campaignId })
-      });
-      if (res.ok) {
-        const deal = await res.json();
-        setActiveDeal(deal);
+  const handleSelectCreatorForOutreach = (deal) => {
+    if (deal) setActiveDeal(deal);
+  };
+
+  const handleViewDeal = async (deal, campaignId) => {
+    if (deal) setActiveDeal(deal);
+    if (campaignId) {
+      try {
+        const res = await fetch(`/api/campaigns/${campaignId}`);
+        if (res.ok) {
+          const camp = await res.json();
+          setActiveCampaign(camp);
+          setSelectedWorkspaceCampaign(camp);
+        }
+      } catch (err) {
+        console.error('Failed to load campaign for deal', err);
       }
-    } catch (err) {
-      console.error('Failed to launch outreach', err);
-    } finally {
-      setCurrentTab('portfolio');
     }
+    setCurrentTab('portfolio');
   };
 
   const navSections = [
@@ -402,6 +406,7 @@ export default function App() {
             {currentTab === 'discovery' && (
               <CreatorSearch 
                 onSelectCreator={handleSelectCreatorForOutreach} 
+                onViewDeal={handleViewDeal}
                 activeCampaign={activeCampaign}
               />
             )}
@@ -410,6 +415,7 @@ export default function App() {
               <CampaignBuilder 
                 activeCampaign={activeCampaign}
                 forceCreateNew={forceCreateNewCampaign}
+                initialWorkspaceCampaign={selectedWorkspaceCampaign}
                 onCampaignSaved={(c) => {
                   setActiveCampaign(c);
                   fetchActiveCampaign();
@@ -417,6 +423,7 @@ export default function App() {
                 }}
                 onSwitchCampaign={(c) => {
                   setActiveCampaign(c);
+                  setSelectedWorkspaceCampaign(c);
                 }}
               />
             )}
