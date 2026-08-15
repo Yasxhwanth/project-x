@@ -23,11 +23,16 @@ import {
   Renew,
   ChevronRight,
   Currency,
-  Launch
+  Launch,
+  Time,
+  Information,
+  Add,
+  SettingsAdjust,
+  CheckmarkOutline
 } from '@carbon/icons-react';
 
 // Typewriter Text Effect for live AI response
-function TypewriterText({ text, speed = 10 }) {
+function TypewriterText({ text, speed = 8 }) {
   const [displayedText, setDisplayedText] = useState('');
   const [isTyping, setIsTyping] = useState(true);
 
@@ -56,9 +61,9 @@ function TypewriterText({ text, speed = 10 }) {
         <span 
           style={{
             display: 'inline-block',
-            width: '8px',
+            width: '6px',
             height: '14px',
-            background: '#4589ff',
+            background: '#0f62fe',
             marginLeft: '4px',
             verticalAlign: 'middle',
             animation: 'blink 0.8s infinite'
@@ -70,10 +75,10 @@ function TypewriterText({ text, speed = 10 }) {
 }
 
 const QUICK_SIMULATION_CHIPS = [
-  "Bhai, ₹25k is too low. Can we do ₹35,000 for a dedicated Reel?",
-  "I am interested! I accept the offered fee. Please share next steps.",
-  "Can you increase the budget to ₹30,000? I will also post on Stories.",
-  "Will the brand provide a product sample unit before shooting?"
+  { label: '💰 Counter at ₹35,000', text: 'Hey, my standard rate for a dedicated Reel is ₹35,000 given my engagement rate. Can we meet at ₹35k?' },
+  { label: '🤝 Accept at ₹30,000', text: 'Namaste! ₹30,000 sounds fair for the integration. Please send over the agreement and ship the product unit.' },
+  { label: '📦 Request 2 Product Units', text: 'I would love to partner! Could you also send a 2nd unit for a viewer giveaway during the launch?' },
+  { label: '📹 Add 2 Story Integrations', text: 'Can you do ₹32,000? In return, I will include 2 Instagram Stories with direct swipe-up discount links.' }
 ];
 
 export default function EmailNegotiator({ campaignId, activeDeal, onDealUpdated, onNavigateToDiscovery }) {
@@ -95,6 +100,7 @@ export default function EmailNegotiator({ campaignId, activeDeal, onDealUpdated,
   const [loadingMemory, setLoadingMemory] = useState(false);
   const [showAddNote, setShowAddNote] = useState(false);
   const [newMemoryNote, setNewMemoryNote] = useState('');
+  const [newMemoryCategory, setNewMemoryCategory] = useState('PRICING_HISTORY');
 
   // Inline Creator Email Editor State
   const [isEditingEmail, setIsEditingEmail] = useState(false);
@@ -145,82 +151,86 @@ export default function EmailNegotiator({ campaignId, activeDeal, onDealUpdated,
     try {
       const url = campaignId ? `/api/deals?campaignId=${campaignId}` : '/api/deals';
       const res = await fetch(url);
-      if (res.ok) {
-        const data = await res.json();
-        const list = Array.isArray(data) ? data : [];
-        setDeals(list);
-        if (list.length > 0) {
-          if (!selectedDealId || !list.some(d => d.id === selectedDealId)) {
-            setSelectedDealId(activeDeal?.id || list[0].id);
+      const data = await res.json();
+      const rawDeals = data.deals || [];
+
+      // Deduplicate deals by creator_email / creator_name for a pristine list
+      const uniqueMap = new Map();
+      rawDeals.forEach(d => {
+        const key = (d.creatorEmail || d.creator_email || d.creatorName || d.id).toLowerCase();
+        if (!uniqueMap.has(key)) {
+          uniqueMap.set(key, d);
+        } else {
+          // Keep the one with more messages
+          const existing = uniqueMap.get(key);
+          if ((d.emailThread?.length || 0) > (existing.emailThread?.length || 0)) {
+            uniqueMap.set(key, d);
           }
         }
+      });
+
+      const cleanDeals = Array.from(uniqueMap.values());
+      setDeals(cleanDeals);
+      
+      if (!selectedDealId && cleanDeals.length > 0) {
+        setSelectedDealId(cleanDeals[0].id);
       }
     } catch (err) {
-      console.error('Failed to load deals in EmailNegotiator', err);
+      console.error("Failed to load deals", err);
     } finally {
       setLoadingDeals(false);
     }
-  }, [campaignId, activeDeal, selectedDealId]);
+  }, [campaignId, selectedDealId]);
 
   useEffect(() => {
     fetchDeals();
   }, [fetchDeals]);
 
-  useEffect(() => {
-    if (activeDeal?.id) {
-      setSelectedDealId(activeDeal.id);
-    }
-  }, [activeDeal]);
+  // Find currently active deal
+  const currentDeal = deals.find(d => d.id === selectedDealId) || deals[0] || null;
 
-  // Fetch Creator Persistent Memory whenever selected deal changes
-  const activeSelectedDeal = deals.find(d => d.id === selectedDealId) || activeDeal || deals[0];
+  // Load creator persistent memory whenever selected deal changes
   useEffect(() => {
-    if (!activeSelectedDeal) return;
-    const targetId = activeSelectedDeal.creatorId || activeSelectedDeal.creatorEmail;
-    if (!targetId) return;
-
+    if (!currentDeal) return;
     setLoadingMemory(true);
+    const targetId = currentDeal.creatorId || currentDeal.creatorEmail || currentDeal.id;
     fetch(`/api/creators/${encodeURIComponent(targetId)}/memory`)
       .then(r => r.json())
       .then(data => {
         setCreatorMemory(data);
       })
-      .catch(err => console.error('Failed to fetch creator memory:', err))
+      .catch(err => {
+        console.error('Failed to load creator memory:', err);
+      })
       .finally(() => setLoadingMemory(false));
-  }, [activeSelectedDeal?.id, activeSelectedDeal?.creatorId, activeSelectedDeal?.creatorEmail]);
+  }, [currentDeal?.id, currentDeal?.creatorEmail]);
 
-  const currentDeal = deals.find(d => d.id === selectedDealId) || activeDeal || deals[0];
+  // Filter deals
+  const filteredDeals = deals.filter(d => 
+    (d.creatorName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (d.creatorEmail || '').toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
-  const filteredDeals = deals.filter(d => {
-    if (!searchQuery) return true;
-    const name = d.creatorName || '';
-    const email = d.creatorEmail || '';
-    return name.toLowerCase().includes(searchQuery.toLowerCase()) || email.toLowerCase().includes(searchQuery.toLowerCase());
-  });
-
-  const handleSimulateCreatorReply = async (e) => {
-    if (e) e.preventDefault();
-    if (!creatorReplyInput.trim() || !currentDeal) return;
+  // Send reply / negotiation turn
+  const handleSendCreatorReply = async (messageText = null) => {
+    const textToSend = messageText || creatorReplyInput;
+    if (!textToSend.trim() || !currentDeal) return;
 
     setLoading(true);
+    setThinkingStep(0);
     setErrorMsg(null);
     setSuccessMsg(null);
-    setThinkingStep(0);
 
     const stepInterval = setInterval(() => {
-      setThinkingStep((prev) => (prev < thinkingSteps.length - 1 ? prev + 1 : prev));
-    }, 700);
+      setThinkingStep(prev => (prev < thinkingSteps.length - 1 ? prev + 1 : prev));
+    }, 1000);
 
     try {
-      const token = localStorage.getItem('cc_token');
-      const headers = { 'Content-Type': 'application/json' };
-      if (token) headers['Authorization'] = `Bearer ${token}`;
-
       const res = await fetch(`/api/deals/${currentDeal.id}/negotiate`, {
         method: 'POST',
-        headers,
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          creatorMessage: creatorReplyInput,
+          creatorMessage: textToSend,
           manualPriceOverride: manualPriceOverride ? parseInt(manualPriceOverride, 10) : null
         })
       });
@@ -237,6 +247,13 @@ export default function EmailNegotiator({ campaignId, activeDeal, onDealUpdated,
         setManualPriceOverride('');
         setSuccessMsg(`AI Negotiator replied to ${data.deal.creatorName} • Stage: ${data.deal.status}`);
         setTimeout(() => setSuccessMsg(null), 5000);
+        
+        // Refresh memory profile
+        const targetId = data.deal.creatorId || data.deal.creatorEmail;
+        fetch(`/api/creators/${encodeURIComponent(targetId)}/memory`)
+          .then(r => r.json())
+          .then(setCreatorMemory)
+          .catch(() => {});
       }
     } catch (err) {
       console.error("Failed to process AI negotiation", err);
@@ -258,8 +275,8 @@ export default function EmailNegotiator({ campaignId, activeDeal, onDealUpdated,
         body: JSON.stringify({
           creatorEmail: currentDeal.creatorEmail,
           creatorName: currentDeal.creatorName,
-          memoryCategory: 'STRATEGY_NOTE',
-          memoryKey: 'brand_manager_note',
+          memoryCategory: newMemoryCategory,
+          memoryKey: newMemoryCategory === 'PRICING_HISTORY' ? 'Rate Preference' : newMemoryCategory === 'LOGISTICS_PREFERENCE' ? 'Logistics Note' : 'Creator Trait',
           memoryValue: newMemoryNote.trim(),
           sourceDealId: currentDeal.id
         })
@@ -282,6 +299,7 @@ export default function EmailNegotiator({ campaignId, activeDeal, onDealUpdated,
     switch ((status || '').toUpperCase()) {
       case 'AGREED':
       case 'ACCEPTED':
+      case 'QA_PASSED':
         return 'green';
       case 'NEGOTIATING':
       case 'COUNTER_OFFER':
@@ -304,10 +322,10 @@ export default function EmailNegotiator({ campaignId, activeDeal, onDealUpdated,
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
           <h2 style={{ fontSize: '1.5rem', fontWeight: '400', color: '#f4f4f4', margin: '0 0 0.25rem 0', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-            <Email size={24} style={{ color: '#0f62fe' }} /> AI Autonomous Email Negotiator
+            <Email size={24} style={{ color: '#0f62fe' }} /> AI Autonomous Email Negotiator & Memory Studio
           </h2>
           <p style={{ color: '#8d8d8d', fontSize: '0.875rem', margin: 0 }}>
-            Real-time Gmail thread timeline with autonomous Google Gemini commercial negotiation & Section 194J TDS compliance.
+            Real-time Gmail conversational intelligence powered by Google Gemini with persistent creator memory & Section 194J TDS compliance.
           </p>
         </div>
 
@@ -356,7 +374,7 @@ export default function EmailNegotiator({ campaignId, activeDeal, onDealUpdated,
         
         {/* LEFT COLUMN: Deal Selector Sidebar */}
         <Column lg={5} md={3} sm={4}>
-          <Tile style={{ background: '#1a1a1a', border: '1px solid #2e2e2e', padding: '1rem', borderRadius: 6, display: 'flex', flexDirection: 'column', height: '100%', minHeight: '620px' }}>
+          <Tile style={{ background: '#181818', border: '1px solid #2e2e2e', padding: '1rem', borderRadius: 6, display: 'flex', flexDirection: 'column', height: '100%', minHeight: '640px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
               <span style={{ color: '#f4f4f4', fontWeight: '600', fontSize: '0.9rem' }}>Contacted Creators</span>
               <Tag type="blue" size="sm">{deals.length} Active</Tag>
@@ -373,7 +391,7 @@ export default function EmailNegotiator({ campaignId, activeDeal, onDealUpdated,
               />
             </div>
 
-            <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '520px', paddingRight: '0.25rem' }}>
+            <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '540px', paddingRight: '0.25rem' }}>
               {loadingDeals ? (
                 <div style={{ textAlign: 'center', padding: '2rem 0' }}>
                   <Loading small withOverlay={false} />
@@ -398,7 +416,7 @@ export default function EmailNegotiator({ campaignId, activeDeal, onDealUpdated,
                       key={d.id}
                       onClick={() => setSelectedDealId(d.id)}
                       style={{
-                        padding: '0.75rem',
+                        padding: '0.85rem',
                         borderRadius: 6,
                         cursor: 'pointer',
                         background: isSelected ? 'rgba(15, 98, 254, 0.15)' : '#222222',
@@ -406,17 +424,17 @@ export default function EmailNegotiator({ campaignId, activeDeal, onDealUpdated,
                         transition: 'all 0.15s ease'
                       }}
                     >
-                      <div style={{ display: 'flex', gap: '0.65rem', alignItems: 'center', marginBottom: '0.35rem' }}>
+                      <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', marginBottom: '0.35rem' }}>
                         <img
                           src={d.creatorAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(d.creatorName || 'Creator')}&background=0f62fe&color=ffffff`}
                           alt={d.creatorName}
-                          style={{ width: 34, height: 34, borderRadius: '50%', objectFit: 'cover' }}
+                          style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover', border: isSelected ? '2px solid #0f62fe' : '1px solid #444' }}
                         />
                         <div style={{ flex: 1, minWidth: 0 }}>
-                          <h5 style={{ margin: 0, color: '#f4f4f4', fontSize: '0.875rem', fontWeight: '600', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          <h5 style={{ margin: 0, color: '#f4f4f4', fontSize: '0.9rem', fontWeight: '600', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                             {d.creatorName || 'Creator'}
                           </h5>
-                          <span style={{ fontSize: '0.75rem', color: '#8d8d8d' }}>
+                          <span style={{ fontSize: '0.75rem', color: '#8d8d8d', display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                             {d.creatorEmail}
                           </span>
                         </div>
@@ -424,12 +442,12 @@ export default function EmailNegotiator({ campaignId, activeDeal, onDealUpdated,
 
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.4rem', fontSize: '0.75rem' }}>
                         <Tag type={getStatusColor(d.status)} size="sm">{d.status || 'INVITED'}</Tag>
-                        <span style={{ color: '#42be65', fontWeight: '600' }}>₹{Number(price).toLocaleString('en-IN')}</span>
+                        <span style={{ color: '#42be65', fontWeight: '700', fontFamily: 'monospace', fontSize: '0.85rem' }}>₹{Number(price).toLocaleString('en-IN')}</span>
                       </div>
 
                       {lastMsg && (
-                        <p style={{ margin: '0.4rem 0 0 0', fontSize: '0.75rem', color: '#8d8d8d', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                          {lastMsg.sender === 'BRAND_AI' ? '🤖 You: ' : '👤 Creator: '}{lastMsg.body}
+                        <p style={{ margin: '0.4rem 0 0 0', fontSize: '0.75rem', color: '#a8a8a8', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {lastMsg.sender === 'CREATOR' ? '👤 Creator: ' : '🤖 AI: '}{lastMsg.body}
                         </p>
                       )}
                     </div>
@@ -446,12 +464,12 @@ export default function EmailNegotiator({ campaignId, activeDeal, onDealUpdated,
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               
               {/* Active Deal Info Tile */}
-              <Tile style={{ background: '#1a1a1a', border: '1px solid #2e2e2e', padding: '1rem 1.25rem', borderRadius: 6, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+              <Tile style={{ background: '#181818', border: '1px solid #2e2e2e', padding: '1rem 1.25rem', borderRadius: 6, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
                 <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
                   <img
                     src={currentDeal.creatorAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(currentDeal.creatorName || 'Creator')}&background=0f62fe&color=ffffff`}
                     alt={currentDeal.creatorName}
-                    style={{ width: 46, height: 46, borderRadius: '50%', objectFit: 'cover', border: '2px solid #0f62fe' }}
+                    style={{ width: 48, height: 48, borderRadius: '50%', objectFit: 'cover', border: '2px solid #0f62fe' }}
                   />
                   <div>
                     <h3 style={{ margin: 0, color: '#f4f4f4', fontSize: '1.15rem', fontWeight: '600' }}>
@@ -467,7 +485,7 @@ export default function EmailNegotiator({ campaignId, activeDeal, onDealUpdated,
                           value={editedEmail}
                           onChange={e => setEditedEmail(e.target.value)}
                           placeholder="creator@gmail.com"
-                          style={{ width: '220px' }}
+                          style={{ width: '240px' }}
                         />
                         <Button 
                           size="sm" 
@@ -512,8 +530,8 @@ export default function EmailNegotiator({ campaignId, activeDeal, onDealUpdated,
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
                   <div style={{ textAlign: 'right' }}>
-                    <span style={{ fontSize: '0.75rem', color: '#8d8d8d', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Commercial Terms</span>
-                    <div style={{ fontSize: '1.25rem', fontWeight: '700', color: '#42be65' }}>
+                    <span style={{ fontSize: '0.75rem', color: '#8d8d8d', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Agreed Fee</span>
+                    <div style={{ fontSize: '1.35rem', fontWeight: '700', color: '#42be65', fontFamily: 'monospace' }}>
                       ₹{Number(currentDeal.currentAgreedPrice || currentDeal.offeredPrice || 25000).toLocaleString('en-IN')}
                     </div>
                   </div>
@@ -524,23 +542,25 @@ export default function EmailNegotiator({ campaignId, activeDeal, onDealUpdated,
                 </div>
               </Tile>
 
-              {/* 🧠 Creator Memory & Episodic Intelligence Bar */}
-              <Tile style={{ background: 'rgba(15, 98, 254, 0.06)', border: '1px solid rgba(15, 98, 254, 0.25)', padding: '0.85rem 1.25rem', borderRadius: 6 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+              {/* 🧠 UPGRADED CREATOR MEMORY & EPISODIC INTELLIGENCE CARD */}
+              <Tile style={{ background: '#1c1f26', border: '1px solid #2d3748', padding: '1rem 1.25rem', borderRadius: 6 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <span style={{ fontSize: '0.95rem' }}>🧠</span>
-                    <span style={{ fontWeight: '600', color: '#78a9ff', fontSize: '0.875rem' }}>
-                      AI Persistent Creator Memory & Historical Profile
+                    <span style={{ fontSize: '1.1rem' }}>🧠</span>
+                    <span style={{ fontWeight: '700', color: '#78a9ff', fontSize: '0.9rem' }}>
+                      Persistent Creator Memory & Intelligence Graph
                     </span>
                     <Tag type="blue" size="sm">
-                      {creatorMemory?.stats?.totalInteractions || 1} Interaction{creatorMemory?.stats?.totalInteractions !== 1 ? 's' : ''}
+                      {creatorMemory?.stats?.totalInteractions || 1} Turn Interaction
                     </Tag>
                   </div>
                   
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.75rem', color: '#a8a8a8' }}>
-                    <span>⚡ Thread Context: <strong style={{ color: '#42be65' }}>{currentDeal.emailThread?.length || 1} turns active</strong></span>
+                    <span>⚡ Turns: <strong style={{ color: '#42be65' }}>{currentDeal.emailThread?.length || 1} active</strong></span>
                     <span>•</span>
-                    <span>📹 Historical VideoDB QA: <strong style={{ color: '#0f62fe' }}>{creatorMemory?.stats?.averageComplianceScore || 92}%</strong></span>
+                    <span>📹 Compliance Score: <strong style={{ color: '#0f62fe' }}>{creatorMemory?.stats?.averageComplianceScore || 95}%</strong></span>
+                    <span>•</span>
+                    <span>🛡️ Status: <strong style={{ color: '#42be65' }}>{creatorMemory?.stats?.reliabilityRating || 'High'}</strong></span>
                     <Button 
                       kind="ghost" 
                       size="sm" 
@@ -554,57 +574,63 @@ export default function EmailNegotiator({ campaignId, activeDeal, onDealUpdated,
 
                 {/* Quick Add Custom Fact Form */}
                 {showAddNote && (
-                  <form onSubmit={handleAddCustomMemoryNote} style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem', marginTop: '0.5rem' }}>
+                  <form onSubmit={handleAddCustomMemoryNote} style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
                     <TextInput
                       id="custom-memory-note"
                       size="sm"
                       labelText=""
-                      placeholder="e.g. Creator prefers Hindi voiceover and 3-day sample lead time..."
+                      placeholder="e.g. Creator requires 2 testing units and prefers Hindi captions..."
                       value={newMemoryNote}
                       onChange={e => setNewMemoryNote(e.target.value)}
-                      style={{ flex: 1 }}
+                      style={{ flex: 1, minWidth: '240px' }}
                     />
                     <Button type="submit" size="sm" kind="primary" disabled={!newMemoryNote.trim()}>
-                      Save Memory
+                      Save to Memory
                     </Button>
                   </form>
                 )}
 
-                {/* Learned Trait Badges */}
+                {/* Structured Categorized Memory Pills */}
                 <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
-                  {creatorMemory?.memories && creatorMemory.memories.length > 0 ? (
-                    creatorMemory.memories.map(m => (
-                      <span 
-                        key={m.id} 
+                  {(creatorMemory?.memories && creatorMemory.memories.length > 0 ? creatorMemory.memories : []).map(m => {
+                    const isPrice = m.memory_category === 'PRICING_HISTORY' || m.memory_key?.toLowerCase().includes('rate');
+                    const isDeliverable = m.memory_category === 'DELIVERABLE_PREFERENCE' || m.memory_key?.toLowerCase().includes('format');
+                    const isLogistics = m.memory_category === 'LOGISTICS_PREFERENCE' || m.memory_key?.toLowerCase().includes('sample');
+                    const isCompliance = m.memory_category === 'COMPLIANCE_RECORD' || m.memory_key?.toLowerCase().includes('safety');
+
+                    const icon = isPrice ? '💰' : isDeliverable ? '🎬' : isLogistics ? '📦' : isCompliance ? '🛡️' : '🎙️';
+                    const borderColor = isPrice ? '#24a148' : isDeliverable ? '#0f62fe' : isLogistics ? '#f1c21b' : '#8a3ffc';
+
+                    return (
+                      <div 
+                        key={m.id || m.memory_key}
                         style={{ 
-                          fontSize: '0.75rem', 
-                          padding: '0.2rem 0.55rem', 
-                          background: '#161616', 
-                          border: '1px solid #333333', 
+                          fontSize: '0.78rem', 
+                          padding: '0.35rem 0.65rem', 
+                          background: '#12161f', 
+                          border: `1px solid ${borderColor}`, 
                           borderRadius: 4, 
-                          color: '#e0e0e0',
+                          color: '#f4f4f4',
                           display: 'flex',
                           alignItems: 'center',
-                          gap: '0.35rem'
+                          gap: '0.4rem',
+                          boxShadow: '0 2px 6px rgba(0, 0, 0, 0.2)'
                         }}
                       >
-                        <span style={{ color: '#4589ff' }}>•</span>
-                        <strong>{m.memory_key.replace(/_/g, ' ')}:</strong> {m.memory_value}
-                      </span>
-                    ))
-                  ) : (
-                    <span style={{ fontSize: '0.75rem', color: '#8d8d8d', fontStyle: 'italic' }}>
-                      First collaboration with {currentDeal.creatorName}. Gemini AI is dynamically extracting negotiation traits, tone preferences, and delivery habits into persistent long-term memory.
-                    </span>
-                  )}
+                        <span>{icon}</span>
+                        <strong style={{ color: '#78a9ff' }}>{m.memory_key}:</strong>
+                        <span>{m.memory_value}</span>
+                      </div>
+                    );
+                  })}
                 </div>
               </Tile>
 
-              {/* Email Thread Timeline Box */}
-              <Tile style={{ background: '#161616', border: '1px solid #2e2e2e', padding: '1.25rem', borderRadius: 6, minHeight: '380px', maxHeight: '440px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              {/* TWO-WAY EMAIL CONVERSATION TIMELINE */}
+              <Tile style={{ background: '#121212', border: '1px solid #262626', padding: '1.25rem', borderRadius: 6, minHeight: '400px', maxHeight: '480px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                 {(!currentDeal.emailThread || currentDeal.emailThread.length === 0) ? (
                   <div style={{ textAlign: 'center', padding: '3rem', color: '#6e6e6e' }}>
-                    <Email size={32} style={{ marginBottom: '0.5rem', color: '#444' }} />
+                    <Email size={36} style={{ marginBottom: '0.5rem', color: '#444' }} />
                     <p>No messages recorded yet in this proposal thread.</p>
                   </div>
                 ) : (
@@ -616,29 +642,54 @@ export default function EmailNegotiator({ campaignId, activeDeal, onDealUpdated,
                       <div
                         key={msg.id || idx}
                         style={{
-                          maxWidth: '85%',
+                          maxWidth: '88%',
                           alignSelf: isBrand ? 'flex-start' : 'flex-end',
-                          background: isBrand ? '#202020' : '#002d9c',
-                          border: isBrand ? '1px solid #333' : '1px solid #0043ce',
+                          background: isBrand ? '#1c2230' : '#14291e',
+                          border: isBrand ? '1px solid #0f62fe' : '1px solid #24a148',
+                          borderLeftWidth: isBrand ? '4px' : '1px',
+                          borderRightWidth: !isBrand ? '4px' : '1px',
                           borderRadius: 8,
-                          padding: '1rem',
-                          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)'
+                          padding: '1.1rem',
+                          boxShadow: '0 3px 12px rgba(0, 0, 0, 0.35)'
                         }}
                       >
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem', fontSize: '0.75rem', gap: '1rem' }}>
-                          <span style={{ fontWeight: '600', color: isBrand ? '#4589ff' : '#69c0ff', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                            {isBrand ? <Bot size={14} /> : <User size={14} />} {msg.senderName || (isBrand ? 'Brand AI' : currentDeal.creatorName)}
+                        {/* Header Bar */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.65rem', fontSize: '0.78rem', gap: '1rem' }}>
+                          <span style={{ fontWeight: '700', color: isBrand ? '#78a9ff' : '#42be65', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                            {isBrand ? <Bot size={16} /> : <User size={16} />} 
+                            {isBrand ? '⚡ boAt Creator Partnerships AI' : `👤 ${currentDeal.creatorName}`}
                           </span>
-                          <span style={{ color: '#8d8d8d' }}>{msg.timestamp || 'Just now'}</span>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <Tag type={isBrand ? 'blue' : 'green'} size="sm">
+                              {isBrand ? 'OUTBOUND GMAIL' : 'INBOUND FROM CREATOR'}
+                            </Tag>
+                            <span style={{ color: '#8d8d8d', fontSize: '0.72rem' }}>{msg.timestamp || 'Just now'}</span>
+                          </div>
                         </div>
 
-                        <p style={{ margin: 0, color: '#f4f4f4', fontSize: '0.875rem', lineHeight: '1.5', whiteSpace: 'pre-wrap' }}>
+                        {/* Body Message */}
+                        <p style={{ margin: 0, color: '#f4f4f4', fontSize: '0.875rem', lineHeight: '1.6', whiteSpace: 'pre-wrap' }}>
                           {isLatest && isBrand && loading ? (
-                            <TypewriterText text={msg.body} speed={8} />
+                            <TypewriterText text={msg.body} speed={6} />
                           ) : (
                             msg.body
                           )}
                         </p>
+
+                        {/* Inline Carbon Financial Terms Pill Box (if commercial terms present) */}
+                        {isBrand && (
+                          <div style={{ marginTop: '0.85rem', background: '#12151d', border: '1px solid #2b3648', borderRadius: 4, padding: '0.6rem 0.85rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', fontSize: '0.78rem' }}>
+                            <span style={{ color: '#a8a8a8' }}>
+                              Offered Commercial: <strong style={{ color: '#42be65', fontFamily: 'monospace' }}>₹{Number(currentDeal.currentAgreedPrice || currentDeal.offeredPrice || 25000).toLocaleString('en-IN')}</strong>
+                            </span>
+                            <span style={{ color: '#78a9ff' }}>
+                              Net Escrow (10% TDS): <strong style={{ color: '#f4f4f4', fontFamily: 'monospace' }}>₹{Math.round(Number(currentDeal.currentAgreedPrice || currentDeal.offeredPrice || 25000) * 0.9).toLocaleString('en-IN')}</strong>
+                            </span>
+                            <span style={{ color: '#a8a8a8' }}>
+                              Promo: <code style={{ color: '#f4f4f4', background: '#222', padding: '1px 4px' }}>SAVER20</code>
+                            </span>
+                          </div>
+                        )}
                       </div>
                     );
                   })
@@ -648,115 +699,122 @@ export default function EmailNegotiator({ campaignId, activeDeal, onDealUpdated,
                 {loading && (
                   <div 
                     style={{
-                      padding: '1rem 1.25rem',
-                      borderRadius: 8,
-                      background: 'rgba(15, 98, 254, 0.1)',
-                      borderLeft: '4px solid #0f62fe',
-                      border: '1px solid rgba(15, 98, 254, 0.3)',
+                      maxWidth: '88%',
                       alignSelf: 'flex-start',
-                      maxWidth: '85%'
+                      background: 'rgba(15, 98, 254, 0.08)',
+                      border: '1px dashed #0f62fe',
+                      borderRadius: 8,
+                      padding: '1rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.85rem'
                     }}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', marginBottom: '0.35rem' }}>
-                      <Loading small withOverlay={false} />
-                      <span style={{ fontWeight: '600', color: '#78a9ff', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                        <Bot size={16} /> Gemini 2.0 AI Negotiator Thinking...
-                      </span>
-                    </div>
-                    <div style={{ color: '#edf5ff', fontSize: '0.825rem' }}>
-                      {thinkingSteps[thinkingStep]}
+                    <Loading small withOverlay={false} />
+                    <div>
+                      <div style={{ color: '#78a9ff', fontWeight: '600', fontSize: '0.85rem', marginBottom: '0.2rem' }}>
+                        Google Gemini 3.1 Neural Reasoning in Progress...
+                      </div>
+                      <div style={{ color: '#a8a8a8', fontSize: '0.78rem' }}>
+                        {thinkingSteps[thinkingStep]}
+                      </div>
                     </div>
                   </div>
                 )}
               </Tile>
 
-              {/* Action & Simulator Composer */}
-              <Tile style={{ background: '#1a1a1a', border: '1px solid #2e2e2e', padding: '1.25rem', borderRadius: 6 }}>
-                <div style={{ marginBottom: '0.75rem' }}>
-                  <span style={{ fontSize: '0.85rem', fontWeight: '600', color: '#f4f4f4' }}>
-                    Simulate Creator Response (or Receive Real Inbound Email):
+              {/* QUICK SIMULATION CHIPS & INTERACTIVE COMPOSER DOCK */}
+              <Tile style={{ background: '#181818', border: '1px solid #2e2e2e', padding: '1.1rem 1.25rem', borderRadius: 6 }}>
+                
+                {/* Simulation Scenario Chips */}
+                <div style={{ marginBottom: '0.85rem' }}>
+                  <span style={{ fontSize: '0.75rem', color: '#8d8d8d', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '0.4rem' }}>
+                    Quick Simulation Prompts (Test Back-and-Forth AI Negotiation):
                   </span>
-                  <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', marginTop: '0.4rem' }}>
-                    {QUICK_SIMULATION_CHIPS.map((chip, i) => (
+                  <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                    {QUICK_SIMULATION_CHIPS.map((chip, idx) => (
                       <button
-                        key={i}
-                        type="button"
-                        onClick={() => setCreatorReplyInput(chip)}
-                        style={{
-                          background: '#262626',
-                          border: '1px solid #3d3d3d',
-                          color: '#c6c6c6',
-                          fontSize: '0.75rem',
-                          padding: '0.3rem 0.6rem',
-                          borderRadius: 14,
-                          cursor: 'pointer'
+                        key={idx}
+                        disabled={loading}
+                        onClick={() => {
+                          setCreatorReplyInput(chip.text);
+                          handleSendCreatorReply(chip.text);
                         }}
+                        style={{
+                          background: '#222222',
+                          border: '1px solid #3d3d3d',
+                          borderRadius: 4,
+                          color: '#f4f4f4',
+                          padding: '0.35rem 0.75rem',
+                          fontSize: '0.78rem',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.35rem',
+                          transition: 'all 0.15s ease'
+                        }}
+                        onMouseEnter={e => { e.currentTarget.style.borderColor = '#0f62fe'; e.currentTarget.style.background = '#282828'; }}
+                        onMouseLeave={e => { e.currentTarget.style.borderColor = '#3d3d3d'; e.currentTarget.style.background = '#222222'; }}
                       >
-                        {chip}
+                        {chip.label}
                       </button>
                     ))}
                   </div>
                 </div>
 
-                <form onSubmit={handleSimulateCreatorReply} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                {/* Custom Message Input */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                   <TextArea
-                    id="negotiator-reply-input"
-                    labelText="Creator Message / Counter-Offer"
-                    placeholder="Type creator response (e.g. 'I can do ₹30,000 for a Reel + 1 Story')..."
-                    rows={3}
+                    id="creator-reply-input"
+                    labelText="Inbound Creator Message (or Simulate Email Reply):"
+                    placeholder="Type what the creator says (e.g. 'Can we do ₹32,000 + 2 Stories?' or 'Accepted, let's proceed')..."
                     value={creatorReplyInput}
                     onChange={e => setCreatorReplyInput(e.target.value)}
-                    style={{ background: '#121212' }}
+                    rows={2}
+                    disabled={loading}
                   />
 
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      <span style={{ fontSize: '0.8rem', color: '#8d8d8d' }}>Price Override (₹):</span>
+                      <span style={{ fontSize: '0.78rem', color: '#8d8d8d' }}>Force Agreed Price Override:</span>
                       <TextInput
-                        id="price-override-input"
-                        labelText=""
-                        hideLabel
-                        placeholder="e.g. 30000"
+                        id="price-override"
                         size="sm"
-                        type="number"
+                        labelText=""
+                        placeholder="₹ Optional"
                         value={manualPriceOverride}
                         onChange={e => setManualPriceOverride(e.target.value)}
-                        style={{ width: 140, background: '#121212' }}
+                        style={{ width: '110px' }}
+                        disabled={loading}
                       />
                     </div>
 
                     <Button
-                      type="submit"
                       kind="primary"
+                      size="sm"
                       renderIcon={Send}
                       disabled={loading || !creatorReplyInput.trim()}
+                      onClick={() => handleSendCreatorReply()}
                     >
-                      {loading ? 'AI Negotiating...' : 'Trigger AI Auto-Negotiator (Gemini)'}
+                      {loading ? 'AI Formulating Counter-Offer...' : 'Send Message & Run AI Counter-Offer'}
                     </Button>
                   </div>
-                </form>
+                </div>
               </Tile>
 
             </div>
           ) : (
-            <Tile style={{ background: '#1a1a1a', border: '1px solid #2e2e2e', padding: '3rem', textAlign: 'center', borderRadius: 6 }}>
-              <Email size={48} style={{ color: '#555', marginBottom: '1rem' }} />
-              <h3 style={{ color: '#f4f4f4', fontSize: '1.2rem', marginBottom: '0.5rem' }}>No Active Deal Selected</h3>
-              <p style={{ color: '#8d8d8d', fontSize: '0.875rem', marginBottom: '1.5rem' }}>
-                Select a creator from the left sidebar to inspect and negotiate their collaboration proposal.
+            <Tile style={{ background: '#181818', border: '1px solid #2e2e2e', padding: '3rem', textAlign: 'center' }}>
+              <Email size={48} style={{ color: '#0f62fe', marginBottom: '1rem' }} />
+              <h3 style={{ color: '#f4f4f4', marginBottom: '0.5rem' }}>No Creator Deal Selected</h3>
+              <p style={{ color: '#8d8d8d', maxWidth: '400px', margin: '0 auto 1.5rem auto' }}>
+                Select a creator from the left sidebar to inspect real Gmail threads, view persistent episodic memory, or negotiate commercial rates.
               </p>
-              {onNavigateToDiscovery && (
-                <Button kind="primary" size="md" onClick={onNavigateToDiscovery} renderIcon={Launch}>
-                  Discover Creators & Launch Outreach
-                </Button>
-              )}
             </Tile>
           )}
         </Column>
 
       </Grid>
-
     </div>
   );
 }
-

@@ -47,7 +47,17 @@ import AgencyCommandCenter from './components/AgencyCommandCenter';
 import CampaignPortfolioModal from './components/CampaignPortfolioModal';
 
 export default function App() {
-  const [currentTab, setCurrentTab] = useState('overview');
+  // Restore active tab from URL hash or localStorage on page load/refresh
+  const getInitialTab = () => {
+    const hash = window.location.hash.replace('#', '').trim();
+    const validTabs = ['overview', 'campaigns', 'discovery', 'deals', 'approvals', 'analytics', 'attribution', 'strategy', 'governance', 'verification', 'payouts', 'crm', 'agency'];
+    if (hash && validTabs.includes(hash)) return hash;
+    const saved = localStorage.getItem('cc_active_tab');
+    if (saved && validTabs.includes(saved)) return saved;
+    return 'overview';
+  };
+
+  const [currentTab, setCurrentTab] = useState(getInitialTab);
   const [activeDeal, setActiveDeal] = useState(null);
   const [activeCampaign, setActiveCampaign] = useState(null);
   const [campaigns, setCampaigns] = useState([]);
@@ -57,17 +67,44 @@ export default function App() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isOrgSettingsOpen, setIsOrgSettingsOpen] = useState(false);
   const [session, setSession] = useState(null);
-  const [workspaceMode, setWorkspaceMode] = useState('brand');
+  const [workspaceMode, setWorkspaceMode] = useState(() => localStorage.getItem('cc_workspace_mode') || 'brand');
 
   const [pendingApprovals, setPendingApprovals] = useState(0);
   const [forceCreateNewCampaign, setForceCreateNewCampaign] = useState(false);
   const [selectedWorkspaceCampaign, setSelectedWorkspaceCampaign] = useState(null);
 
+  // Sync tab changes to URL hash and localStorage
+  useEffect(() => {
+    localStorage.setItem('cc_active_tab', currentTab);
+    if (window.location.hash.replace('#', '') !== currentTab) {
+      window.location.hash = currentTab;
+    }
+  }, [currentTab]);
+
+  // Sync workspace mode to localStorage
+  useEffect(() => {
+    localStorage.setItem('cc_workspace_mode', workspaceMode);
+  }, [workspaceMode]);
+
+  // Listen to browser Back/Forward navigation
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.replace('#', '').trim();
+      const validTabs = ['overview', 'campaigns', 'discovery', 'deals', 'approvals', 'analytics', 'attribution', 'strategy', 'governance', 'verification', 'payouts', 'crm', 'agency'];
+      if (hash && validTabs.includes(hash) && hash !== currentTab) {
+        setCurrentTab(hash);
+      }
+    };
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, [currentTab]);
+
   useEffect(() => {
     if (window.location.search) {
       const params = new URLSearchParams(window.location.search);
       if (params.get('gmail_status') || params.get('gmail_error')) {
-        window.history.replaceState({}, document.title, window.location.pathname);
+        const cleanUrl = window.location.pathname + (window.location.hash || '');
+        window.history.replaceState({}, document.title, cleanUrl);
       }
     }
     fetchSession();
