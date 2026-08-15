@@ -1,18 +1,12 @@
 services:
-  # Node.js Web Service for Express Backend + Event Bus Engine + MCP + 24/7 Agent
+  # Node.js Unified Web Service (Express Backend + Vite Frontend + 24/7 Agent Engine)
   - type: web
     name: project-x-server
     env: node
     buildCommand: npm run install:all && npm run build
     startCommand: npm start
-    disk:
-      name: sqlite-data
-      mountPath: /opt/render/project/src/server/database
-      sizeGB: 1
     envVars:
       - key: NODE_ENV
         value: production
-      - key: PORT
-        value: 5001
       - key: JWT_SECRET
         generateValue: true
