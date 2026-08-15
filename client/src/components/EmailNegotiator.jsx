@@ -145,14 +145,33 @@ export default function EmailNegotiator({ campaignId, activeDeal, onDealUpdated,
     }
   };
 
-  // Fetch campaign deals
+  // Sync activeDeal prop from parent immediately
+  useEffect(() => {
+    if (activeDeal?.id) {
+      setSelectedDealId(activeDeal.id);
+      setDeals(prev => {
+        if (!prev.find(d => d.id === activeDeal.id)) {
+          return [activeDeal, ...prev];
+        }
+        return prev;
+      });
+    }
+  }, [activeDeal]);
+
+  // Fetch campaign deals with graceful fallback
   const fetchDeals = useCallback(async () => {
     setLoadingDeals(true);
     try {
-      const url = campaignId ? `/api/deals?campaignId=${campaignId}` : '/api/deals';
-      const res = await fetch(url);
-      const data = await res.json();
-      const rawDeals = data.deals || [];
+      let res = await fetch(campaignId ? `/api/deals?campaignId=${campaignId}` : '/api/deals');
+      let data = await res.json();
+      let rawDeals = Array.isArray(data) ? data : (data.deals || []);
+
+      // If no deals found for this specific campaign, fetch all deals across workspace
+      if (rawDeals.length === 0 && campaignId) {
+        res = await fetch('/api/deals');
+        data = await res.json();
+        rawDeals = Array.isArray(data) ? data : (data.deals || []);
+      }
 
       // Deduplicate deals by creator_email / creator_name
       const uniqueMap = new Map();
@@ -162,7 +181,7 @@ export default function EmailNegotiator({ campaignId, activeDeal, onDealUpdated,
           uniqueMap.set(key, d);
         } else {
           const existing = uniqueMap.get(key);
-          if ((d.emailThread?.length || 0) > (existing.emailThread?.length || 0)) {
+          if ((d.emailThread?.length || 0) >= (existing.emailThread?.length || 0)) {
             uniqueMap.set(key, d);
           }
         }
@@ -171,7 +190,9 @@ export default function EmailNegotiator({ campaignId, activeDeal, onDealUpdated,
       const cleanDeals = Array.from(uniqueMap.values());
       setDeals(cleanDeals);
       
-      if (!selectedDealId && cleanDeals.length > 0) {
+      if (activeDeal?.id) {
+        setSelectedDealId(activeDeal.id);
+      } else if (cleanDeals.length > 0 && !selectedDealId) {
         setSelectedDealId(cleanDeals[0].id);
       }
     } catch (err) {
@@ -179,7 +200,7 @@ export default function EmailNegotiator({ campaignId, activeDeal, onDealUpdated,
     } finally {
       setLoadingDeals(false);
     }
-  }, [campaignId, selectedDealId]);
+  }, [campaignId, selectedDealId, activeDeal?.id]);
 
   useEffect(() => {
     fetchDeals();
