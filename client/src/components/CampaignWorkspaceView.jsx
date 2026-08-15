@@ -21,6 +21,7 @@ export default function CampaignWorkspaceView({ campaign, onBack }) {
   const [deals, setDeals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState(0);
+  const [selectedDealForNegotiation, setSelectedDealForNegotiation] = useState(null);
 
   useEffect(() => {
     if (campaign?.id) fetchCampaignDeals();
@@ -182,7 +183,7 @@ export default function CampaignWorkspaceView({ campaign, onBack }) {
             </Grid>
           </TabPanel>
 
-          {/* Tab 1: Creator Sourcing */}
+          {/* Tab 1: Creator Sourcing & Deals */}
           <TabPanel style={{ padding: '1.5rem 0' }}>
             <Tile style={{ background: '#262626', padding: '1.25rem', marginBottom: '1rem' }}>
               <p style={{ fontSize: '0.875rem', color: '#c6c6c6', margin: 0 }}>
@@ -191,7 +192,10 @@ export default function CampaignWorkspaceView({ campaign, onBack }) {
             </Tile>
             <CreatorCrmPipeline
               campaignId={campaign.id}
-              onSelectDealForNegotiation={() => setActiveTab(2)}
+              onSelectDealForNegotiation={(deal) => {
+                setSelectedDealForNegotiation(deal);
+                setActiveTab(2);
+              }}
               onSelectDealForVideo={() => setActiveTab(3)}
               onSelectDealForPayout={() => setActiveTab(4)}
             />
@@ -201,10 +205,15 @@ export default function CampaignWorkspaceView({ campaign, onBack }) {
           <TabPanel style={{ padding: '1.5rem 0' }}>
             <Tile style={{ background: '#262626', padding: '1.25rem', marginBottom: '1rem' }}>
               <p style={{ fontSize: '0.875rem', color: '#c6c6c6', margin: 0 }}>
-                All email negotiation threads scoped to <strong style={{ color: '#f4f4f4' }}>{product}</strong>. Select a deal below to compose or review messages.
+                All email negotiation threads scoped to <strong style={{ color: '#f4f4f4' }}>{product}</strong>. Select a deal from the sidebar to inspect or negotiate.
               </p>
             </Tile>
-            <EmailNegotiator campaignId={campaign.id} />
+            <EmailNegotiator 
+              campaignId={campaign.id} 
+              activeDeal={selectedDealForNegotiation}
+              onDealUpdated={() => fetchCampaignDeals()}
+              onNavigateToDiscovery={() => setActiveTab(1)}
+            />
           </TabPanel>
 
           {/* Tab 3: Video QA */}

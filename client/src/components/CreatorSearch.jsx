@@ -452,6 +452,10 @@ export default function CreatorSearch({ onSelectCreator, onViewDeal, activeCampa
         creatorId={selectedCreatorId}
         isOpen={!!selectedCreatorId}
         onClose={() => setSelectedCreatorId(null)}
+        onSelectOutreach={(creator) => {
+          setSelectedCreatorId(null);
+          handleOpenOutreachModal(creator);
+        }}
       />
 
       {/* Outreach Proposal Carbon Modal */}
