@@ -282,6 +282,7 @@ app.get('/api/integrations/gmail/connect', optionalAuth, (req, res) => {
 
 app.get('/api/integrations/gmail/callback', async (req, res) => {
   const { code, state, error } = req.query;
+  const host = req.get('host') || 'localhost:5001';
   const clientBaseUrl = process.env.CLIENT_URL || '';
 
   if (error || !code) {
