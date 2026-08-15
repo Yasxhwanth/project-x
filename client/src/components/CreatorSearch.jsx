@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { 
   Search as SearchInput, Select, SelectItem, Button, Tag, Loading,
-  SkeletonPlaceholder, Pagination, Modal, NumberInput, InlineNotification, Tile, Grid, Column, InlineLoading
+  SkeletonPlaceholder, Pagination, Modal, NumberInput, TextInput, InlineNotification, Tile, Grid, Column, InlineLoading
 } from '@carbon/react';
 import { 
   Search, CheckmarkOutline, WarningAlt, Send, Currency, UserFollow, Launch, ChevronLeft, ChevronRight, Email, CheckmarkFilled, ArrowRight
@@ -46,6 +46,7 @@ export default function CreatorSearch({ onSelectCreator, onViewDeal, activeCampa
 
   // Outreach Proposal Modal State
   const [outreachCreator, setOutreachCreator] = useState(null);
+  const [destinationEmail, setDestinationEmail] = useState('');
   const [campaignsList, setCampaignsList] = useState([]);
   const [targetCampaignId, setTargetCampaignId] = useState('');
   const [offeredFee, setOfferedFee] = useState(25000);
@@ -83,6 +84,7 @@ export default function CreatorSearch({ onSelectCreator, onViewDeal, activeCampa
 
   const handleOpenOutreachModal = (c) => {
     setOutreachCreator(c);
+    setDestinationEmail(c.email || '');
     setOfferedFee(c.price_per_post || 25000);
     setTargetCampaignId(activeCampaign?.id || campaignsList[0]?.id || 'camp_01');
     setOutreachResult(null);
@@ -92,6 +94,7 @@ export default function CreatorSearch({ onSelectCreator, onViewDeal, activeCampa
     if (!outreachCreator) return;
     setSendingOutreach(true);
     setOutreachResult(null);
+    const targetEmail = destinationEmail.trim() || outreachCreator.email;
     try {
       const res = await fetch('/api/deals/outreach', {
         method: 'POST',
@@ -101,25 +104,27 @@ export default function CreatorSearch({ onSelectCreator, onViewDeal, activeCampa
           campaignId: targetCampaignId || 'camp_01',
           offeredPrice: offeredFee,
           creatorName: outreachCreator.name,
-          creatorEmail: outreachCreator.email,
+          creatorEmail: targetEmail,
           creatorAvatar: outreachCreator.avatar,
           platform: outreachCreator.platform
         })
       });
       if (res.ok) {
         const deal = await res.json();
+        // Update local creator list email if changed
+        setCreators(prev => prev.map(c => c.id === outreachCreator.id ? { ...c, email: targetEmail } : c));
         setOutreachResult({ 
           success: true, 
           deal, 
           creatorName: outreachCreator.name,
-          creatorEmail: outreachCreator.email,
+          creatorEmail: targetEmail,
           fee: offeredFee,
           campaignId: targetCampaignId || 'camp_01'
         });
         setGlobalNotification({
           kind: 'success',
           title: 'Proposal Email Dispatched!',
-          subtitle: `Proposal successfully sent to ${outreachCreator.name} (${outreachCreator.email}) for ₹${Number(offeredFee).toLocaleString('en-IN')}.`
+          subtitle: `Proposal successfully sent to ${outreachCreator.name} (${targetEmail}) for ₹${Number(offeredFee).toLocaleString('en-IN')}.`
         });
       } else {
         const errData = await res.json();
@@ -557,14 +562,19 @@ export default function CreatorSearch({ onSelectCreator, onViewDeal, activeCampa
                       <CheckmarkFilled size={14} /> {senderEmail || 'Project X Cloud Mailer'}
                     </span>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#161616', padding: '0.4rem 0.6rem', borderRadius: 4, border: '1px solid #393939' }}>
-                    <span style={{ color: '#a8a8a8' }}>To (Creator Inbox):</span>
-                    <span style={{ color: '#4589ff', fontWeight: '600' }}>
-                      {outreachCreator.email}
-                    </span>
-                  </div>
                 </div>
               </Tile>
+
+              {/* Editable Recipient Creator Email */}
+              <TextInput
+                id="outreach-creator-email"
+                labelText="Recipient Creator Email (Live Inbox Delivery)"
+                helperText="Emails will be dispatched to this inbox via your connected Gmail account and saved permanently."
+                value={destinationEmail}
+                onChange={e => setDestinationEmail(e.target.value)}
+                placeholder="e.g. creator@gmail.com"
+                style={{ background: '#262626' }}
+              />
 
               {/* Campaign Selection */}
               <Select 

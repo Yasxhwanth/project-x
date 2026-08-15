@@ -96,6 +96,10 @@ export default function EmailNegotiator({ campaignId, activeDeal, onDealUpdated,
   const [showAddNote, setShowAddNote] = useState(false);
   const [newMemoryNote, setNewMemoryNote] = useState('');
 
+  // Inline Creator Email Editor State
+  const [isEditingEmail, setIsEditingEmail] = useState(false);
+  const [editedEmail, setEditedEmail] = useState('');
+
   const thinkingSteps = [
     'Recalling creator episodic memory & past deal benchmarks...',
     'Analyzing creator response and commercial parameters...',
@@ -419,9 +423,56 @@ export default function EmailNegotiator({ campaignId, activeDeal, onDealUpdated,
                     <h3 style={{ margin: 0, color: '#f4f4f4', fontSize: '1.15rem', fontWeight: '600' }}>
                       {currentDeal.creatorName}
                     </h3>
-                    <p style={{ margin: '0.15rem 0 0 0', color: '#a8a8a8', fontSize: '0.825rem' }}>
-                      {currentDeal.creatorEmail} • Deal <span style={{ fontFamily: 'monospace', color: '#4589ff' }}>#{currentDeal.id}</span>
-                    </p>
+                    
+                    {isEditingEmail ? (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginTop: '0.25rem' }}>
+                        <TextInput
+                          id="edit-deal-email"
+                          size="sm"
+                          labelText=""
+                          value={editedEmail}
+                          onChange={e => setEditedEmail(e.target.value)}
+                          placeholder="creator@gmail.com"
+                          style={{ width: '220px' }}
+                        />
+                        <Button 
+                          size="sm" 
+                          kind="primary" 
+                          hasIconOnly 
+                          renderIcon={Checkmark} 
+                          iconDescription="Save Email"
+                          onClick={async () => {
+                            if (!editedEmail.trim()) return;
+                            try {
+                              const res = await fetch(`/api/deals/${currentDeal.id}`, {
+                                method: 'PATCH',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ creatorEmail: editedEmail.trim() })
+                              });
+                              if (res.ok) {
+                                setDeals(prev => prev.map(d => d.id === currentDeal.id ? { ...d, creatorEmail: editedEmail.trim(), creator_email: editedEmail.trim() } : d));
+                                setIsEditingEmail(false);
+                                setSuccessMsg(`Creator email updated to ${editedEmail.trim()} and saved.`);
+                                setTimeout(() => setSuccessMsg(null), 4000);
+                              }
+                            } catch(err) { console.error(err); }
+                          }}
+                        />
+                        <Button size="sm" kind="ghost" hasIconOnly renderIcon={Reset} iconDescription="Cancel" onClick={() => setIsEditingEmail(false)} />
+                      </div>
+                    ) : (
+                      <p style={{ margin: '0.15rem 0 0 0', color: '#a8a8a8', fontSize: '0.825rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                        <span style={{ color: '#4589ff', fontWeight: '500' }}>{currentDeal.creatorEmail}</span>
+                        <button 
+                          onClick={() => { setEditedEmail(currentDeal.creatorEmail || ''); setIsEditingEmail(true); }}
+                          title="Edit recipient email address"
+                          style={{ background: 'transparent', border: 'none', color: '#8d8d8d', cursor: 'pointer', padding: '0 2px', display: 'inline-flex', alignItems: 'center' }}
+                        >
+                          <Edit size={13} />
+                        </button>
+                        <span>• Deal <span style={{ fontFamily: 'monospace', color: '#4589ff' }}>#{currentDeal.id}</span></span>
+                      </p>
+                    )}
                   </div>
                 </div>
 

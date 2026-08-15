@@ -939,15 +939,32 @@ app.post(['/api/deals/outreach', '/api/deals'], async (req, res) => {
     if (!creator && creatorEmail) {
       creator = await getDbRow("SELECT * FROM creators WHERE email = ?", [creatorEmail]);
     }
+
+    const targetEmail = (creatorEmail || '').trim() || creator?.email || 'collabs@project-x.in';
+    const targetName = (creatorName || '').trim() || creator?.name || 'Creator';
+    const targetPlatform = platform || creator?.platform || 'Instagram';
+    const targetAvatar = creatorAvatar || creator?.avatar || '';
+
+    // Permanently persist/update email in creators table if creator exists
+    if (creator?.id && creatorEmail && creatorEmail.trim()) {
+      await runDb('UPDATE creators SET email = ? WHERE id = ?', [targetEmail, creator.id]).catch(() => {});
+      creator.email = targetEmail;
+    }
+
     if (!creator) {
       creator = {
         id: creatorId || "creator_" + Date.now(),
-        name: creatorName || "Creator",
-        email: creatorEmail || "collabs@project-x.in",
-        avatar: creatorAvatar || "",
-        platform: platform || "Instagram",
+        name: targetName,
+        email: targetEmail,
+        avatar: targetAvatar,
+        platform: targetPlatform,
         price_per_post: offeredPrice || 25000
       };
+      // Insert new creator into database
+      await runDb(`
+        INSERT OR IGNORE INTO creators (id, name, email, avatar, platform, price_per_post, followers_raw, reach_text, avg_views, engagement_rate, rating, location, authenticity_score)
+        VALUES (?, ?, ?, ?, ?, ?, 250000, '250K', '80K', 4.5, 4.8, 'India', 92)
+      `, [creator.id, targetName, targetEmail, targetAvatar, targetPlatform, offeredPrice || 25000]).catch(() => {});
     }
 
     const campaign = await getDbRow("SELECT * FROM campaigns WHERE id = ?", [campaignId]) || await getDbRow("SELECT * FROM campaigns LIMIT 1");
@@ -959,8 +976,8 @@ app.post(['/api/deals/outreach', '/api/deals'], async (req, res) => {
       id: "msg_out_" + Date.now(),
       sender: "BRAND_AI",
       senderName: `${campaign.brand_name} Marketing AI`,
-      recipientName: creator.name,
-      body: `Namaste ${creator.name},\n\nWe love your content on ${creator.platform}! We'd like to invite you to collaborate on our upcoming campaign for ${campaign.product_name}.\n\n- Proposed Fee: ₹${initialPrice.toLocaleString('en-IN')}\n- Required Spoken Phrase: "${campaign.mandatory_phrases}"\n- Guidelines: ${campaign.guidelines || "Feature product clearly in your video."}\n\nPlease reply directly to let us know if you'd like to partner with us!\n\nBest regards,\n${campaign.brand_name} Marketing AI`,
+      recipientName: targetName,
+      body: `Namaste ${targetName},\n\nWe love your content on ${targetPlatform}! We'd like to invite you to collaborate on our upcoming campaign for ${campaign.product_name}.\n\n- Proposed Fee: ₹${initialPrice.toLocaleString('en-IN')}\n- Required Spoken Phrase: "${campaign.mandatory_phrases}"\n- Guidelines: ${campaign.guidelines || "Feature product clearly in your video."}\n\nPlease reply directly to let us know if you'd like to partner with us!\n\nBest regards,\n${campaign.brand_name} Marketing AI`,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       intent: "INITIAL_OUTREACH"
     };
@@ -971,17 +988,19 @@ app.post(['/api/deals/outreach', '/api/deals'], async (req, res) => {
         platform, offered_price, current_agreed_price, status, video_url, email_thread_json
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `, [
-      dealId, campaign.id, creator.id, creator.name, creator.email, creator.avatar,
-      creator.platform, initialPrice, initialPrice, 'INVITED', '', JSON.stringify([initialEmail])
+      dealId, campaign.id, creator.id, targetName, targetEmail, targetAvatar,
+      targetPlatform, initialPrice, initialPrice, 'INVITED', '', JSON.stringify([initialEmail])
     ]);
 
     // Dispatch real email via Gmail / Nodemailer engine (non-blocking background dispatch)
     sendCreatorEmail({
-      toEmail: creator.email,
-      creatorName: creator.name,
+      toEmail: targetEmail,
+      creatorName: targetName,
       subject: `Collaboration Proposal: ${campaign.brand_name} x ${campaign.product_name}`,
       body: initialEmail.body,
       organizationId: campaign.organization_id || 'org_boat_01'
+    }).then(result => {
+      console.log(`✉️  [Outreach API] Email dispatched to ${targetEmail}:`, result.messageId || 'SENT');
     }).catch(emailErr => {
       console.error('[Outreach API] Background email send error:', emailErr.message);
     });
@@ -990,10 +1009,10 @@ app.post(['/api/deals/outreach', '/api/deals'], async (req, res) => {
       id: dealId,
       campaignId: campaign.id,
       creatorId: creator.id,
-      creatorName: creator.name,
-      creatorEmail: creator.email,
-      creatorAvatar: creator.avatar,
-      platform: creator.platform,
+      creatorName: targetName,
+      creatorEmail: targetEmail,
+      creatorAvatar: targetAvatar,
+      platform: targetPlatform,
       offeredPrice: initialPrice,
       currentAgreedPrice: initialPrice,
       status: "INVITED",
@@ -1007,6 +1026,63 @@ app.post(['/api/deals/outreach', '/api/deals'], async (req, res) => {
   } catch (err) {
     console.error("Outreach error", err);
     res.status(500).json({ error: "Failed to launch outreach" });
+  }
+});
+
+// Update Deal recipient email or commercial terms
+app.patch('/api/deals/:id', async (req, res) => {
+  try {
+    const { creatorEmail, creatorName, currentAgreedPrice, status } = req.body;
+    const dealId = req.params.id;
+
+    const existingDeal = await getDbRow('SELECT * FROM deals WHERE id = ?', [dealId]);
+    if (!existingDeal) return res.status(404).json({ error: 'Deal not found' });
+
+    const newEmail = (creatorEmail || '').trim() || existingDeal.creator_email;
+    const newName = (creatorName || '').trim() || existingDeal.creator_name;
+    const newPrice = currentAgreedPrice || existingDeal.current_agreed_price;
+    const newStatus = status || existingDeal.status;
+
+    await runDb(`
+      UPDATE deals 
+      SET creator_email = ?, creator_name = ?, current_agreed_price = ?, status = ?, updated_at = CURRENT_TIMESTAMP 
+      WHERE id = ?
+    `, [newEmail, newName, newPrice, newStatus, dealId]);
+
+    // Also update creator record if creator_id exists
+    if (existingDeal.creator_id && newEmail) {
+      await runDb('UPDATE creators SET email = ? WHERE id = ?', [newEmail, existingDeal.creator_id]).catch(() => {});
+    }
+
+    const updated = await getDbRow('SELECT * FROM deals WHERE id = ?', [dealId]);
+    res.json({ success: true, deal: updated });
+  } catch (err) {
+    console.error('[Update Deal Error]:', err);
+    res.status(500).json({ error: 'Failed to update deal: ' + err.message });
+  }
+});
+
+// Update Creator Profile & Email permanently
+app.patch('/api/creators/:id', async (req, res) => {
+  try {
+    const { email, name, price_per_post, phone, bio } = req.body;
+    const creatorId = req.params.id;
+
+    if (email) {
+      await runDb('UPDATE creators SET email = ? WHERE id = ?', [email.trim(), creatorId]);
+    }
+    if (name) {
+      await runDb('UPDATE creators SET name = ? WHERE id = ?', [name.trim(), creatorId]);
+    }
+    if (price_per_post) {
+      await runDb('UPDATE creators SET price_per_post = ? WHERE id = ?', [price_per_post, creatorId]);
+    }
+
+    const updated = await getDbRow('SELECT * FROM creators WHERE id = ?', [creatorId]);
+    res.json({ success: true, creator: updated });
+  } catch (err) {
+    console.error('[Update Creator Error]:', err);
+    res.status(500).json({ error: 'Failed to update creator: ' + err.message });
   }
 });
 
