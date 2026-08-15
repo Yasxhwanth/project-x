@@ -58,6 +58,8 @@ export class VideoSession {
     this.scenes = await extractScenes({
       videoUrl: this.videoUrl,
       metadata: this.metadata,
+      transcriptChunks: this.transcriptChunks,
+      fullTranscript: this.transcript,
       productName,
       brandName,
       apiKey: this.apiKey
