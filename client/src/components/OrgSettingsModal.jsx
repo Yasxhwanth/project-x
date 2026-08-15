@@ -14,7 +14,7 @@ import {
   SelectItem,
   Tag
 } from '@carbon/react';
-import { Enterprise, Settings, Save, Checkmark, User, Bot, Video, Search, Locked } from '@carbon/icons-react';
+import { Enterprise, Settings, Save, Checkmark, User, Bot, Video, Search, Locked, Email } from '@carbon/icons-react';
 
 export default function OrgSettingsModal({ isOpen, onClose, session, onOpenAuthModal }) {
   const [activeTab, setActiveTab] = useState(0);
