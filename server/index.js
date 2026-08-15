@@ -93,7 +93,7 @@ app.post('/api/auth/register', async (req, res) => {
   }
 });
 
-app.get('/api/auth/me', optionalAuth, async (req, res) => {
+app.get(['/api/auth/session', '/api/auth/me'], optionalAuth, async (req, res) => {
   try {
     if (!req.user?.id) {
       return res.json({ user: null, organization: null });
