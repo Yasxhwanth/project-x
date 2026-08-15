@@ -264,20 +264,54 @@ export default function OrgSettingsModal({ isOpen, onClose, session, onOpenAuthM
                     </div>
                   </div>
 
+                  {/* Direct App Password / SMTP (No Refresh Tokens or OAuth needed) */}
+                  <div style={{ background: '#161616', border: '1px solid #0f62fe', padding: '1.25rem', borderRadius: '6px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem' }}>
+                      <Email size={20} style={{ color: '#4589ff' }} />
+                      <span style={{ fontWeight: '600', color: '#ffffff', fontSize: '1rem' }}>
+                        Direct Gmail / SMTP Setup (Zero OAuth / No Refresh Tokens Needed)
+                      </span>
+                    </div>
+                    <p style={{ fontSize: '0.825rem', color: '#a8a8a8', margin: '0 0 1rem 0', lineHeight: 1.5 }}>
+                      Send emails directly to real creator inboxes using your email and a 16-character Google App Password. No Google Cloud Console, redirect URLs, or expiring refresh tokens required.
+                    </p>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                      <TextInput
+                        id="modal-sender-email"
+                        labelText="Your Gmail / Company Email Address"
+                        placeholder="e.g. yashwanthtm5@gmail.com"
+                        value={senderEmail}
+                        onChange={(e) => setSenderEmail(e.target.value)}
+                        required
+                      />
+                      <TextInput
+                        id="modal-smtp-pass"
+                        labelText="16-Character Gmail App Password"
+                        placeholder="e.g. abcd efgh ijkl mnop"
+                        type="password"
+                        value={smtpPass}
+                        onChange={(e) => setSmtpPass(e.target.value)}
+                        helperText="Get from Google Account > Security > 2-Step Verification > App Passwords"
+                      />
+                    </div>
+                  </div>
+
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                     <TextInput
                       id="modal-sender-name"
-                      labelText="Sender Name (AI Outbound)"
+                      labelText="Sender Display Name"
+                      placeholder="e.g. Yashwanth | Project X"
                       value={senderName}
                       onChange={(e) => setSenderName(e.target.value)}
                       required
                     />
                     <TextInput
-                      id="modal-sender-email"
-                      labelText="Sender Email Address"
-                      value={senderEmail}
-                      onChange={(e) => setSenderEmail(e.target.value)}
-                      required
+                      id="modal-smtp-user"
+                      labelText="SMTP Username (Optional - defaults to email)"
+                      placeholder="yashwanthtm5@gmail.com"
+                      value={smtpUser}
+                      onChange={(e) => setSmtpUser(e.target.value)}
                     />
                   </div>
 
@@ -287,6 +321,7 @@ export default function OrgSettingsModal({ isOpen, onClose, session, onOpenAuthM
                       labelText="SMTP Host"
                       value={smtpHost}
                       onChange={(e) => setSmtpHost(e.target.value)}
+                      helperText="Defaults to smtp.gmail.com for Gmail"
                     />
                     <TextInput
                       id="modal-smtp-port"
@@ -294,22 +329,6 @@ export default function OrgSettingsModal({ isOpen, onClose, session, onOpenAuthM
                       type="number"
                       value={smtpPort}
                       onChange={(e) => setSmtpPort(e.target.value)}
-                    />
-                  </div>
-
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                    <TextInput
-                      id="modal-smtp-user"
-                      labelText="SMTP Username"
-                      value={smtpUser}
-                      onChange={(e) => setSmtpUser(e.target.value)}
-                    />
-                    <TextInput
-                      id="modal-smtp-pass"
-                      labelText="SMTP Password / App Secret"
-                      type="password"
-                      value={smtpPass}
-                      onChange={(e) => setSmtpPass(e.target.value)}
                     />
                   </div>
 
