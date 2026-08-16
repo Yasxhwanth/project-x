@@ -89,31 +89,61 @@ body {
 ::-webkit-scrollbar-thumb:hover { background: #525252; }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// App Logo Mark
-// ─────────────────────────────────────────────────────────────────────────────
-// ─────────────────────────────────────────────────────────────────────────────
-// App Logo Mark
+// App Logo Mark & Brand Header
 // ─────────────────────────────────────────────────────────────────────────────
 .app-logo-mark {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 24px; height: 24px;
+  width: 22px; height: 22px;
   background: linear-gradient(135deg, #0f62fe 0%, #0043ce 100%);
-  border-radius: 6px;
-  font-size: 0.8rem;
+  border-radius: 5px;
+  font-size: 0.75rem;
   font-weight: 800;
-  color: #fff;
+  color: #ffffff;
   letter-spacing: -0.02em;
   flex-shrink: 0;
-  box-shadow: 0 0 12px rgba(15, 98, 254, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.12);
+  box-shadow: 0 0 10px rgba(15, 98, 254, 0.45);
+}
+
+.brand-title {
+  font-size: 0.925rem;
+  font-weight: 600;
+  color: #f4f4f4;
+  letter-spacing: -0.01em;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  line-height: 1;
+}
+
+.brand-os {
+  font-size: 0.7rem;
+  font-weight: 400;
+  color: #8d8d8d;
+}
+
+.brand-tag {
+  font-size: 0.6rem;
+  font-weight: 700;
+  padding: 0.15rem 0.45rem;
+  border-radius: 3px;
+  background: rgba(15, 98, 254, 0.18);
+  color: #78a9ff;
+  border: 1px solid rgba(15, 98, 254, 0.4);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Carbon Header Overrides
 // ─────────────────────────────────────────────────────────────────────────────
 .cds--header {
-  background: rgba(14, 14, 14, 0.94) !important;
+  height: 3rem !important;
+  background: rgba(14, 14, 14, 0.95) !important;
   backdrop-filter: blur(16px) saturate(180%) !important;
   -webkit-backdrop-filter: blur(16px) saturate(180%) !important;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
@@ -121,11 +151,15 @@ body {
 }
 
 .cds--header__name {
-  display: flex !important;
+  display: inline-flex !important;
+  flex-direction: row !important;
   align-items: center !important;
-  gap: 0.65rem !important;
+  gap: 0.6rem !important;
+  height: 100% !important;
   padding: 0 1.25rem !important;
   text-decoration: none !important;
+  white-space: nowrap !important;
+  line-height: 1 !important;
 
   &:hover, &:focus { background: transparent !important; }
 }

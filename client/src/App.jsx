@@ -340,15 +340,12 @@ export default function App() {
           <SkipToContent />
 
           {/* Logo + Brand */}
-          <HeaderName href="#overview" prefix="" style={{ gap: '0.65rem', fontWeight: 600, display: 'flex', alignItems: 'center' }}>
+          <HeaderName href="#overview" prefix="" style={{ display: 'flex', alignItems: 'center', gap: '0.55rem', height: '100%', textDecoration: 'none', whiteSpace: 'nowrap' }}>
             <span className="app-logo-mark">X</span>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.4rem' }}>
-              <span style={{ color: '#f4f4f4', fontSize: '0.95rem', fontWeight: 600, letterSpacing: '-0.01em' }}>Project X</span>
-              <span style={{ color: '#8d8d8d', fontSize: '0.75rem', fontWeight: 400 }}>OS</span>
-            </div>
-            <Tag type="blue" size="sm" style={{ marginLeft: '0.25rem', borderRadius: '4px', fontSize: '0.625rem', fontWeight: 700 }}>
-              Enterprise
-            </Tag>
+            <span className="brand-title">
+              Project X <span className="brand-os">OS</span>
+            </span>
+            <span className="brand-tag">Enterprise</span>
           </HeaderName>
 
           <HeaderGlobalBar>
