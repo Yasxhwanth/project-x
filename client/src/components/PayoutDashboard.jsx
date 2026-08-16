@@ -20,7 +20,8 @@ import {
   Identification,
   CheckmarkFilled,
   WarningAltFilled,
-  Receipt
+  Receipt,
+  Finance
 } from '@carbon/icons-react';
 import CreatorKycModal from './CreatorKycModal';
 
@@ -30,7 +31,7 @@ export default function PayoutDashboard({ activeDeal }) {
     creatorId: 'cr_yt_fittuber',
     creatorName: 'Vivek Mittal (Fit Tuber)',
     creatorEmail: 'vivek@fittuber.com',
-    creatorAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=250&q=80',
+    creatorAvatar: 'https://ui-avatars.com/api/?name=Vivek%20Mittal&background=e65100&color=ffffff&bold=true&size=256',
     currentAgreedPrice: 45000,
     status: 'VERIFIED'
   };
@@ -118,40 +119,45 @@ export default function PayoutDashboard({ activeDeal }) {
   };
 
   return (
-    <div className="payout-dashboard-module">
-      <div style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
-        <div>
-          <h2 style={{ fontSize: '1.5rem', fontWeight: '400', marginBottom: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <Currency size={24} style={{ color: '#f1c21b' }} /> Razorpay UPI Settlement & Section 194J 10% TDS Tax Receipt
-          </h2>
-          <p style={{ color: '#a8a8a8' }}>
-            Statutory Indian Income Tax Section 194J/194C TDS withholding calculator, PAN validation, and instant automated bank / UPI settlement.
-          </p>
-        </div>
+    <div style={{ width: '100%' }}>
+      
+      {/* ─── Hero Header ──────────────────────────────────────────────────── */}
+      <div className="hero-header" style={{ marginBottom: '1.25rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
+          <div>
+            <h1>Payouts & Section 194J TDS Settlement</h1>
+            <p>
+              Statutory Indian Income Tax Section 194J/194C TDS withholding calculator, PAN validation, and instant automated bank / UPI settlement.
+            </p>
+          </div>
 
-        <Button
-          kind={isKycVerified ? "secondary" : "primary"}
-          size="md"
-          renderIcon={Identification}
-          onClick={() => setKycModalOpen(true)}
-        >
-          {isKycVerified ? "View / Edit Creator KYC" : "Verify Creator KYC (Required)"}
-        </Button>
+          <Button
+            kind={isKycVerified ? "secondary" : "primary"}
+            size="md"
+            renderIcon={Identification}
+            onClick={() => setKycModalOpen(true)}
+          >
+            {isKycVerified ? "View / Edit Creator KYC" : "Verify Creator KYC (Required)"}
+          </Button>
+        </div>
       </div>
 
-      {/* KYC Compliance Status Ribbon */}
-      <div style={{
-        background: isKycVerified ? 'rgba(66, 190, 101, 0.12)' : 'rgba(218, 30, 40, 0.12)',
-        border: `1px solid ${isKycVerified ? '#42be65' : '#da1e28'}`,
-        borderRadius: '4px',
-        padding: '0.85rem 1.25rem',
-        marginBottom: '1.5rem',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        flexWrap: 'wrap',
-        gap: '0.75rem'
-      }}>
+      {/* ─── KYC Compliance Status Ribbon ─────────────────────────────────── */}
+      <Tile 
+        style={{
+          background: isKycVerified ? 'rgba(66, 190, 101, 0.08)' : 'rgba(218, 30, 40, 0.08)',
+          border: `1px solid ${isKycVerified ? 'rgba(66, 190, 101, 0.3)' : 'rgba(218, 30, 40, 0.3)'}`,
+          borderLeft: `4px solid ${isKycVerified ? '#42be65' : '#da1e28'}`,
+          borderRadius: 6,
+          padding: '1rem 1.25rem',
+          marginBottom: '1.5rem',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '0.75rem'
+        }}
+      >
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
           {isKycVerified ? (
             <CheckmarkFilled size={22} style={{ color: '#42be65' }} />
@@ -159,13 +165,13 @@ export default function PayoutDashboard({ activeDeal }) {
             <WarningAltFilled size={22} style={{ color: '#da1e28' }} />
           )}
           <div>
-            <div style={{ fontWeight: '600', color: '#f4f4f4', fontSize: '0.95rem' }}>
+            <div style={{ fontWeight: 600, color: '#f4f4f4', fontSize: '0.95rem' }}>
               {isKycVerified ? `KYC Verified: ${kycData.legal_name} (PAN: ${kycData.maskedPan || kycData.pan_number})` : 'Creator KYC Verification Incomplete'}
             </div>
             <div style={{ fontSize: '0.8rem', color: '#a8a8a8' }}>
               {isKycVerified
                 ? `Payout Destination: ${kycData.payout_method === 'UPI' ? `UPI (${kycData.upi_id})` : `${kycData.bank_name} (${kycData.maskedBankAccount})`}`
-                : 'Indian Tax Regulations require verified PAN and destination details before disbursing commercial payments.'}
+                : 'Indian Tax Regulations require verified PAN and bank/UPI destination before disbursing commercial payments.'}
             </div>
           </div>
         </div>
@@ -180,7 +186,7 @@ export default function PayoutDashboard({ activeDeal }) {
             </Button>
           )}
         </div>
-      </div>
+      </Tile>
 
       {errorMsg && (
         <InlineNotification
@@ -191,26 +197,28 @@ export default function PayoutDashboard({ activeDeal }) {
         />
       )}
 
-      <Grid style={{ padding: 0, rowGap: '1.5rem', columnGap: '1.5rem' }}>
+      {/* ─── Main 16-Column Layout ────────────────────────────────────────── */}
+      <Grid fullWidth style={{ padding: 0, rowGap: '1.25rem', columnGap: '1.25rem' }}>
+        
         {/* Left Column: Payout Calculation & Overrides */}
         <Column lg={8} md={8} sm={4}>
-          <Tile style={{ padding: '1.75rem', background: '#262626' }}>
-            <h4 style={{ fontSize: '1.1rem', fontWeight: '600', marginBottom: '1.25rem' }}>
+          <Tile style={{ padding: '1.5rem', background: 'var(--color-surface)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: 6 }}>
+            <h4 style={{ fontSize: '1.05rem', fontWeight: 600, color: '#f4f4f4', marginBottom: '1.25rem' }}>
               Settlement Calculation & Fee Overrides
             </h4>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '1.5rem' }}>
               <TextInput
                 id="agreed-gross-fee"
-                labelText="Agreed Commercial Gross Fee (₹)"
+                labelText="Agreed Commercial Gross Fee (INR ₹)"
                 value={`₹${grossFee.toLocaleString('en-IN')}`}
                 disabled
               />
 
-              <div style={{ background: '#161616', padding: '1rem', borderRadius: '4px', border: '1px solid #393939' }}>
+              <div style={{ background: '#111111', padding: '1rem', borderRadius: 4, border: '1px solid rgba(255, 255, 255, 0.08)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                  <span style={{ fontSize: '0.85rem', fontWeight: '600', color: '#f1c21b', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                    <Edit size={16} /> Manual Fee Override (₹)
+                  <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#f1c21b', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                    <Edit size={15} /> Manual Fee Override (₹)
                   </span>
                   <Tag type={manualOverrideFee ? "purple" : "gray"} size="sm">
                     {manualOverrideFee ? "Manual Override" : "Agreed Deal Value"}
@@ -254,29 +262,29 @@ export default function PayoutDashboard({ activeDeal }) {
               renderIcon={Send}
               disabled={loading || !isKycVerified}
               onClick={handleExecutePayout}
-              style={{ width: '100%' }}
+              style={{ width: '100%', maxWidth: 'none' }}
             >
-              {loading ? "Settling via Razorpay RouteX UPI..." : `Execute Verified Payout (₹${netPayoutAmount.toLocaleString('en-IN')})`}
+              {loading ? "Settling via RouteX UPI..." : `Execute Verified Payout (₹${netPayoutAmount.toLocaleString('en-IN')})`}
             </Button>
           </Tile>
         </Column>
 
         {/* Right Column: Statutory Form 16A Breakdown */}
         <Column lg={8} md={8} sm={4}>
-          <Tile style={{ padding: '1.75rem', background: '#262626' }}>
-            <h4 style={{ fontSize: '1.1rem', fontWeight: '600', marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <Receipt size={20} style={{ color: '#42be65' }} /> Indian Income Tax Withholding Summary
+          <Tile style={{ padding: '1.5rem', background: 'var(--color-surface)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: 6 }}>
+            <h4 style={{ fontSize: '1.05rem', fontWeight: 600, color: '#f4f4f4', marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <Receipt size={18} style={{ color: '#42be65' }} /> Indian Income Tax Withholding Summary
             </h4>
 
-            <div style={{ background: '#161616', padding: '1.25rem', borderRadius: '4px', display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+            <div style={{ background: '#111111', padding: '1.25rem', borderRadius: 4, border: '1px solid rgba(255, 255, 255, 0.06)', display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.95rem' }}>
                 <span style={{ color: '#a8a8a8' }}>Agreed Gross Commercial Fee:</span>
-                <span style={{ fontWeight: '600', color: '#f4f4f4' }}>₹{effectiveGrossFee.toLocaleString('en-IN')}</span>
+                <span style={{ fontWeight: 600, color: '#f4f4f4' }}>₹{effectiveGrossFee.toLocaleString('en-IN')}</span>
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.95rem' }}>
-                <span style={{ color: '#da1e28' }}>{tdsRate}% TDS Withholding (Sec {tdsSection}):</span>
-                <span style={{ fontWeight: '600', color: '#da1e28' }}>- ₹{tdsAmount.toLocaleString('en-IN')}</span>
+                <span style={{ color: '#ff8389' }}>{tdsRate}% TDS Withholding (Sec {tdsSection}):</span>
+                <span style={{ fontWeight: 600, color: '#ff8389' }}>- ₹{tdsAmount.toLocaleString('en-IN')}</span>
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: '#8d8d8d' }}>
@@ -284,24 +292,24 @@ export default function PayoutDashboard({ activeDeal }) {
                 <span>{kycData?.maskedPan || (isKycVerified ? kycData?.pan_number : 'PAN NOT LINKED')}</span>
               </div>
 
-              <hr style={{ borderColor: '#393939', margin: '0.25rem 0' }} />
+              <hr style={{ borderColor: 'rgba(255, 255, 255, 0.08)', margin: '0.25rem 0' }} />
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.15rem', fontWeight: '700' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.15rem', fontWeight: 700 }}>
                 <span style={{ color: '#42be65' }}>Net Instant Bank / UPI Disbursement:</span>
                 <span style={{ color: '#42be65' }}>₹{netPayoutAmount.toLocaleString('en-IN')}</span>
               </div>
             </div>
 
             {payoutResult && (
-              <div style={{ marginTop: '1.5rem', background: '#161616', padding: '1.25rem', borderRadius: '4px', borderLeft: '4px solid #42be65' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: '700', color: '#42be65', marginBottom: '0.35rem' }}>
+              <div style={{ marginTop: '1.5rem', background: '#111111', padding: '1.25rem', borderRadius: 4, borderLeft: '4px solid #42be65', border: '1px solid rgba(66, 190, 101, 0.3)', borderLeftWidth: '4px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 700, color: '#42be65', marginBottom: '0.35rem' }}>
                   <CheckmarkFilled size={18} /> Razorpay UPI Payout Settled Successfully!
                 </div>
                 <div style={{ fontSize: '0.85rem', color: '#c6c6c6', marginBottom: '0.25rem' }}>
                   Transaction Ref: <strong>{payoutResult.transactionRef || payoutResult.payoutRef}</strong>
                 </div>
                 <div style={{ fontSize: '0.85rem', color: '#c6c6c6', marginBottom: '0.75rem' }}>
-                  Form 16A Voucher: <strong>{payoutResult.form16a?.voucherNo || 'TDS16A-2026-V889'}</strong> (Challan: {payoutResult.form16a?.challanRef || 'CHLN8891023'})
+                  Form 16A Voucher: <strong>{payoutResult.form16a?.voucherNo || 'TDS16A-2026-V889'}</strong>
                 </div>
                 <div>
                   <Button
@@ -309,7 +317,7 @@ export default function PayoutDashboard({ activeDeal }) {
                     kind="tertiary"
                     renderIcon={DocumentDownload}
                     onClick={() => {
-                      alert(`Downloading Form 16A TDS Tax Certificate:\n\nCertificate No: ${payoutResult.form16a?.voucherNo || 'TDS16A-2026'}\nDeductor TAN: BLRP09876C\nDeductee PAN: ${kycData?.pan_number || 'AABPM1234F'}\nGross Credited: ₹${effectiveGrossFee.toLocaleString('en-IN')}\nTax Deposited: ₹${tdsAmount.toLocaleString('en-IN')}\nChallan BSR Code: 0210045`);
+                      alert(`Form 16A TDS Tax Certificate:\n\nCertificate No: ${payoutResult.form16a?.voucherNo || 'TDS16A-2026'}\nDeductor TAN: BLRP09876C\nDeductee PAN: ${kycData?.pan_number || 'AABPM1234F'}\nGross Credited: ₹${effectiveGrossFee.toLocaleString('en-IN')}\nTax Deposited: ₹${tdsAmount.toLocaleString('en-IN')}`);
                     }}
                   >
                     Download Form 16A TDS Certificate

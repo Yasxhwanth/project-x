@@ -10,7 +10,8 @@ import {
   InlineNotification,
   Loading,
   Search as SearchInput,
-  Modal
+  Modal,
+  InlineLoading
 } from '@carbon/react';
 import { 
   Email, 
@@ -33,7 +34,8 @@ import {
   Document,
   View,
   Laptop,
-  Mobile
+  Mobile,
+  ArrowRight
 } from '@carbon/icons-react';
 
 // Brand Design Theme Resolver for In-App UI
@@ -131,7 +133,6 @@ function getClientBrandTheme(brandName) {
   for (const [k, v] of Object.entries(BRAND_PALETTES)) {
     if (key.includes(k) || k.includes(key)) return v;
   }
-  // Generic fallback
   return {
     name: brandName,
     primary: '#0f62fe',
@@ -146,7 +147,6 @@ function getClientBrandTheme(brandName) {
   };
 }
 
-// Typewriter Text Effect for live AI response
 function TypewriterText({ text, speed = 8 }) {
   const [displayedText, setDisplayedText] = useState('');
   const [isTyping, setIsTyping] = useState(true);
@@ -210,19 +210,15 @@ export default function EmailNegotiator({ campaignId, activeDeal, onDealUpdated,
   const [successMsg, setSuccessMsg] = useState(null);
   const [senderEmail, setSenderEmail] = useState('');
   
-  // Creator Persistent Memory State
   const [creatorMemory, setCreatorMemory] = useState(null);
   const [loadingMemory, setLoadingMemory] = useState(false);
   const [showAddNote, setShowAddNote] = useState(false);
   const [newMemoryNote, setNewMemoryNote] = useState('');
   const [newMemoryCategory, setNewMemoryCategory] = useState('PRICING_HISTORY');
 
-  // Inline Email Editor State
   const [isEditingEmail, setIsEditingEmail] = useState(false);
   const [editedEmail, setEditedEmail] = useState('');
-  const [syncingInbox, setSyncingInbox] = useState(false);
 
-  // Branded Email Preview Modal State
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [previewHtml, setPreviewHtml] = useState('');
   const [previewLoading, setPreviewLoading] = useState(false);
@@ -235,7 +231,6 @@ export default function EmailNegotiator({ campaignId, activeDeal, onDealUpdated,
     'Updating deal terms and recording creator preferences...'
   ];
 
-  // Fetch sender status
   useEffect(() => {
     fetch('/api/integrations/gmail/status')
       .then(r => r.json())
@@ -264,7 +259,6 @@ export default function EmailNegotiator({ campaignId, activeDeal, onDealUpdated,
     fetchDeals();
   }, [fetchDeals]);
 
-  // Load creator memory when selectedDeal changes
   const currentDeal = deals.find(d => d.id === selectedDealId);
   const activeBrandName = currentDeal?.brandName || currentDeal?.brand_name || 'boAt Lifestyle';
   const brandTheme = getClientBrandTheme(activeBrandName);
@@ -379,7 +373,6 @@ export default function EmailNegotiator({ campaignId, activeDeal, onDealUpdated,
       if (res.ok) {
         setNewMemoryNote('');
         setShowAddNote(false);
-        // Refresh memory
         const memRes = await fetch(`/api/creators/${currentDeal.creatorId}/memory`);
         const memData = await memRes.json();
         setCreatorMemory(memData);
@@ -417,13 +410,13 @@ export default function EmailNegotiator({ campaignId, activeDeal, onDealUpdated,
   );
 
   return (
-    <div style={{ color: '#fff' }}>
+    <div style={{ color: '#fff', width: '100%' }}>
       
       {/* Notifications */}
       {errorMsg && (
         <InlineNotification
           kind="error"
-          title="Error"
+          title="Negotiation Error"
           subtitle={errorMsg}
           onCloseButtonClick={() => setErrorMsg(null)}
           style={{ marginBottom: '1rem' }}
@@ -432,7 +425,7 @@ export default function EmailNegotiator({ campaignId, activeDeal, onDealUpdated,
       {successMsg && (
         <InlineNotification
           kind="success"
-          title="Success"
+          title="Status Updated"
           subtitle={successMsg}
           onCloseButtonClick={() => setSuccessMsg(null)}
           style={{ marginBottom: '1rem' }}
@@ -443,36 +436,34 @@ export default function EmailNegotiator({ campaignId, activeDeal, onDealUpdated,
       <Modal
         open={isPreviewOpen}
         onRequestClose={() => setIsPreviewOpen(false)}
-        modalHeading={`${activeBrandName} — Branded Responsive Email Card Preview`}
+        modalHeading={`${activeBrandName} — Branded Email Preview`}
         primaryButtonText="Close Preview"
         onRequestSubmit={() => setIsPreviewOpen(false)}
         size="lg"
-        style={{ color: '#f4f4f4' }}
       >
         <div style={{ padding: '0.5rem 0' }}>
           
-          {/* Viewport & Brand Palette Bar */}
           <div style={{ 
             display: 'flex', 
             justifyContent: 'space-between', 
             alignItems: 'center', 
-            background: '#1f1f1f', 
+            background: 'var(--color-surface)', 
             padding: '0.6rem 1rem', 
             borderRadius: 6, 
             marginBottom: '1rem',
-            border: '1px solid #333' 
+            border: '1px solid rgba(255, 255, 255, 0.08)' 
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
               <span style={{ 
                 display: 'inline-block', 
-                width: 12, 
-                height: 12, 
+                width: 10, 
+                height: 10, 
                 borderRadius: '50%', 
                 background: brandTheme.primary,
                 boxShadow: `0 0 8px ${brandTheme.primary}` 
               }} />
               <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#ffffff' }}>
-                {brandTheme.name} Design System
+                {brandTheme.name}
               </span>
               <span style={{ fontSize: '0.75rem', color: '#8d8d8d' }}>
                 ({brandTheme.tagline})
@@ -480,52 +471,35 @@ export default function EmailNegotiator({ campaignId, activeDeal, onDealUpdated,
             </div>
 
             <div style={{ display: 'flex', gap: '0.35rem' }}>
-              <button
+              <Button
+                kind={previewViewport === 'desktop' ? 'primary' : 'ghost'}
+                size="sm"
+                renderIcon={Laptop}
                 onClick={() => setPreviewViewport('desktop')}
-                style={{
-                  background: previewViewport === 'desktop' ? '#0f62fe' : 'transparent',
-                  color: previewViewport === 'desktop' ? '#ffffff' : '#8d8d8d',
-                  border: '1px solid #393939',
-                  borderRadius: 4,
-                  padding: '0.25rem 0.65rem',
-                  fontSize: '0.75rem',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.35rem',
-                  cursor: 'pointer'
-                }}
+                style={{ height: '1.75rem', fontSize: '0.75rem' }}
               >
-                <Laptop size={14} /> Desktop (600px)
-              </button>
+                Desktop (600px)
+              </Button>
 
-              <button
+              <Button
+                kind={previewViewport === 'mobile' ? 'primary' : 'ghost'}
+                size="sm"
+                renderIcon={Mobile}
                 onClick={() => setPreviewViewport('mobile')}
-                style={{
-                  background: previewViewport === 'mobile' ? '#0f62fe' : 'transparent',
-                  color: previewViewport === 'mobile' ? '#ffffff' : '#8d8d8d',
-                  border: '1px solid #393939',
-                  borderRadius: 4,
-                  padding: '0.25rem 0.65rem',
-                  fontSize: '0.75rem',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.35rem',
-                  cursor: 'pointer'
-                }}
+                style={{ height: '1.75rem', fontSize: '0.75rem' }}
               >
-                <Mobile size={14} /> Mobile (380px)
-              </button>
+                Mobile (380px)
+              </Button>
             </div>
           </div>
 
-          {/* Email Preview Frame Container */}
           <div style={{
             display: 'flex',
             justifyContent: 'center',
             background: '#0d0d0d',
             padding: '1.5rem',
-            borderRadius: 8,
-            border: '1px solid #282828',
+            borderRadius: 6,
+            border: '1px solid rgba(255, 255, 255, 0.08)',
             minHeight: '480px',
             maxHeight: '620px',
             overflowY: 'auto'
@@ -533,13 +507,13 @@ export default function EmailNegotiator({ campaignId, activeDeal, onDealUpdated,
             {previewLoading ? (
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#8d8d8d', gap: '0.75rem' }}>
                 <Loading small withOverlay={false} />
-                <span>Compiling brand email HTML card...</span>
+                <span>Compiling responsive brand email card...</span>
               </div>
             ) : (
               <div style={{ 
                 width: previewViewport === 'mobile' ? '380px' : '100%', 
                 maxWidth: '600px',
-                transition: 'width 0.25s ease' 
+                transition: 'width 0.2s ease' 
               }}>
                 <iframe
                   title="Branded Email Preview"
@@ -559,16 +533,26 @@ export default function EmailNegotiator({ campaignId, activeDeal, onDealUpdated,
         </div>
       </Modal>
 
-      <Grid style={{ padding: 0 }}>
+      {/* ─── Main Two-Column Negotiation Studio ──────────────────────────── */}
+      <Grid fullWidth style={{ padding: 0, rowGap: '1.25rem', columnGap: '1.25rem' }}>
         
-        {/* LEFT COLUMN: Deal Roster List */}
+        {/* LEFT COLUMN: Deal Queue Roster */}
         <Column lg={5} md={3} sm={4}>
-          <Tile style={{ background: '#161616', border: '1px solid #262626', padding: '1rem', height: 'calc(100vh - 12rem)', display: 'flex', flexDirection: 'column' }}>
-            
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+          <Tile 
+            style={{ 
+              background: 'var(--color-surface)', 
+              border: '1px solid rgba(255, 255, 255, 0.08)', 
+              borderRadius: 6,
+              padding: '1.25rem', 
+              height: 'calc(100vh - 11rem)', 
+              display: 'flex', 
+              flexDirection: 'column' 
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.85rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <Email size={18} style={{ color: '#0f62fe' }} />
-                <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: '600', color: '#f4f4f4' }}>
+                <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 600, color: '#f4f4f4' }}>
                   Deal Negotiations ({deals.length})
                 </h3>
               </div>
@@ -579,22 +563,20 @@ export default function EmailNegotiator({ campaignId, activeDeal, onDealUpdated,
                 renderIcon={Renew} 
                 iconDescription="Refresh Deals"
                 onClick={fetchDeals}
-                style={{ padding: '0 0.5rem', minHeight: '24px' }}
+                style={{ height: '1.75rem', width: '1.75rem' }}
               />
             </div>
 
-            {/* Search Input */}
-            <div style={{ marginBottom: '0.75rem' }}>
+            <div style={{ marginBottom: '0.85rem' }}>
               <SearchInput
                 id="search-deals"
                 size="sm"
-                placeholder="Search creator or brand..."
+                placeholder="Filter by creator or brand..."
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
               />
             </div>
 
-            {/* List of Deals */}
             <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
               {loadingDeals ? (
                 <div style={{ textAlign: 'center', padding: '2rem', color: '#8d8d8d' }}>
@@ -615,26 +597,26 @@ export default function EmailNegotiator({ campaignId, activeDeal, onDealUpdated,
                       key={d.id}
                       onClick={() => setSelectedDealId(d.id)}
                       style={{
-                        padding: '0.75rem',
+                        padding: '0.75rem 0.85rem',
                         borderRadius: '4px',
-                        background: isSelected ? 'rgba(255, 255, 255, 0.08)' : 'rgba(255, 255, 255, 0.02)',
-                        border: isSelected ? `1px solid ${itemTheme.primary}` : '1px solid rgba(255, 255, 255, 0.05)',
-                        borderLeft: isSelected ? `3px solid ${itemTheme.primary}` : '3px solid transparent',
+                        background: isSelected ? 'rgba(15, 98, 254, 0.1)' : 'rgba(255, 255, 255, 0.02)',
+                        border: isSelected ? '1px solid #0f62fe' : '1px solid rgba(255, 255, 255, 0.05)',
+                        borderLeft: isSelected ? '3px solid #0f62fe' : '3px solid transparent',
                         cursor: 'pointer',
                         transition: 'all 0.15s ease'
                       }}
                     >
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
-                        <span style={{ fontWeight: isSelected ? '600' : '400', color: isSelected ? '#ffffff' : '#e0e0e0', fontSize: '0.85rem' }}>
+                        <span style={{ fontWeight: isSelected ? 600 : 400, color: isSelected ? '#ffffff' : '#c6c6c6', fontSize: '0.85rem' }}>
                           {d.creatorName || 'Creator'}
                         </span>
-                        <span style={{ fontSize: '0.75rem', fontWeight: '700', color: itemTheme.primary, fontFamily: 'monospace' }}>
+                        <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#42be65', fontFamily: 'monospace' }}>
                           ₹{Number(d.currentAgreedPrice || d.offeredPrice || 0).toLocaleString('en-IN')}
                         </span>
                       </div>
 
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.75rem' }}>
-                        <span style={{ color: '#8d8d8d', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                        <span style={{ color: '#8d8d8d', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
                           <span style={{ width: 6, height: 6, borderRadius: '50%', background: itemTheme.primary }} />
                           {d.brandName || d.brand_name || 'Brand'}
                         </span>
@@ -650,45 +632,40 @@ export default function EmailNegotiator({ campaignId, activeDeal, onDealUpdated,
           </Tile>
         </Column>
 
-        {/* RIGHT COLUMN: Active Deal Workspace & Branded Message Stream */}
+        {/* RIGHT COLUMN: Active Negotiation Workspace */}
         <Column lg={11} md={5} sm={4}>
           {currentDeal ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               
-              {/* Header Details Tile with Brand Identity Badge */}
-              <Tile style={{ 
-                background: '#262626', 
-                border: '1px solid #393939', 
-                borderTop: `3px solid ${brandTheme.primary}`,
-                padding: '1rem 1.25rem', 
-                display: 'flex', 
-                justifyContent: 'space-between', 
-                alignItems: 'center', 
-                flexWrap: 'wrap', 
-                gap: '1rem' 
-              }}>
+              {/* Header Details Tile */}
+              <Tile 
+                style={{ 
+                  background: 'var(--color-surface)', 
+                  border: '1px solid rgba(255, 255, 255, 0.08)', 
+                  borderTop: `3px solid ${brandTheme.primary}`,
+                  borderRadius: 6,
+                  padding: '1rem 1.25rem', 
+                  display: 'flex', 
+                  justifyContent: 'space-between', 
+                  alignItems: 'center', 
+                  flexWrap: 'wrap', 
+                  gap: '1rem' 
+                }}
+              >
                 <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
                   <img
-                    src={currentDeal.creatorAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(currentDeal.creatorName || 'Creator')}&background=0f62fe&color=ffffff`}
+                    src={currentDeal.creatorAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(currentDeal.creatorName || 'Creator')}&background=0f62fe&color=ffffff&size=128`}
                     alt={currentDeal.creatorName}
                     style={{ width: 44, height: 44, borderRadius: '50%', objectFit: 'cover' }}
                   />
                   <div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      <h3 style={{ margin: 0, color: '#f4f4f4', fontSize: '1.1rem', fontWeight: '600' }}>
+                      <h3 style={{ margin: 0, color: '#f4f4f4', fontSize: '1.05rem', fontWeight: 600 }}>
                         {currentDeal.creatorName}
                       </h3>
-                      <span style={{ 
-                        fontSize: '0.65rem', 
-                        fontWeight: 700, 
-                        color: brandTheme.primary, 
-                        background: 'rgba(255, 255, 255, 0.05)', 
-                        padding: '0.1rem 0.45rem', 
-                        borderRadius: 3, 
-                        border: `1px solid ${brandTheme.primary}40` 
-                      }}>
+                      <Tag type="blue" size="sm">
                         {brandTheme.name}
-                      </span>
+                      </Tag>
                     </div>
                     
                     {isEditingEmail ? (
@@ -744,8 +721,6 @@ export default function EmailNegotiator({ campaignId, activeDeal, onDealUpdated,
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                  
-                  {/* PREVIEW BRANDED CARD BUTTON */}
                   <Button
                     kind="secondary"
                     size="sm"
@@ -753,12 +728,12 @@ export default function EmailNegotiator({ campaignId, activeDeal, onDealUpdated,
                     onClick={handleOpenBrandEmailPreview}
                     style={{ height: '2rem', fontSize: '0.75rem' }}
                   >
-                    Preview Brand Email Card
+                    Preview Brand Email
                   </Button>
 
                   <div style={{ textAlign: 'right' }}>
-                    <span style={{ fontSize: '0.75rem', color: '#8d8d8d', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Agreed Fee</span>
-                    <div style={{ fontSize: '1.25rem', fontWeight: '700', color: '#42be65', fontFamily: 'monospace' }}>
+                    <span style={{ fontSize: '0.7rem', color: '#8d8d8d', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Agreed Fee</span>
+                    <div style={{ fontSize: '1.2rem', fontWeight: 700, color: '#42be65', fontFamily: 'monospace' }}>
                       ₹{Number(currentDeal.currentAgreedPrice || currentDeal.offeredPrice || 0).toLocaleString('en-IN')}
                     </div>
                   </div>
@@ -769,32 +744,31 @@ export default function EmailNegotiator({ campaignId, activeDeal, onDealUpdated,
                 </div>
               </Tile>
 
-              {/* Creator Profile & Notes (Persistent Memory) */}
-              <Tile style={{ background: '#262626', border: '1px solid #393939', padding: '1rem 1.25rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <Document size={16} style={{ color: brandTheme.primary }} />
-                    <span style={{ fontWeight: '600', color: '#f4f4f4', fontSize: '0.875rem' }}>
-                      Creator Profile & Context Notes
+              {/* Creator Context & Memory */}
+              <Tile style={{ background: 'var(--color-surface)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: 6, padding: '0.85rem 1.25rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    <Document size={15} style={{ color: '#0f62fe' }} />
+                    <span style={{ fontWeight: 600, color: '#f4f4f4', fontSize: '0.8rem' }}>
+                      Context & Relationship Memory
                     </span>
                   </div>
                   
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.75rem', color: '#8d8d8d' }}>
-                    <span>Thread History: <strong style={{ color: '#f4f4f4' }}>{currentDeal.emailThread?.length || 1} messages</strong></span>
+                    <span>Thread: <strong style={{ color: '#f4f4f4' }}>{currentDeal.emailThread?.length || 1} msgs</strong></span>
                     <span>•</span>
-                    <span>Quality Score: <strong style={{ color: '#42be65' }}>{creatorMemory?.stats?.averageComplianceScore || 95}%</strong></span>
+                    <span>Quality: <strong style={{ color: '#42be65' }}>{creatorMemory?.stats?.averageComplianceScore || 95}%</strong></span>
                     <Button 
                       kind="ghost" 
                       size="sm" 
                       onClick={() => setShowAddNote(!showAddNote)}
-                      style={{ padding: '0 0.5rem', minHeight: '24px', fontSize: '0.75rem' }}
+                      style={{ padding: '0 0.5rem', height: '1.5rem', fontSize: '0.75rem' }}
                     >
                       {showAddNote ? 'Cancel' : '＋ Add Note'}
                     </Button>
                   </div>
                 </div>
 
-                {/* Add Note Form */}
                 {showAddNote && (
                   <form onSubmit={handleAddCustomMemoryNote} style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
                     <TextInput
@@ -812,17 +786,17 @@ export default function EmailNegotiator({ campaignId, activeDeal, onDealUpdated,
                   </form>
                 )}
 
-                {/* Structured Notes Pills */}
-                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', alignItems: 'center' }}>
                   {(creatorMemory?.memories && creatorMemory.memories.length > 0 ? creatorMemory.memories : []).map(m => (
                     <div 
                       key={m.id || m.memory_key}
                       style={{ 
                         fontSize: '0.75rem', 
-                        padding: '0.3rem 0.6rem', 
-                        background: '#1f1f1f', 
-                        border: '1px solid #393939', 
+                        padding: '0.25rem 0.55rem', 
+                        background: '#111111', 
+                        border: '1px solid rgba(255, 255, 255, 0.08)', 
                         color: '#f4f4f4',
+                        borderRadius: 3,
                         display: 'flex',
                         alignItems: 'center',
                         gap: '0.4rem'
@@ -835,8 +809,21 @@ export default function EmailNegotiator({ campaignId, activeDeal, onDealUpdated,
                 </div>
               </Tile>
 
-              {/* Message Timeline with Brand-Specific Styling */}
-              <Tile style={{ background: '#161616', border: '1px solid #262626', padding: '1.25rem', minHeight: '380px', maxHeight: '460px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              {/* Message Timeline */}
+              <Tile 
+                style={{ 
+                  background: 'var(--color-surface)', 
+                  border: '1px solid rgba(255, 255, 255, 0.08)', 
+                  borderRadius: 6,
+                  padding: '1.25rem', 
+                  minHeight: '380px', 
+                  maxHeight: '460px', 
+                  overflowY: 'auto', 
+                  display: 'flex', 
+                  flexDirection: 'column', 
+                  gap: '1rem' 
+                }}
+              >
                 {(!currentDeal.emailThread || currentDeal.emailThread.length === 0) ? (
                   <div style={{ textAlign: 'center', padding: '3rem', color: '#6e6e6e' }}>
                     <Email size={32} style={{ marginBottom: '0.5rem', color: '#444' }} />
@@ -853,18 +840,17 @@ export default function EmailNegotiator({ campaignId, activeDeal, onDealUpdated,
                         style={{
                           maxWidth: '85%',
                           alignSelf: isBrand ? 'flex-start' : 'flex-end',
-                          background: isBrand ? brandTheme.cardBg : '#1f2420',
-                          border: isBrand ? `1px solid ${brandTheme.cardBorder}` : '1px solid #24a148',
+                          background: isBrand ? brandTheme.cardBg : '#17231c',
+                          border: isBrand ? `1px solid ${brandTheme.cardBorder}` : '1px solid rgba(66, 190, 101, 0.3)',
                           borderLeft: isBrand ? `3px solid ${brandTheme.primary}` : undefined,
-                          borderRight: !isBrand ? '3px solid #24a148' : undefined,
+                          borderRight: !isBrand ? '3px solid #42be65' : undefined,
                           padding: '1rem',
                           borderRadius: 4,
                           boxShadow: isBrand ? `0 4px 16px rgba(0,0,0,0.25)` : 'none'
                         }}
                       >
-                        {/* Header Bar */}
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem', fontSize: '0.75rem', gap: '1rem' }}>
-                          <span style={{ fontWeight: '600', color: isBrand ? brandTheme.primary : '#42be65', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                          <span style={{ fontWeight: 600, color: isBrand ? brandTheme.primary : '#42be65', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
                             {isBrand ? <Bot size={14} /> : <User size={14} />} 
                             {isBrand ? `${brandTheme.name} Partnerships` : currentDeal.creatorName}
                           </span>
@@ -876,8 +862,7 @@ export default function EmailNegotiator({ campaignId, activeDeal, onDealUpdated,
                           </div>
                         </div>
 
-                        {/* Message Content */}
-                        <p style={{ margin: 0, color: '#f4f4f4', fontSize: '0.875rem', lineHeight: '1.6', whiteSpace: 'pre-wrap' }}>
+                        <p style={{ margin: 0, color: '#f4f4f4', fontSize: '0.875rem', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
                           {isLatest && isBrand && loading ? (
                             <TypewriterText text={msg.body} speed={6} />
                           ) : (
@@ -885,7 +870,6 @@ export default function EmailNegotiator({ campaignId, activeDeal, onDealUpdated,
                           )}
                         </p>
 
-                        {/* Financial Terms & Deliverables Breakdown */}
                         {isBrand && (() => {
                           const fee = Number(msg.offeredPrice || currentDeal.currentAgreedPrice || currentDeal.offeredPrice || 0);
                           const tdsNet = Math.round(fee * 0.9);
@@ -894,13 +878,13 @@ export default function EmailNegotiator({ campaignId, activeDeal, onDealUpdated,
                           return (
                             <div style={{ 
                               marginTop: '0.75rem', 
-                              background: '#121212', 
-                              border: `1px solid ${brandTheme.cardBorder}`, 
+                              background: '#0d0d0d', 
+                              border: `1px solid rgba(255, 255, 255, 0.06)`, 
                               padding: '0.6rem 0.85rem', 
                               display: 'flex', 
                               flexWrap: 'wrap', 
                               gap: '0.85rem', 
-                              fontSize: '0.75rem',
+                              fontSize: '0.75rem', 
                               borderRadius: 4
                             }}>
                               {fee > 0 && (
@@ -931,7 +915,6 @@ export default function EmailNegotiator({ campaignId, activeDeal, onDealUpdated,
                   })
                 )}
 
-                {/* Loading State */}
                 {loading && (
                   <div 
                     style={{
@@ -949,7 +932,7 @@ export default function EmailNegotiator({ campaignId, activeDeal, onDealUpdated,
                   >
                     <Loading small withOverlay={false} />
                     <div>
-                      <div style={{ color: brandTheme.primary, fontWeight: '600', fontSize: '0.8rem' }}>
+                      <div style={{ color: brandTheme.primary, fontWeight: 600, fontSize: '0.8rem' }}>
                         Formulating {brandTheme.name} response...
                       </div>
                       <div style={{ color: '#8d8d8d', fontSize: '0.75rem' }}>
@@ -961,9 +944,8 @@ export default function EmailNegotiator({ campaignId, activeDeal, onDealUpdated,
               </Tile>
 
               {/* Composer Dock */}
-              <Tile style={{ background: '#262626', border: '1px solid #393939', padding: '1rem 1.25rem' }}>
+              <Tile style={{ background: 'var(--color-surface)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: 6, padding: '1rem 1.25rem' }}>
                 
-                {/* Presets */}
                 <div style={{ marginBottom: '0.75rem' }}>
                   <span style={{ fontSize: '0.75rem', color: '#8d8d8d', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '0.4rem' }}>
                     Quick Response Templates:
@@ -978,8 +960,9 @@ export default function EmailNegotiator({ campaignId, activeDeal, onDealUpdated,
                           handleSendCreatorReply(preset.text);
                         }}
                         style={{
-                          background: '#161616',
-                          border: '1px solid #393939',
+                          background: '#111111',
+                          border: '1px solid rgba(255, 255, 255, 0.1)',
+                          borderRadius: 4,
                           color: '#c6c6c6',
                           padding: '0.3rem 0.65rem',
                           fontSize: '0.75rem',
@@ -989,7 +972,7 @@ export default function EmailNegotiator({ campaignId, activeDeal, onDealUpdated,
                           transition: 'all 0.15s ease'
                         }}
                         onMouseEnter={e => { e.currentTarget.style.borderColor = brandTheme.primary; e.currentTarget.style.color = '#f4f4f4'; }}
-                        onMouseLeave={e => { e.currentTarget.style.borderColor = '#393939'; e.currentTarget.style.color = '#c6c6c6'; }}
+                        onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)'; e.currentTarget.style.color = '#c6c6c6'; }}
                       >
                         {preset.label}
                       </button>
@@ -997,7 +980,6 @@ export default function EmailNegotiator({ campaignId, activeDeal, onDealUpdated,
                   </div>
                 </div>
 
-                {/* Input Textarea */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                   <TextArea
                     id="creator-reply-input"
@@ -1040,9 +1022,9 @@ export default function EmailNegotiator({ campaignId, activeDeal, onDealUpdated,
 
             </div>
           ) : (
-            <Tile style={{ background: '#161616', border: '1px solid #262626', padding: '3rem', textAlign: 'center' }}>
+            <Tile style={{ background: 'var(--color-surface)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: 6, padding: '3.5rem 2rem', textAlign: 'center' }}>
               <Email size={36} style={{ color: '#0f62fe', marginBottom: '0.75rem' }} />
-              <h3 style={{ color: '#f4f4f4', marginBottom: '0.25rem', fontSize: '1.1rem' }}>No Creator Selected</h3>
+              <h3 style={{ color: '#f4f4f4', marginBottom: '0.25rem', fontSize: '1.1rem', fontWeight: 600 }}>No Creator Selected</h3>
               <p style={{ color: '#8d8d8d', maxWidth: '380px', margin: '0 auto', fontSize: '0.85rem' }}>
                 Select a creator from the left list to view conversation history and manage deal terms.
               </p>
