@@ -29,6 +29,8 @@ import {
   ChevronRight,
   OverflowMenuHorizontal,
   CheckmarkFilled,
+  Renew,
+  Launch,
 } from '@carbon/icons-react';
 
 import CreatorSearch from './components/CreatorSearch';
@@ -56,49 +58,49 @@ const NAV_SECTIONS = [
     id: 'workspace',
     label: 'WORKSPACE',
     items: [
-      { id: 'overview',   label: 'Dashboard',         icon: Rocket,           description: 'Campaign overview' },
+      { id: 'overview',   label: 'Dashboard',         icon: Rocket,           description: 'Campaign operations & telemetry' },
     ],
   },
   {
     id: 'campaigns',
     label: 'CAMPAIGNS',
     items: [
-      { id: 'portfolio',    label: 'Campaigns',         icon: Enterprise,       description: 'Manage campaigns' },
-      { id: 'discovery',    label: 'Creator Discovery', icon: Search,           description: 'Find creators' },
-      { id: 'negotiator',   label: 'Outreach & Deals',  icon: Email,            description: 'Email & negotiate' },
-      { id: 'verification', label: 'Video QA & ASCI',   icon: Video,            description: 'Compliance check' },
-      { id: 'payouts',      label: 'Payouts & TDS',     icon: Currency,         description: 'Section 194J' },
+      { id: 'portfolio',    label: 'Campaigns Hub',     icon: Enterprise,       description: 'Manage briefs & budget pacing' },
+      { id: 'discovery',    label: 'Creator Discovery', icon: Search,           description: 'Find verified talent' },
+      { id: 'negotiator',   label: 'Outreach & Deals',  icon: Email,            badgeKey: 'deals', description: 'Commercial email negotiations' },
+      { id: 'verification', label: 'Video QA & ASCI',   icon: Video,            badgeKey: 'videos', description: 'Multimodal content compliance' },
+      { id: 'payouts',      label: 'Payouts & TDS',     icon: Currency,         description: 'Section 194J escrow settlement' },
     ],
   },
   {
     id: 'approvals',
-    label: 'APPROVALS',
+    label: 'APPROVALS & GOVERNANCE',
     items: [
-      { id: 'approvals', label: 'Approval Inbox', icon: WarningAltFilled, hasBadge: true, description: 'Pending actions' },
+      { id: 'approvals', label: 'Approval Inbox', icon: WarningAltFilled, badgeKey: 'approvals', description: 'Human-in-the-loop escalation queue' },
     ],
   },
   {
     id: 'insights',
-    label: 'INSIGHTS',
+    label: 'INSIGHTS & REPORTING',
     items: [
-      { id: 'closeout',     label: 'Closeout Report',  icon: DocumentDownload, description: 'Client reporting' },
-      { id: 'attribution',  label: 'Attribution',      icon: ShoppingBag,      description: 'Revenue tracking' },
-      { id: 'analytics',    label: 'Analytics',        icon: ChartBar,         description: 'Performance data' },
+      { id: 'closeout',     label: 'Closeout Report',  icon: DocumentDownload, description: 'Executive stakeholder report' },
+      { id: 'attribution',  label: 'Attribution',      icon: ShoppingBag,      description: 'Shopify GMV & ROAS tracking' },
+      { id: 'analytics',    label: 'Analytics',        icon: ChartBar,         description: 'Market benchmarks & performance' },
     ],
   },
   {
     id: 'system',
-    label: 'AI SYSTEM',
+    label: 'AUTONOMOUS SYSTEM',
     items: [
-      { id: 'strategy',      label: 'AI Strategy',    icon: Idea,     description: 'Campaign AI' },
-      { id: 'control_plane', label: 'AI Governance',  icon: Security, description: 'Agent oversight' },
+      { id: 'strategy',      label: 'AI Strategy',    icon: Idea,     description: 'Creator portfolio mix generator' },
+      { id: 'control_plane', label: 'AI Governance',  icon: Security, description: 'State machines & event stream' },
     ],
   },
 ];
 
 const PAGE_TITLES = {
   overview:      'Dashboard',
-  portfolio:     'Campaigns',
+  portfolio:     'Campaigns Hub',
   discovery:     'Creator Discovery',
   negotiator:    'Outreach & Deals',
   verification:  'Video QA & ASCI Compliance',
@@ -126,7 +128,7 @@ function UserInitialsAvatar({ name, size = 28 }) {
         display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
         fontSize: size * 0.38, fontWeight: 700, color: '#ffffff',
         flexShrink: 0, letterSpacing: '0.02em',
-        boxShadow: '0 0 0 2px rgba(15,98,254,0.35)',
+        boxShadow: '0 0 0 2px rgba(15,98,254,0.4)',
       }}
     >
       {initials}
@@ -134,44 +136,36 @@ function UserInitialsAvatar({ name, size = 28 }) {
   );
 }
 
-// ─── Active Campaign Pill ────────────────────────────────────────────────────
+// ─── Active Campaign Header Button ───────────────────────────────────────────
 function CampaignPill({ campaign, onClick }) {
   if (!campaign) return null;
-  const name = campaign.productName || campaign.product_name || '—';
-  const brand = campaign.brandName || campaign.brand_name || '';
+  const name = campaign.productName || campaign.product_name || 'Active Campaign';
+  const brand = campaign.brandName || campaign.brand_name || 'Brand';
   return (
     <button
       onClick={onClick}
+      className="topbar-campaign-pill"
       style={{
         display: 'flex', alignItems: 'center', gap: '0.5rem',
-        padding: '0 0.9rem', height: '2rem',
-        background: 'rgba(15,98,254,0.1)',
-        border: '1px solid rgba(15,98,254,0.3)',
-        borderRadius: '1rem',
+        padding: '0 0.85rem', height: '2.1rem',
+        background: 'rgba(15, 98, 254, 0.08)',
+        border: '1px solid rgba(15, 98, 254, 0.28)',
+        borderRadius: '2rem',
         cursor: 'pointer',
         transition: 'all 0.18s ease',
         marginRight: '0.5rem',
       }}
-      onMouseEnter={e => {
-        e.currentTarget.style.background = 'rgba(15,98,254,0.18)';
-        e.currentTarget.style.borderColor = 'rgba(15,98,254,0.55)';
-      }}
-      onMouseLeave={e => {
-        e.currentTarget.style.background = 'rgba(15,98,254,0.1)';
-        e.currentTarget.style.borderColor = 'rgba(15,98,254,0.3)';
-      }}
+      title="Click to switch campaign brief"
     >
       <span className="live-indicator-dot" />
-      {brand && (
-        <span style={{ fontSize: '0.75rem', color: '#8fb4ff', fontWeight: 500 }}>
-          {brand}
-        </span>
-      )}
-      <ChevronRight size={10} style={{ color: 'rgba(15,98,254,0.6)' }} />
-      <span style={{ fontSize: '0.75rem', color: '#d0e2ff', fontWeight: 600, maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+      <span style={{ fontSize: '0.75rem', color: '#8fb4ff', fontWeight: 600 }}>
+        {brand}
+      </span>
+      <ChevronRight size={10} style={{ color: 'rgba(143,180,255,0.5)' }} />
+      <span style={{ fontSize: '0.75rem', color: '#f4f4f4', fontWeight: 500, maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
         {name}
       </span>
-      <OverflowMenuHorizontal size={14} style={{ color: '#4589ff', marginLeft: 2 }} />
+      <OverflowMenuHorizontal size={14} style={{ color: '#78a9ff', marginLeft: 2 }} />
     </button>
   );
 }
@@ -180,15 +174,18 @@ function CampaignPill({ campaign, onClick }) {
 function NavSectionLabel({ label }) {
   return (
     <div style={{
-      padding: '1rem 1rem 0.3rem',
-      fontSize: '0.6rem',
+      padding: '0.85rem 1rem 0.35rem',
+      fontSize: '0.625rem',
       fontWeight: 700,
-      letterSpacing: '0.1em',
+      letterSpacing: '0.08em',
       textTransform: 'uppercase',
-      color: '#4c4c4c',
+      color: '#6f6f6f',
       userSelect: 'none',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between'
     }}>
-      {label}
+      <span>{label}</span>
     </div>
   );
 }
@@ -212,7 +209,7 @@ export default function App() {
   const [isOrgSettingsOpen, setIsOrgSettingsOpen]     = useState(false);
   const [session, setSession]                         = useState(null);
   const [workspaceMode, setWorkspaceMode]             = useState(() => localStorage.getItem('cc_workspace_mode') || 'brand');
-  const [pendingApprovals, setPendingApprovals]       = useState(0);
+  const [navCounts, setNavCounts]                     = useState({ approvals: 0, deals: 0, videos: 0 });
   const [forceCreateNewCampaign, setForceCreateNewCampaign]   = useState(false);
   const [selectedWorkspaceCampaign, setSelectedWorkspaceCampaign] = useState(null);
   const [navHovered, setNavHovered] = useState(null);
@@ -247,17 +244,37 @@ export default function App() {
     }
     fetchSession();
     fetchActiveCampaign();
-    fetchPendingCount();
-    const iv = setInterval(fetchPendingCount, 20000);
+    fetchNavTelemetry();
+    const iv = setInterval(fetchNavTelemetry, 25000);
     return () => clearInterval(iv);
   }, []);
 
-  const fetchPendingCount = async () => {
+  const fetchNavTelemetry = async () => {
     try {
-      const res = await fetch('/api/agents/escalations');
-      if (!res.ok) return;
-      const data = await res.json();
-      setPendingApprovals(Array.isArray(data) ? data.filter(t => t.status === 'PENDING').length : 0);
+      // 1. Pending Approvals
+      const resEsc = await fetch('/api/agents/escalations');
+      let pendingCount = 0;
+      if (resEsc.ok) {
+        const data = await resEsc.json();
+        pendingCount = Array.isArray(data) ? data.filter(t => t.status === 'PENDING').length : 0;
+      }
+
+      // 2. Active Deals & Videos
+      const resDeals = await fetch('/api/deals');
+      let activeDeals = 0;
+      let submittedVideos = 0;
+      if (resDeals.ok) {
+        const dealsData = await resDeals.json();
+        const dealList = Array.isArray(dealsData) ? dealsData : dealsData.deals || [];
+        activeDeals = dealList.filter(d => d.status === 'NEGOTIATING' || d.status === 'INVITED').length;
+        submittedVideos = dealList.filter(d => d.status === 'VIDEO_SUBMITTED').length;
+      }
+
+      setNavCounts({
+        approvals: pendingCount,
+        deals: activeDeals,
+        videos: submittedVideos
+      });
     } catch {}
   };
 
@@ -323,28 +340,46 @@ export default function App() {
           <SkipToContent />
 
           {/* Logo + Brand */}
-          <HeaderName href="#overview" prefix="" style={{ gap: '0.6rem', fontWeight: 600 }}>
+          <HeaderName href="#overview" prefix="" style={{ gap: '0.65rem', fontWeight: 600, display: 'flex', alignItems: 'center' }}>
             <span className="app-logo-mark">X</span>
-            <span style={{ color: '#f4f4f4', fontSize: '0.925rem', letterSpacing: '-0.01em' }}>Project X</span>
-            <Tag type="blue" size="sm" style={{ marginLeft: '0.15rem', borderRadius: '4px', fontSize: '0.6rem', fontWeight: 700 }}>OS</Tag>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.4rem' }}>
+              <span style={{ color: '#f4f4f4', fontSize: '0.95rem', fontWeight: 600, letterSpacing: '-0.01em' }}>Project X</span>
+              <span style={{ color: '#8d8d8d', fontSize: '0.75rem', fontWeight: 400 }}>OS</span>
+            </div>
+            <Tag type="blue" size="sm" style={{ marginLeft: '0.25rem', borderRadius: '4px', fontSize: '0.625rem', fontWeight: 700 }}>
+              Enterprise
+            </Tag>
           </HeaderName>
 
           <HeaderGlobalBar>
             {/* Active Campaign Switcher */}
             <CampaignPill campaign={activeCampaign} onClick={() => setIsCampaignModalOpen(true)} />
 
-            {/* Pending Approvals Bell */}
-            {pendingApprovals > 0 && (
-              <HeaderGlobalAction
-                aria-label={`${pendingApprovals} pending approvals`}
-                tooltipAlignment="end"
-                onClick={() => setCurrentTab('approvals')}
-                style={{ position: 'relative' }}
+            {/* Workspace Mode Badge / Switcher */}
+            <div style={{ display: 'flex', alignItems: 'center', marginRight: '0.75rem' }}>
+              <Tag 
+                type={workspaceMode === 'agency' ? 'purple' : 'teal'} 
+                size="md"
+                style={{ cursor: 'pointer', fontWeight: 600, margin: 0 }}
+                onClick={() => setWorkspaceMode(workspaceMode === 'brand' ? 'agency' : 'brand')}
+                title="Click to toggle Brand / Agency console mode"
               >
-                <WarningAltFilled size={20} style={{ color: '#f1c21b' }} />
-                <span className="header-badge">{pendingApprovals}</span>
-              </HeaderGlobalAction>
-            )}
+                {workspaceMode === 'agency' ? 'Agency Mode' : 'Brand Console'}
+              </Tag>
+            </div>
+
+            {/* Pending Approvals Bell */}
+            <HeaderGlobalAction
+              aria-label={`${navCounts.approvals} pending approvals`}
+              tooltipAlignment="end"
+              onClick={() => setCurrentTab('approvals')}
+              style={{ position: 'relative' }}
+            >
+              <WarningAltFilled size={20} style={{ color: navCounts.approvals > 0 ? '#f1c21b' : '#8d8d8d' }} />
+              {navCounts.approvals > 0 && (
+                <span className="header-badge">{navCounts.approvals}</span>
+              )}
+            </HeaderGlobalAction>
 
             {/* Settings */}
             <HeaderGlobalAction
@@ -407,14 +442,14 @@ export default function App() {
           >
             <SideNavItems>
               {NAV_SECTIONS.map((sec, si) => (
-                <div key={sec.id} style={{ borderTop: si > 0 ? '1px solid #1f1f1f' : 'none', paddingBottom: '0.25rem' }}>
+                <div key={sec.id} style={{ borderTop: si > 0 ? '1px solid rgba(255, 255, 255, 0.05)' : 'none', paddingBottom: '0.35rem' }}>
                   <NavSectionLabel label={sec.label} />
 
                   {sec.items.map((item) => {
                     const Icon    = item.icon;
                     const isActive = currentTab === item.id;
                     const isHovered = navHovered === item.id;
-                    const badge = item.hasBadge ? pendingApprovals : 0;
+                    const badgeCount = item.badgeKey ? navCounts[item.badgeKey] || 0 : 0;
 
                     return (
                       <SideNavLink
@@ -428,30 +463,34 @@ export default function App() {
                         style={{
                           position: 'relative',
                           borderLeft: isActive
-                            ? '2px solid #0f62fe'
-                            : '2px solid transparent',
+                            ? '3px solid #0f62fe'
+                            : '3px solid transparent',
                           background: isActive
-                            ? 'rgba(15,98,254,0.1)'
+                            ? 'linear-gradient(90deg, rgba(15,98,254,0.16) 0%, rgba(15,98,254,0.03) 100%)'
                             : isHovered
                             ? 'rgba(255,255,255,0.04)'
                             : 'transparent',
-                          color: isActive ? '#78a9ff' : isHovered ? '#e8e8e8' : '#a8a8a8',
+                          color: isActive ? '#78a9ff' : isHovered ? '#f4f4f4' : '#a8a8a8',
                           fontWeight: isActive ? 600 : 400,
                           fontSize: '0.85rem',
-                          minHeight: '2.25rem',
-                          paddingLeft: '0.85rem',
+                          minHeight: '2.35rem',
+                          paddingLeft: '0.95rem',
                           transition: 'all 0.15s ease',
                           outline: 'none',
                         }}
                       >
                         <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', paddingRight: '0.5rem' }}>
                           <span>{item.label}</span>
-                          {badge > 0 && (
-                            <Tag type="red" size="sm" style={{ minWidth: 0, padding: '0 6px', height: '1.1rem', fontSize: '0.65rem', fontWeight: 700, lineHeight: '1.1rem' }}>
-                              {badge}
+                          {badgeCount > 0 && (
+                            <Tag 
+                              type={item.badgeKey === 'approvals' ? 'red' : item.badgeKey === 'videos' ? 'purple' : 'teal'} 
+                              size="sm" 
+                              style={{ minWidth: 0, padding: '0 6px', height: '1.15rem', fontSize: '0.65rem', fontWeight: 700, lineHeight: '1.15rem', margin: 0 }}
+                            >
+                              {badgeCount}
                             </Tag>
                           )}
-                          {isActive && !badge && (
+                          {isActive && badgeCount === 0 && (
                             <span style={{ width: 4, height: 4, borderRadius: '50%', background: '#0f62fe', flexShrink: 0 }} />
                           )}
                         </span>
@@ -462,19 +501,20 @@ export default function App() {
               ))}
             </SideNavItems>
 
-            {/* ── Nav Footer: User info ─────────────────────────── */}
+            {/* ── Nav Footer: User info & System Status ───────────── */}
             <div className="nav-footer">
               {session?.user ? (
                 <button
                   className="nav-user-row"
                   onClick={() => setIsOrgSettingsOpen(true)}
+                  title="Manage user profile and credentials"
                 >
                   <UserInitialsAvatar name={session.user.name} size={28} />
                   <div style={{ minWidth: 0, flex: 1 }}>
                     <div className="nav-user-name">{session.user.name}</div>
-                    <div className="nav-user-role">{session.user.role || 'Brand Manager'}</div>
+                    <div className="nav-user-role">{session.user.role || 'Brand Operations'}</div>
                   </div>
-                  <Settings size={14} style={{ color: '#525252', flexShrink: 0 }} />
+                  <Settings size={14} style={{ color: '#6f6f6f', flexShrink: 0 }} />
                 </button>
               ) : (
                 <button
@@ -482,9 +522,18 @@ export default function App() {
                   onClick={() => setIsAuthModalOpen(true)}
                 >
                   <UserAvatar size={16} />
-                  <span>Sign in</span>
+                  <span>Sign in to Workspace</span>
                 </button>
               )}
+
+              {/* System Telemetry Indicator Ribbon */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '0.65rem', paddingTop: '0.5rem', borderTop: '1px solid rgba(255, 255, 255, 0.05)', fontSize: '0.68rem', color: '#6f6f6f' }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                  <span className="live-indicator-dot" style={{ width: 6, height: 6 }} />
+                  <span>Real-time Sync</span>
+                </span>
+                <span style={{ fontFamily: 'monospace', color: '#42be65' }}>99.9%</span>
+              </div>
             </div>
           </SideNav>
 
@@ -494,25 +543,30 @@ export default function App() {
             {/* Top Page Header Bar */}
             <div className="page-header-bar">
               <div className="page-breadcrumb">
-                <span className="crumb-root">Project X</span>
-                <ChevronRight size={12} style={{ color: '#3d3d3d' }} />
+                <span className="crumb-root" onClick={() => setCurrentTab('overview')} style={{ cursor: 'pointer' }}>
+                  Project X
+                </span>
+                <ChevronRight size={12} style={{ color: '#4c4c4c' }} />
                 <span className="crumb-section">{activeSectionLabel}</span>
-                <ChevronRight size={12} style={{ color: '#3d3d3d' }} />
+                <ChevronRight size={12} style={{ color: '#4c4c4c' }} />
                 <span className="crumb-current">{PAGE_TITLES[currentTab]}</span>
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <Tag type="green" size="sm" style={{ margin: 0, fontWeight: 600 }}>
+                  ● Ledger Active (₹ INR)
+                </Tag>
                 {activeCampaign && (
                   <button
                     className="active-campaign-bar-btn"
                     onClick={() => setIsCampaignModalOpen(true)}
                   >
                     <CheckmarkFilled size={12} style={{ color: '#42be65' }} />
-                    <span className="acb-label">Active</span>
+                    <span className="acb-label">Brief:</span>
                     <span className="acb-name">
                       {activeCampaign.productName || activeCampaign.product_name}
                     </span>
-                    <OverflowMenuHorizontal size={14} style={{ color: '#525252' }} />
+                    <OverflowMenuHorizontal size={14} style={{ color: '#78a9ff' }} />
                   </button>
                 )}
               </div>

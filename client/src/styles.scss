@@ -91,36 +91,39 @@ body {
 // ─────────────────────────────────────────────────────────────────────────────
 // App Logo Mark
 // ─────────────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// App Logo Mark
+// ─────────────────────────────────────────────────────────────────────────────
 .app-logo-mark {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 22px; height: 22px;
-  background: linear-gradient(135deg, $blue-60 0%, #0043ce 100%);
-  border-radius: 4px;
-  font-size: 0.75rem;
+  width: 24px; height: 24px;
+  background: linear-gradient(135deg, #0f62fe 0%, #0043ce 100%);
+  border-radius: 6px;
+  font-size: 0.8rem;
   font-weight: 800;
   color: #fff;
   letter-spacing: -0.02em;
   flex-shrink: 0;
-  box-shadow: 0 0 0 1px rgba(255,255,255,0.08);
+  box-shadow: 0 0 12px rgba(15, 98, 254, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.12);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Carbon Header Overrides
 // ─────────────────────────────────────────────────────────────────────────────
 .cds--header {
-  background: rgba(16, 16, 16, 0.92) !important;
+  background: rgba(14, 14, 14, 0.94) !important;
   backdrop-filter: blur(16px) saturate(180%) !important;
   -webkit-backdrop-filter: blur(16px) saturate(180%) !important;
-  border-bottom: 1px solid rgba(255,255,255,0.07) !important;
-  box-shadow: 0 1px 0 rgba(255,255,255,0.04) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.03), 0 4px 20px rgba(0, 0, 0, 0.35) !important;
 }
 
 .cds--header__name {
   display: flex !important;
   align-items: center !important;
-  gap: 0.6rem !important;
+  gap: 0.65rem !important;
   padding: 0 1.25rem !important;
   text-decoration: none !important;
 
@@ -130,26 +133,33 @@ body {
 .cds--header__global {
   display: flex;
   align-items: center;
-  gap: 0;
+  gap: 0.25rem;
+  padding-right: 0.5rem;
 }
 
 .cds--header__action {
-  width: 3rem !important;
-  height: 3rem !important;
+  width: 2.75rem !important;
+  height: 2.75rem !important;
+  border-radius: 6px !important;
+  margin: 0 2px !important;
   position: relative;
+  transition: all 0.15s ease !important;
 
-  svg { transition: color 0.15s ease; }
-  &:hover svg { color: #f4f4f4 !important; }
+  svg { transition: color 0.15s ease; color: #a8a8a8; }
+  &:hover {
+    background: rgba(255, 255, 255, 0.06) !important;
+    svg { color: #ffffff !important; }
+  }
 }
 
 // ─── Header Badge (notification count) ──────────────────────────────────────
 .header-badge {
   position: absolute;
-  top: 6px; right: 6px;
+  top: 5px; right: 5px;
   min-width: 16px; height: 16px;
-  background: $red-50;
+  background: #da1e28;
   color: #fff;
-  font-size: 0.6rem;
+  font-size: 0.625rem;
   font-weight: 700;
   border-radius: 8px;
   display: flex;
@@ -158,33 +168,34 @@ body {
   padding: 0 4px;
   line-height: 1;
   pointer-events: none;
-  box-shadow: 0 0 0 2px $bg-base;
+  box-shadow: 0 0 0 2px #141414;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SideNav
 // ─────────────────────────────────────────────────────────────────────────────
 .workspace-sidenav {
-  width: 236px !important;
+  width: 256px !important;
   top: 3rem !important;
-  background: #111111 !important;
-  border-right: 1px solid rgba(255,255,255,0.06) !important;
+  background: #121212 !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.07) !important;
   display: flex !important;
   flex-direction: column !important;
   overflow: hidden !important;
 
   // Override Carbon's default link height / padding
   .cds--side-nav__link {
-    min-height: 2.25rem !important;
-    padding-right: 0.75rem !important;
-    border-radius: 0 !important;
-    font-size: var(--type-body) !important;
+    min-height: 2.35rem !important;
+    padding-right: 0.85rem !important;
+    border-radius: 4px !important;
+    margin: 1px 6px !important;
+    font-size: 0.85rem !important;
     transition: background 0.12s ease, color 0.12s ease !important;
 
     // Suppress Carbon's active state colour so our inline style wins
     &.cds--side-nav__link--current {
-      background: rgba(15,98,254,0.1) !important;
-      color: $blue-40 !important;
+      background: linear-gradient(90deg, rgba(15,98,254,0.16) 0%, rgba(15,98,254,0.03) 100%) !important;
+      color: #78a9ff !important;
     }
 
     // Icon color
@@ -196,7 +207,7 @@ body {
 
   // Remove Carbon SideNavItems default padding
   .cds--side-nav__items {
-    padding: 0 !important;
+    padding: 0.5rem 0 !important;
     flex: 1 !important;
     overflow-y: auto !important;
     overflow-x: hidden !important;
@@ -205,8 +216,9 @@ body {
 
 // ─── Nav Footer ──────────────────────────────────────────────────────────────
 .nav-footer {
-  border-top: 1px solid rgba(255,255,255,0.06);
-  padding: var(--space-04);
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  padding: 0.75rem 0.85rem 0.85rem 0.85rem;
+  background: #0d0d0d;
   flex-shrink: 0;
 }
 
@@ -215,20 +227,24 @@ body {
   width: 100%;
   display: flex;
   align-items: center;
-  gap: var(--space-03);
-  padding: var(--space-03) var(--space-04);
+  gap: 0.65rem;
+  padding: 0.45rem 0.6rem;
   border-radius: 6px;
   cursor: pointer;
-  transition: background 0.15s ease;
+  transition: all 0.15s ease;
   box-sizing: border-box;
+  border: 1px solid transparent;
 
-  &:hover { background: rgba(255,255,255,0.05); }
+  &:hover { 
+    background: rgba(255, 255, 255, 0.05); 
+    border-color: rgba(255, 255, 255, 0.08);
+  }
 }
 
 .nav-user-name {
   font-size: 0.8rem;
   font-weight: 600;
-  color: $text-primary;
+  color: #f4f4f4;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -236,7 +252,7 @@ body {
 
 .nav-user-role {
   font-size: 0.65rem;
-  color: $text-placeholder;
+  color: #8d8d8d;
   margin-top: 1px;
 }
 
@@ -246,19 +262,22 @@ body {
   width: 100%;
   display: flex;
   align-items: center;
-  gap: var(--space-03);
-  padding: var(--space-03) var(--space-04);
-  border: 1px solid rgba(255,255,255,0.1);
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid rgba(15, 98, 254, 0.35);
+  background: rgba(15, 98, 254, 0.08);
   border-radius: 6px;
-  font-size: var(--type-label);
-  color: $text-secondary;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #78a9ff;
   cursor: pointer;
   transition: all 0.15s ease;
 
   &:hover {
-    background: rgba(15,98,254,0.1);
-    border-color: rgba(15,98,254,0.35);
-    color: $blue-40;
+    background: rgba(15, 98, 254, 0.16);
+    border-color: rgba(15, 98, 254, 0.55);
+    color: #ffffff;
   }
 }
 
@@ -266,10 +285,10 @@ body {
 // Main Workspace Panel
 // ─────────────────────────────────────────────────────────────────────────────
 .workspace-main {
-  margin-left: 236px;
+  margin-left: 256px;
   flex: 1;
   padding: 0;
-  width: calc(100% - 236px);
+  width: calc(100% - 256px);
   background: $bg-base;
   min-height: calc(100vh - 3rem);
   display: flex;
@@ -281,11 +300,12 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--space-05) var(--space-07);
-  border-bottom: 1px solid rgba(255,255,255,0.06);
-  background: rgba(17,17,17,0.6);
-  backdrop-filter: blur(8px);
-  min-height: 3rem;
+  padding: 0.65rem 1.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  background: rgba(18, 18, 18, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  min-height: 3.1rem;
   position: sticky;
   top: 0;
   z-index: 200;
@@ -294,14 +314,14 @@ body {
 .page-breadcrumb {
   display: flex;
   align-items: center;
-  gap: var(--space-02);
-  font-size: 0.75rem;
+  gap: 0.5rem;
+  font-size: 0.8rem;
 
-  .crumb-root    { color: #3d3d3d; }
-  .crumb-section { color: #525252; }
-  .crumb-current { color: $text-primary; font-weight: 600; }
+  .crumb-root    { color: #6f6f6f; font-weight: 500; transition: color 0.15s ease; &:hover { color: #0f62fe; } }
+  .crumb-section { color: #8d8d8d; font-weight: 500; }
+  .crumb-current { color: #ffffff; font-weight: 600; }
 
-  svg { color: #2a2a2a; flex-shrink: 0; }
+  svg { color: #4c4c4c; flex-shrink: 0; }
 }
 
 // ─── Active Campaign Bar Button ───────────────────────────────────────────────
@@ -310,30 +330,30 @@ body {
   box-sizing: border-box;
   display: flex;
   align-items: center;
-  gap: var(--space-02);
-  padding: 0 var(--space-04);
-  height: 1.75rem;
-  background: rgba(66,190,101,0.08);
-  border: 1px solid rgba(66,190,101,0.25);
+  gap: 0.45rem;
+  padding: 0 0.75rem;
+  height: 1.85rem;
+  background: rgba(66, 190, 101, 0.08);
+  border: 1px solid rgba(66, 190, 101, 0.28);
   border-radius: 2rem;
   cursor: pointer;
   transition: all 0.15s ease;
   font-size: 0.75rem;
-  color: $text-secondary;
+  color: #f4f4f4;
 
   &:hover {
-    background: rgba(66,190,101,0.14);
-    border-color: rgba(66,190,101,0.45);
-    color: $text-primary;
+    background: rgba(66, 190, 101, 0.16);
+    border-color: rgba(66, 190, 101, 0.5);
+    color: #ffffff;
   }
 
-  .acb-label { color: $green-40; font-weight: 600; font-size: 0.7rem; }
-  .acb-name  { color: $text-secondary; max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .acb-label { color: #42be65; font-weight: 600; font-size: 0.7rem; }
+  .acb-name  { color: #ffffff; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
 }
 
 // ─── Page Body Content ────────────────────────────────────────────────────────
 .workspace-main > *:not(.page-header-bar) {
-  padding: var(--space-06) var(--space-07);
+  padding: 1.75rem;
   flex: 1;
 }
 
@@ -348,10 +368,11 @@ body {
 .live-indicator-dot {
   width: 7px; height: 7px;
   border-radius: 50%;
-  background: $green-40;
+  background: #42be65;
+  box-shadow: 0 0 6px rgba(66, 190, 101, 0.6);
+  animation: pulse-glow 2s infinite ease-in-out;
   display: inline-block;
   flex-shrink: 0;
-  animation: pulse-glow 2.2s infinite ease-in-out;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
