@@ -366,9 +366,9 @@ export default function HITLApprovalInbox({ session, compact = false }) {
       <div className="hero-header" style={{ marginBottom: '1.25rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
           <div>
-            <h1>Approval Inbox</h1>
+            <h1>Governance & Escalation Queue</h1>
             <p>
-              Autonomous agents pause and escalate when rates or risks exceed safety thresholds. You govern every decision.
+              Human-in-the-loop review queue for commercial exceptions, rate counter-offers exceeding caps, and milestone payment authorizations.
             </p>
           </div>
           <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>

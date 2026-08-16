@@ -5,17 +5,17 @@ import {
   Column, 
   ProgressBar, 
   Tag, 
-  Loading,
-  Button,
-  InlineNotification,
-  DataTable,
-  TableContainer,
-  Table,
-  TableHead,
-  TableHeader,
-  TableRow,
-  TableCell,
-  TableBody
+  Loading, 
+  Button, 
+  InlineNotification, 
+  DataTable, 
+  TableContainer, 
+  Table, 
+  TableHead, 
+  TableHeader, 
+  TableRow, 
+  TableCell, 
+  TableBody 
 } from '@carbon/react';
 import { Analytics, Currency, UserFollow, ChartBar, Renew, Checkmark, View, Idea, Security, ArrowRight } from '@carbon/icons-react';
 
@@ -44,7 +44,7 @@ export default function AnalyticsDashboard() {
   if (loading) {
     return (
       <div style={{ padding: '3rem', textAlign: 'center' }}>
-        <Loading description="Loading Real-Time Campaign Analytics & Category Benchmarks..." withOverlay={false} />
+        <Loading description="Loading cross-campaign analytics and market benchmarks..." withOverlay={false} />
       </div>
     );
   }
@@ -56,39 +56,40 @@ export default function AnalyticsDashboard() {
   const platform = analytics?.platformBreakdown;
 
   return (
-    <div className="analytics-dashboard-module">
-      <div style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div>
-          <h2 style={{ fontSize: '1.6rem', fontWeight: '400', marginBottom: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <ChartBar size={24} style={{ color: '#42be65' }} /> Layer 3 & 4: Campaign Intelligence, Benchmarks & Autonomous Optimization
-          </h2>
-          <p style={{ color: '#a8a8a8' }}>
-            Closed-loop ROI attribution (Views → Conversions → Revenue → ROI), India D2C market benchmarking, and autonomous AI budget reallocation recommendations.
-          </p>
+    <div style={{ width: '100%' }}>
+      {/* ─── Hero Header ──────────────────────────────────────────────────── */}
+      <div className="hero-header" style={{ marginBottom: '1.25rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
+          <div>
+            <h1>Cross-Campaign Analytics & Market Benchmarks</h1>
+            <p>
+              Closed-loop ROI attribution, Indian D2C industry benchmarks, and algorithmic budget optimization recommendations.
+            </p>
+          </div>
+          <Button size="sm" kind="tertiary" renderIcon={Renew} onClick={fetchAnalytics}>
+            Refresh Analytics
+          </Button>
         </div>
-        <Button size="sm" kind="tertiary" renderIcon={Renew} onClick={fetchAnalytics}>
-          Refresh Metrics
-        </Button>
       </div>
 
       {reallocated && (
         <InlineNotification
           kind="success"
-          title="Autonomous AI Budget Reallocation Applied!"
-          subtitle="Transferred ₹50,000 budget from Ananya Desi Style (0.8x ROI) to Vikram Fitness (5.2x ROI). Projected incremental revenue: +₹2.1 Lakhs!"
-          style={{ marginBottom: '1.5rem' }}
+          title="Autonomous Budget Reallocation Executed"
+          subtitle="Transferred ₹50,000 budget from Ananya Desi Style (0.8x ROI) to Vikram Fitness (5.2x ROI). Projected incremental revenue: +₹2.1 Lakhs."
+          style={{ marginBottom: '1.25rem' }}
         />
       )}
 
       {/* Primary KPI Metrics Row */}
-      <Grid style={{ padding: 0, marginBottom: '1.5rem', rowGap: '1.25rem', columnGap: '1.25rem' }}>
+      <Grid fullWidth style={{ padding: 0, marginBottom: '1.5rem', rowGap: '1.25rem', columnGap: '1.25rem' }}>
         <Column lg={4} md={4} sm={4}>
-          <Tile style={{ background: '#262626', padding: '1.5rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-              <span style={{ color: '#a8a8a8', fontSize: '0.85rem' }}>Total Spend vs Budget</span>
-              <Currency size={20} style={{ color: '#f1c21b' }} />
+          <Tile style={{ background: 'var(--color-surface)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: 6, padding: '1.25rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
+              <span style={{ color: '#8d8d8d', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total Spend vs Cap</span>
+              <Currency size={18} style={{ color: '#f1c21b' }} />
             </div>
-            <div style={{ fontSize: '1.8rem', fontWeight: '700', color: '#f1c21b' }}>
+            <div style={{ fontSize: '1.8rem', fontWeight: 700, color: '#f1c21b' }}>
               ₹{kpi?.totalSpent?.toLocaleString('en-IN') || 0}
             </div>
             <div style={{ fontSize: '0.8rem', color: '#8d8d8d', marginTop: '0.25rem' }}>
@@ -99,48 +100,48 @@ export default function AnalyticsDashboard() {
         </Column>
 
         <Column lg={4} md={4} sm={4}>
-          <Tile style={{ background: '#262626', padding: '1.5rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-              <span style={{ color: '#a8a8a8', fontSize: '0.85rem' }}>Total Audience Reach</span>
-              <UserFollow size={20} style={{ color: '#4589ff' }} />
+          <Tile style={{ background: 'var(--color-surface)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: 6, padding: '1.25rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
+              <span style={{ color: '#8d8d8d', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Combined Audience Reach</span>
+              <UserFollow size={18} style={{ color: '#4589ff' }} />
             </div>
-            <div style={{ fontSize: '1.8rem', fontWeight: '700', color: '#4589ff' }}>
+            <div style={{ fontSize: '1.8rem', fontWeight: 700, color: '#4589ff' }}>
               {kpi?.totalReachText || '0'}
             </div>
             <div style={{ fontSize: '0.8rem', color: '#8d8d8d', marginTop: '0.25rem' }}>
-              Across {kpi?.totalCreators} Indian Creators
+              Across {kpi?.totalCreators} Verified Creators
             </div>
             <div style={{ marginTop: '0.75rem' }}>
-              <Tag type="blue" size="sm">Combined Reach</Tag>
+              <Tag type="blue" size="sm">Audited Audience</Tag>
             </div>
           </Tile>
         </Column>
 
         <Column lg={4} md={4} sm={4}>
-          <Tile style={{ background: '#262626', padding: '1.5rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-              <span style={{ color: '#a8a8a8', fontSize: '0.85rem' }}>Projected Post Views</span>
-              <View size={20} style={{ color: '#42be65' }} />
+          <Tile style={{ background: 'var(--color-surface)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: 6, padding: '1.25rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
+              <span style={{ color: '#8d8d8d', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Projected Post Views</span>
+              <View size={18} style={{ color: '#42be65' }} />
             </div>
-            <div style={{ fontSize: '1.8rem', fontWeight: '700', color: '#42be65' }}>
+            <div style={{ fontSize: '1.8rem', fontWeight: 700, color: '#42be65' }}>
               {kpi?.totalViewsText || '0'}
             </div>
             <div style={{ fontSize: '0.8rem', color: '#8d8d8d', marginTop: '0.25rem' }}>
-              Estimated Organic Views
+              Estimated Organic Impressions
             </div>
             <div style={{ marginTop: '0.75rem' }}>
-              <Tag type="green" size="sm">Organic Views</Tag>
+              <Tag type="green" size="sm">Verified Views</Tag>
             </div>
           </Tile>
         </Column>
 
         <Column lg={4} md={4} sm={4}>
-          <Tile style={{ background: '#262626', padding: '1.5rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-              <span style={{ color: '#a8a8a8', fontSize: '0.85rem' }}>Cost-per-View (CPV)</span>
-              <Analytics size={20} style={{ color: '#be95ff' }} />
+          <Tile style={{ background: 'var(--color-surface)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: 6, padding: '1.25rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
+              <span style={{ color: '#8d8d8d', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Effective Cost-Per-View (CPV)</span>
+              <Analytics size={18} style={{ color: '#be95ff' }} />
             </div>
-            <div style={{ fontSize: '1.8rem', fontWeight: '700', color: '#be95ff' }}>
+            <div style={{ fontSize: '1.8rem', fontWeight: 700, color: '#be95ff' }}>
               {kpi?.costPerView}
             </div>
             <div style={{ fontSize: '0.8rem', color: '#8d8d8d', marginTop: '0.25rem' }}>
@@ -154,69 +155,61 @@ export default function AnalyticsDashboard() {
       </Grid>
 
       {/* 30-Day Campaign Revenue vs Spend Trend Line Chart */}
-      <Tile style={{ padding: '1.5rem', background: '#262626', marginBottom: '1.5rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+      <Tile style={{ padding: '1.5rem', background: 'var(--color-surface)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: 6, marginBottom: '1.5rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
           <div>
-            <h4 style={{ fontSize: '1.05rem', fontWeight: '600', color: '#edf5ff', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <Analytics size={20} style={{ color: '#42be65' }} /> 30-Day Campaign Spend vs Revenue (GMV) Growth Curve
+            <h4 style={{ fontSize: '1.05rem', fontWeight: 600, color: '#edf5ff', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <Analytics size={20} style={{ color: '#42be65' }} /> 30-Day Spend vs Attributed Revenue (GMV)
             </h4>
-            <div style={{ fontSize: '0.8rem', color: '#a8a8a8', marginTop: '0.25rem' }}>
-              Track daily budget deployment vs attributed orders and conversion revenue across India.
+            <div style={{ fontSize: '0.8rem', color: '#8d8d8d', marginTop: '0.25rem' }}>
+              Daily budget allocation versus attributed order conversions across Indian D2C channels.
             </div>
           </div>
           <div style={{ display: 'flex', gap: '1rem', fontSize: '0.8rem' }}>
             <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#42be65' }}>
-              <span style={{ width: '12px', height: '12px', borderRadius: '2px', background: '#42be65' }}></span>
+              <span style={{ width: 10, height: 10, borderRadius: 2, background: '#42be65' }}></span>
               Generated GMV (₹6.8L)
             </span>
             <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#0f62fe' }}>
-              <span style={{ width: '12px', height: '12px', borderRadius: '2px', background: '#0f62fe' }}></span>
+              <span style={{ width: 10, height: 10, borderRadius: 2, background: '#0f62fe' }}></span>
               Creator Spend (₹1.85L)
             </span>
           </div>
         </div>
 
         {/* SVG Curve Area & Line Graph */}
-        <div style={{ background: '#161616', padding: '1.25rem', borderRadius: '4px', border: '1px solid #393939' }}>
+        <div style={{ background: '#111111', padding: '1.25rem', borderRadius: 4, border: '1px solid rgba(255, 255, 255, 0.06)' }}>
           <svg viewBox="0 0 800 200" style={{ width: '100%', height: '180px', overflow: 'visible' }}>
             <defs>
               <linearGradient id="revenueGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#42be65" stopOpacity="0.4" />
+                <stop offset="0%" stopColor="#42be65" stopOpacity="0.3" />
                 <stop offset="100%" stopColor="#42be65" stopOpacity="0.0" />
               </linearGradient>
               <linearGradient id="spendGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#0f62fe" stopOpacity="0.4" />
+                <stop offset="0%" stopColor="#0f62fe" stopOpacity="0.3" />
                 <stop offset="100%" stopColor="#0f62fe" stopOpacity="0.0" />
               </linearGradient>
             </defs>
 
-            {/* Grid lines */}
-            <line x1="0" y1="40" x2="800" y2="40" stroke="#262626" strokeDasharray="4 4" />
-            <line x1="0" y1="90" x2="800" y2="90" stroke="#262626" strokeDasharray="4 4" />
-            <line x1="0" y1="140" x2="800" y2="140" stroke="#262626" strokeDasharray="4 4" />
-            <line x1="0" y1="180" x2="800" y2="180" stroke="#393939" />
+            <line x1="0" y1="40" x2="800" y2="40" stroke="rgba(255, 255, 255, 0.06)" strokeDasharray="4 4" />
+            <line x1="0" y1="90" x2="800" y2="90" stroke="rgba(255, 255, 255, 0.06)" strokeDasharray="4 4" />
+            <line x1="0" y1="140" x2="800" y2="140" stroke="rgba(255, 255, 255, 0.06)" strokeDasharray="4 4" />
+            <line x1="0" y1="180" x2="800" y2="180" stroke="rgba(255, 255, 255, 0.12)" />
 
-            {/* Area Fill for Revenue */}
             <path
               d="M 0,180 Q 150,150 300,100 T 600,40 T 800,15 L 800,180 Z"
               fill="url(#revenueGrad)"
             />
-
-            {/* Revenue Line */}
             <path
               d="M 0,180 Q 150,150 300,100 T 600,40 T 800,15"
               fill="none"
               stroke="#42be65"
-              strokeWidth="3"
+              strokeWidth="2.5"
             />
-
-            {/* Area Fill for Spend */}
             <path
               d="M 0,180 Q 150,165 300,140 T 600,110 T 800,90 L 800,180 Z"
               fill="url(#spendGrad)"
             />
-
-            {/* Spend Line */}
             <path
               d="M 0,180 Q 150,165 300,140 T 600,110 T 800,90"
               fill="none"
@@ -225,45 +218,44 @@ export default function AnalyticsDashboard() {
               strokeDasharray="6 3"
             />
 
-            {/* Data Points */}
-            <circle cx="300" cy="100" r="5" fill="#42be65" stroke="#ffffff" strokeWidth="2" />
+            <circle cx="300" cy="100" r="4" fill="#42be65" stroke="#ffffff" strokeWidth="2" />
             <text x="290" y="85" fill="#42be65" fontSize="11" fontWeight="700">₹2.4L</text>
 
-            <circle cx="600" cy="40" r="5" fill="#42be65" stroke="#ffffff" strokeWidth="2" />
+            <circle cx="600" cy="40" r="4" fill="#42be65" stroke="#ffffff" strokeWidth="2" />
             <text x="590" y="25" fill="#42be65" fontSize="11" fontWeight="700">₹5.1L</text>
 
-            <circle cx="800" cy="15" r="5" fill="#42be65" stroke="#ffffff" strokeWidth="2" />
-            <text x="740" y="20" fill="#42be65" fontSize="11" fontWeight="700">₹6.8L (3.7x ROAS)</text>
+            <circle cx="800" cy="15" r="4" fill="#42be65" stroke="#ffffff" strokeWidth="2" />
+            <text x="710" y="20" fill="#42be65" fontSize="11" fontWeight="700">₹6.8L (3.7x ROAS)</text>
 
             <circle cx="800" cy="90" r="4" fill="#0f62fe" stroke="#ffffff" strokeWidth="2" />
-            <text x="735" y="105" fill="#0f62fe" fontSize="11" fontWeight="700">₹1.85L Spend</text>
+            <text x="710" y="105" fill="#0f62fe" fontSize="11" fontWeight="700">₹1.85L Spend</text>
           </svg>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: '#a8a8a8', marginTop: '0.5rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: '#8d8d8d', marginTop: '0.5rem' }}>
             <span>Week 1</span>
             <span>Week 2</span>
             <span>Week 3</span>
-            <span>Week 4 (Today)</span>
+            <span>Week 4 (Current)</span>
           </div>
         </div>
       </Tile>
 
-      {/* Layer 4: Autonomous Campaign Optimization Agent Card */}
-      <Tile style={{ padding: '1.5rem', background: '#262626', marginBottom: '1.5rem', borderLeft: '4px solid #42be65' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+      {/* Autonomous Optimization Reallocation Section */}
+      <Tile style={{ padding: '1.5rem', background: 'var(--color-surface)', border: '1px solid rgba(255, 255, 255, 0.08)', borderLeft: '4px solid #42be65', borderRadius: 6, marginBottom: '1.5rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <Idea size={22} style={{ color: '#42be65' }} />
-            <h4 style={{ fontSize: '1.05rem', fontWeight: '600', color: '#edf5ff', margin: 0 }}>
-              Layer 4: AI Campaign Optimization Agent Recommendation
+            <Idea size={20} style={{ color: '#42be65' }} />
+            <h4 style={{ fontSize: '1.05rem', fontWeight: 600, color: '#edf5ff', margin: 0 }}>
+              Algorithmic Budget Optimization & Reallocation
             </h4>
           </div>
-          <Tag type="teal" size="md">Confidence Score: {optAgent?.confidence || '94%'}</Tag>
+          <Tag type="teal" size="md">Confidence Rating: {optAgent?.confidence || '94%'}</Tag>
         </div>
 
-        <Grid style={{ padding: 0, rowGap: '1rem', columnGap: '1rem' }}>
+        <Grid fullWidth style={{ padding: 0, rowGap: '1rem', columnGap: '1rem' }}>
           <Column lg={8} md={4} sm={4}>
-            <div style={{ background: '#161616', padding: '1rem', borderRadius: '4px', border: '1px solid #393939' }}>
-              <div style={{ fontSize: '0.75rem', color: '#42be65', fontWeight: '600', marginBottom: '0.25rem' }}>🔥 Top Performing Creator</div>
-              <div style={{ fontSize: '1rem', fontWeight: '700', color: '#ffffff' }}>{optAgent?.topPerformer?.creatorName}</div>
+            <div style={{ background: '#111111', padding: '1rem', borderRadius: 4, border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+              <div style={{ fontSize: '0.75rem', color: '#42be65', fontWeight: 600, marginBottom: '0.25rem' }}>TOP PERFORMING CREATOR</div>
+              <div style={{ fontSize: '1rem', fontWeight: 700, color: '#ffffff' }}>{optAgent?.topPerformer?.creatorName}</div>
               <div style={{ fontSize: '0.85rem', color: '#c6c6c6', marginTop: '0.25rem' }}>
                 ROI: <strong style={{ color: '#42be65' }}>{optAgent?.topPerformer?.roi}</strong> • Generated {optAgent?.topPerformer?.conversions} Orders ({optAgent?.topPerformer?.revenue})
               </div>
@@ -271,9 +263,9 @@ export default function AnalyticsDashboard() {
           </Column>
 
           <Column lg={8} md={4} sm={4}>
-            <div style={{ background: '#161616', padding: '1rem', borderRadius: '4px', border: '1px solid #393939' }}>
-              <div style={{ fontSize: '0.75rem', color: '#da1e28', fontWeight: '600', marginBottom: '0.25rem' }}>📉 Underperforming Creator</div>
-              <div style={{ fontSize: '1rem', fontWeight: '700', color: '#ffffff' }}>{optAgent?.underPerformer?.creatorName}</div>
+            <div style={{ background: '#111111', padding: '1rem', borderRadius: 4, border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+              <div style={{ fontSize: '0.75rem', color: '#da1e28', fontWeight: 600, marginBottom: '0.25rem' }}>UNDERPERFORMING CREATOR</div>
+              <div style={{ fontSize: '1rem', fontWeight: 700, color: '#ffffff' }}>{optAgent?.underPerformer?.creatorName}</div>
               <div style={{ fontSize: '0.85rem', color: '#c6c6c6', marginTop: '0.25rem' }}>
                 ROI: <strong style={{ color: '#da1e28' }}>{optAgent?.underPerformer?.roi}</strong> • Generated {optAgent?.underPerformer?.conversions} Orders ({optAgent?.underPerformer?.revenue})
               </div>
@@ -281,13 +273,13 @@ export default function AnalyticsDashboard() {
           </Column>
 
           <Column lg={16} md={8} sm={4}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#161616', padding: '1rem', borderRadius: '4px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#111111', padding: '1rem 1.25rem', borderRadius: 4, border: '1px solid rgba(255, 255, 255, 0.06)', flexWrap: 'wrap', gap: '0.75rem' }}>
               <div>
-                <span style={{ fontWeight: '600', color: '#edf5ff', fontSize: '0.9rem' }}>
-                  AI Autonomous Recommendation: {optAgent?.recommendationAction}
+                <span style={{ fontWeight: 600, color: '#edf5ff', fontSize: '0.9rem' }}>
+                  Recommendation: {optAgent?.recommendationAction}
                 </span>
                 <div style={{ fontSize: '0.8rem', color: '#42be65', marginTop: '0.25rem' }}>
-                  Expected Incremental Revenue: <strong>+{optAgent?.expectedIncrementalRevenue}</strong>
+                  Projected Incremental GMV: <strong>+{optAgent?.expectedIncrementalRevenue}</strong>
                 </div>
               </div>
               <Button 
@@ -297,36 +289,35 @@ export default function AnalyticsDashboard() {
                 disabled={reallocated}
                 onClick={() => setReallocated(true)}
               >
-                {reallocated ? "Reallocated!" : "Execute Autonomous Reallocation"}
+                {reallocated ? "Reallocated!" : "Execute Budget Reallocation"}
               </Button>
             </div>
           </Column>
         </Grid>
       </Tile>
 
-      {/* Layer 3: Category Benchmarks & Deal Pipeline Funnel */}
-      <Grid style={{ padding: 0, rowGap: '1.5rem', columnGap: '1.5rem' }}>
-        {/* Category Benchmarking Tile */}
+      {/* Category Benchmarks & Pipeline Funnel */}
+      <Grid fullWidth style={{ padding: 0, rowGap: '1.5rem', columnGap: '1.5rem' }}>
         <Column lg={8} md={4} sm={4}>
-          <Tile style={{ padding: '1.5rem', background: '#262626', height: '100%' }}>
-            <h4 style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '1.25rem', color: '#edf5ff', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <Security size={18} style={{ color: '#0f62fe' }} /> Category Benchmarking (India Market)
+          <Tile style={{ padding: '1.5rem', background: 'var(--color-surface)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: 6, height: '100%' }}>
+            <h4 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '1.25rem', color: '#edf5ff', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <Security size={18} style={{ color: '#0f62fe' }} /> Indian D2C Industry Benchmarks
             </h4>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              <div style={{ background: '#161616', padding: '1rem', borderRadius: '4px' }}>
-                <div style={{ fontSize: '0.8rem', color: '#a8a8a8' }}>Market: {benchmark?.categoryName}</div>
-                <div style={{ fontSize: '1.25rem', fontWeight: '700', color: '#42be65', margin: '0.25rem 0' }}>
+              <div style={{ background: '#111111', padding: '1rem', borderRadius: 4, border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+                <div style={{ fontSize: '0.8rem', color: '#8d8d8d' }}>Category: {benchmark?.categoryName}</div>
+                <div style={{ fontSize: '1.25rem', fontWeight: 700, color: '#42be65', margin: '0.25rem 0' }}>
                   Your CPM: ₹{benchmark?.yourCPM} vs Category Median ₹{benchmark?.categoryMedianCPM}
                 </div>
-                <Tag type="green" size="md" style={{ fontWeight: '700' }}>
+                <Tag type="green" size="md" style={{ fontWeight: 700 }}>
                   {benchmark?.performanceVerdict}
                 </Tag>
               </div>
 
-              <div style={{ background: '#161616', padding: '1rem', borderRadius: '4px' }}>
-                <div style={{ fontSize: '0.8rem', color: '#a8a8a8' }}>Engagement Rate Benchmark</div>
-                <div style={{ fontSize: '1.1rem', fontWeight: '600', color: '#ffffff', marginTop: '0.25rem' }}>
+              <div style={{ background: '#111111', padding: '1rem', borderRadius: 4, border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+                <div style={{ fontSize: '0.8rem', color: '#8d8d8d' }}>Audience Engagement Benchmark</div>
+                <div style={{ fontSize: '1.1rem', fontWeight: 600, color: '#ffffff', marginTop: '0.25rem' }}>
                   Your Avg: {benchmark?.avgEngagement} (Category Median: {benchmark?.categoryMedianEngagement})
                 </div>
               </div>
@@ -334,65 +325,63 @@ export default function AnalyticsDashboard() {
           </Tile>
         </Column>
 
-        {/* Funnel & Platform */}
         <Column lg={8} md={4} sm={4}>
-          <Tile style={{ padding: '1.5rem', background: '#262626', height: '100%' }}>
-            <h4 style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '1.25rem', color: '#edf5ff' }}>
-              Deal Pipeline Conversion Funnel
+          <Tile style={{ padding: '1.5rem', background: 'var(--color-surface)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: 6, height: '100%' }}>
+            <h4 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '1.25rem', color: '#edf5ff' }}>
+              Commercial Deal Conversion Funnel
             </h4>
-            <Grid style={{ padding: 0, rowGap: '1rem' }}>
+            <Grid fullWidth style={{ padding: 0, rowGap: '1rem' }}>
               <Column lg={5} md={2} sm={2}>
-                <div style={{ background: '#161616', padding: '1rem', borderRadius: '4px', textAlign: 'center' }}>
-                  <div style={{ fontSize: '0.75rem', color: '#a8a8a8' }}>Outreach Sent</div>
-                  <div style={{ fontSize: '1.5rem', fontWeight: '700', color: '#4589ff', margin: '0.25rem 0' }}>
+                <div style={{ background: '#111111', padding: '1rem', borderRadius: 4, textAlign: 'center', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+                  <div style={{ fontSize: '0.75rem', color: '#8d8d8d' }}>Outreach Sent</div>
+                  <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#4589ff', margin: '0.25rem 0' }}>
                     {funnel?.totalInvited}
                   </div>
                 </div>
               </Column>
 
               <Column lg={5} md={2} sm={2}>
-                <div style={{ background: '#161616', padding: '1rem', borderRadius: '4px', textAlign: 'center' }}>
-                  <div style={{ fontSize: '0.75rem', color: '#a8a8a8' }}>Negotiating</div>
-                  <div style={{ fontSize: '1.5rem', fontWeight: '700', color: '#f1c21b', margin: '0.25rem 0' }}>
+                <div style={{ background: '#111111', padding: '1rem', borderRadius: 4, textAlign: 'center', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+                  <div style={{ fontSize: '0.75rem', color: '#8d8d8d' }}>Negotiating</div>
+                  <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#f1c21b', margin: '0.25rem 0' }}>
                     {funnel?.totalNegotiating}
                   </div>
                 </div>
               </Column>
 
               <Column lg={6} md={4} sm={4}>
-                <div style={{ background: '#161616', padding: '1rem', borderRadius: '4px', textAlign: 'center' }}>
-                  <div style={{ fontSize: '0.75rem', color: '#a8a8a8' }}>Verified & Paid</div>
-                  <div style={{ fontSize: '1.5rem', fontWeight: '700', color: '#42be65', margin: '0.25rem 0' }}>
-                    {funnel?.totalPaid + funnel?.totalVerified}
+                <div style={{ background: '#111111', padding: '1rem', borderRadius: 4, textAlign: 'center', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+                  <div style={{ fontSize: '0.75rem', color: '#8d8d8d' }}>Verified & Settled</div>
+                  <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#42be65', margin: '0.25rem 0' }}>
+                    {(funnel?.totalPaid || 0) + (funnel?.totalVerified || 0)}
                   </div>
                 </div>
               </Column>
             </Grid>
 
-            {/* Platform & Niche SVG Visual Charts */}
-            <div style={{ marginTop: '1.25rem', paddingTop: '1.25rem', borderTop: '1px solid #393939', display: 'flex', gap: '1rem', alignItems: 'center' }}>
-              {/* SVG Donut Chart */}
-              <div style={{ position: 'relative', width: '80px', height: '80px', flexShrink: 0 }}>
+            {/* Platform Visual Chart */}
+            <div style={{ marginTop: '1.25rem', paddingTop: '1.25rem', borderTop: '1px solid rgba(255, 255, 255, 0.06)', display: 'flex', gap: '1rem', alignItems: 'center' }}>
+              <div style={{ position: 'relative', width: '70px', height: '70px', flexShrink: 0 }}>
                 <svg viewBox="0 0 36 36" style={{ width: '100%', height: '100%', transform: 'rotate(-90deg)' }}>
                   <circle cx="18" cy="18" r="15.915" fill="none" stroke="#8a3ffc" strokeWidth="3.8" strokeDasharray="60 40" strokeDashoffset="0" />
                   <circle cx="18" cy="18" r="15.915" fill="none" stroke="#da1e28" strokeWidth="3.8" strokeDasharray="40 60" strokeDashoffset="-60" />
                 </svg>
-                <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', fontSize: '0.7rem', fontWeight: '700', color: '#ffffff' }}>
-                  IG vs YT
+                <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', fontSize: '0.65rem', fontWeight: 700, color: '#ffffff' }}>
+                  IG / YT
                 </div>
               </div>
 
               <div style={{ flex: 1, fontSize: '0.8rem', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ color: '#be95ff', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                    <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#8a3ffc' }}></span>
+                    <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#8a3ffc' }}></span>
                     Instagram (60% Reach)
                   </span>
                   <strong style={{ color: '#ffffff' }}>18.2M</strong>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ color: '#ff8389', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                    <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#da1e28' }}></span>
+                    <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#da1e28' }}></span>
                     YouTube (40% Reach)
                   </span>
                   <strong style={{ color: '#ffffff' }}>12.1M</strong>
@@ -404,12 +393,12 @@ export default function AnalyticsDashboard() {
       </Grid>
 
       {/* Creator Performance Leaderboard Table */}
-      <Tile style={{ padding: '1.5rem', background: '#262626', marginTop: '1.5rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-          <h4 style={{ fontSize: '1.05rem', fontWeight: '600', color: '#edf5ff', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <ChartBar size={20} style={{ color: '#42be65' }} /> Top Creator Performance Leaderboard (Real ROI)
+      <Tile style={{ padding: '1.5rem', background: 'var(--color-surface)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: 6, marginTop: '1.5rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+          <h4 style={{ fontSize: '1.05rem', fontWeight: 600, color: '#edf5ff', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <ChartBar size={20} style={{ color: '#42be65' }} /> Top Creator Performance & ROI Leaderboard
           </h4>
-          <Tag type="green" size="md">Live Database Tracking</Tag>
+          <Tag type="green" size="md">Audited Database Tracking</Tag>
         </div>
 
         <DataTable
@@ -454,24 +443,24 @@ export default function AnalyticsDashboard() {
                     return (
                       <TableRow key={row.id} {...getRowProps({ row })}>
                         <TableCell>
-                          <div style={{ fontWeight: '600' }}>{rowData.name}</div>
-                          <div style={{ fontSize: '0.75rem', color: '#a8a8a8' }}>{rowData.handle}</div>
+                          <div style={{ fontWeight: 600, color: '#ffffff' }}>{rowData.name}</div>
+                          <div style={{ fontSize: '0.75rem', color: '#8d8d8d' }}>{rowData.handle}</div>
                         </TableCell>
                         <TableCell>
                           <Tag type={rowData.platform === 'YouTube' ? 'red' : 'purple'} size="sm">
                             {rowData.platform}
                           </Tag>
                         </TableCell>
-                        <TableCell style={{ fontWeight: '600', color: '#f1c21b' }}>
+                        <TableCell style={{ fontWeight: 600, color: '#f1c21b' }}>
                           {rowData.fee}
                         </TableCell>
                         <TableCell style={{ color: '#4589ff' }}>
                           {rowData.reach}
                         </TableCell>
-                        <TableCell style={{ fontWeight: '700', color: '#ffffff' }}>
+                        <TableCell style={{ fontWeight: 700, color: '#ffffff' }}>
                           {rowData.orders}
                         </TableCell>
-                        <TableCell style={{ fontWeight: '700', color: '#42be65' }}>
+                        <TableCell style={{ fontWeight: 700, color: '#42be65' }}>
                           {rowData.roas}
                         </TableCell>
                         <TableCell>

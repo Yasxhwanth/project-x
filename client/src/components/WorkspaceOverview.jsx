@@ -23,38 +23,38 @@ import {
 
 const roleConfig = {
   brand: {
-    eyebrow: 'Brand Workspace',
-    title: 'Move campaigns from brief to revenue.',
+    eyebrow: 'BRAND PORTFOLIO COMMAND',
+    title: 'Executive Campaign Operations',
     icon: Enterprise,
-    description: 'Plan creator programs, approve deals, verify deliverables via VideoIntel, and track audited ROAS.',
+    description: 'Orchestrate end-to-end creator programs, autonomous rate negotiations, multimodal content audits, and deterministic revenue attribution.',
     cards: [
-      { title: 'Create Campaign Brief', description: 'Define budget caps, target audience, mandatory claims, and approval rules.', icon: Idea, tab: 'portfolio', color: 'blue' },
-      { title: 'AI Creator Discovery', description: 'Find high-intent vetted creators using semantic natural language search.', icon: User, tab: 'discovery', color: 'teal' },
-      { title: 'Deal Negotiation & Outreach', description: 'Monitor autonomous email outreach, counter-offers, and agreed deliverables.', icon: Email, tab: 'negotiator', color: 'purple' },
-      { title: 'Revenue Attribution & ROAS', description: 'Tie creator links and promo codes directly to order conversions & GMV.', icon: ShoppingBag, tab: 'attribution', color: 'green' }
+      { title: 'Campaign Brief & Budgeting', description: 'Define commercial budget caps, target creator tiers, mandatory claims, and governance policies.', icon: Idea, tab: 'portfolio', color: 'blue' },
+      { title: 'Creator Intelligence & Discovery', description: 'Source verified creators with real contact credentials, authenticity metrics, and commercial pricing benchmarks.', icon: User, tab: 'discovery', color: 'teal' },
+      { title: 'Commercial Negotiation Studio', description: 'Monitor autonomous multi-touch outreach, rate negotiations with confidential budget caps, and agreement status.', icon: Email, tab: 'negotiator', color: 'purple' },
+      { title: 'Revenue Attribution & ROAS', description: 'Direct deterministic attribution linking creator engagements, promotional codes, and Shopify webhooks to GMV.', icon: ShoppingBag, tab: 'attribution', color: 'green' }
     ]
   },
   agency: {
-    eyebrow: 'Agency Command Hub',
-    title: 'Operate every client and talent relationship with clarity.',
+    eyebrow: 'AGENCY MULTI-BRAND COMMAND',
+    title: 'Agency Operations & Governance Hub',
     icon: Group,
-    description: 'Coordinate multi-client briefs, manage creator talent rosters, and track delivery margins without manual spreadsheets.',
+    description: 'Coordinate multi-brand campaign briefs, manage creator talent rosters, and monitor delivery verification across all active accounts.',
     cards: [
-      { title: 'Manage Client Campaigns', description: 'Switch between client briefs, deliverable approvals, and spend pacing.', icon: Enterprise, tab: 'portfolio', color: 'blue' },
-      { title: 'Talent Roster & Sourcing', description: 'Match roster talent to incoming client opportunities with speed.', icon: Group, tab: 'discovery', color: 'purple' },
-      { title: 'Approval Queue & Escalations', description: 'Review high-value rate counter-offers and authorize milestone payouts.', icon: WarningAlt, tab: 'approvals', color: 'magenta' },
-      { title: 'Client Reporting & Analytics', description: 'Generate white-label performance reports and campaign CPM benchmarks.', icon: ChartBar, tab: 'analytics', color: 'green' }
+      { title: 'Multi-Brand Campaign Portfolio', description: 'Govern client briefs, approval thresholds, deliverable milestones, and budget pacing.', icon: Enterprise, tab: 'portfolio', color: 'blue' },
+      { title: 'Talent Sourcing & Intelligence', description: 'Match talent rosters to active client opportunities with verified engagement and commercial metrics.', icon: Group, tab: 'discovery', color: 'purple' },
+      { title: 'Governance & Escalation Queue', description: 'Review high-value rate counter-offers and authorize milestone payout releases.', icon: WarningAlt, tab: 'approvals', color: 'magenta' },
+      { title: 'Performance Analytics & Benchmarks', description: 'Generate executive performance reports, CPM efficiency metrics, and category benchmarks.', icon: ChartBar, tab: 'analytics', color: 'green' }
     ]
   },
   creator: {
-    eyebrow: 'Creator Studio',
-    title: 'Know what is due, what needs approval, and when you get paid.',
+    eyebrow: 'CREATOR COLLABORATION PORTAL',
+    title: 'Commercial Deliverables & Escrow Hub',
     icon: User,
-    description: 'Your live collaboration hub for brand offers, content guidelines, VideoIntel compliance feedback, and fast escrow payouts.',
+    description: 'Manage brand agreements, review content compliance feedback, and track Section 194J net escrow disbursements.',
     cards: [
-      { title: 'Review Brand Invitations', description: 'Inspect incoming brand briefs, rate proposals, and negotiate terms.', icon: Events, tab: 'negotiator', color: 'blue' },
-      { title: 'Submit & Verify Content', description: 'Upload video links for instant multimodal compliance & timestamped proof.', icon: Video, tab: 'negotiator', color: 'purple' },
-      { title: 'Payouts & Performance', description: 'Track verified deliverables, approved payments, and attributed conversion bonuses.', icon: Money, tab: 'attribution', color: 'green' }
+      { title: 'Active Brand Invitations', description: 'Review incoming commercial briefs, rate proposals, and negotiate deliverables.', icon: Events, tab: 'negotiator', color: 'blue' },
+      { title: 'Content Submission & Audit', description: 'Submit content links for instant multimodal compliance verification and timestamped proof.', icon: Video, tab: 'negotiator', color: 'purple' },
+      { title: 'Financial Settlement & TDS', description: 'Track verified deliverables, Section 194J TDS certificates, and instant UPI payouts.', icon: Money, tab: 'attribution', color: 'green' }
     ]
   }
 };
@@ -62,7 +62,6 @@ const roleConfig = {
 export default function WorkspaceOverview({ mode = 'brand', session, onNavigate }) {
   const config = roleConfig[mode] || roleConfig.brand;
   const Icon = config.icon;
-  const name = session?.user?.name || (mode === 'creator' ? 'Creator' : 'Team');
 
   const [statsData, setStatsData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -92,7 +91,6 @@ export default function WorkspaceOverview({ mode = 'brand', session, onNavigate 
 
   useEffect(() => {
     fetchStats();
-    // Auto-poll stats every 12 seconds
     const interval = setInterval(() => {
       fetchStats(false);
     }, 12000);
@@ -117,9 +115,9 @@ export default function WorkspaceOverview({ mode = 'brand', session, onNavigate 
   };
 
   const metrics = statsData?.metrics || [
-    { label: 'Active Campaigns', value: '03', sublabel: 'Loading live briefs...', trend: 'Live DB', badge: 'Active' },
-    { label: 'Creators in Pipeline', value: '14', sublabel: 'Loading deals...', trend: 'Audited', badge: 'High Intent' },
-    { label: 'Verified ROAS', value: '7.89×', sublabel: 'Loading conversions...', trend: 'Live Attribution', badge: 'Audited' }
+    { label: 'Active Campaigns', value: '03', sublabel: 'Synchronized workspaces', trend: 'Live DB', badge: 'Active' },
+    { label: 'Creators in Pipeline', value: '14', sublabel: 'In active negotiation', trend: 'Audited', badge: 'High Intent' },
+    { label: 'Verified ROAS', value: '7.89×', sublabel: 'Attributed conversion rate', trend: 'Deterministic', badge: 'Audited' }
   ];
 
   const activityFeed = statsData?.activityFeed || [];
@@ -134,12 +132,12 @@ export default function WorkspaceOverview({ mode = 'brand', session, onNavigate 
   });
 
   return (
-    <div style={{ color: '#fff', maxWidth: 1280, margin: '0 auto' }}>
+    <div style={{ color: '#fff', maxWidth: 1280, margin: '0 auto', width: '100%' }}>
       
-      {/* ─── Hero Welcome Banner with Live Engine Controls ────────────────── */}
+      {/* ─── Hero Executive Banner ────────────────────────────────────────── */}
       <Tile style={{ 
         background: 'linear-gradient(135deg, rgba(15, 98, 254, 0.12) 0%, rgba(20, 20, 20, 0.95) 100%)', 
-        border: '1px solid rgba(255, 255, 255, 0.1)', 
+        border: '1px solid rgba(255, 255, 255, 0.08)', 
         borderLeft: '4px solid #0f62fe', 
         padding: '1.75rem 2rem', 
         marginBottom: '1.5rem', 
@@ -152,7 +150,7 @@ export default function WorkspaceOverview({ mode = 'brand', session, onNavigate 
             <span style={{ fontSize: '0.75rem', color: '#6f6f6f' }}>•</span>
             <span style={{ fontSize: '0.75rem', color: '#8d8d8d', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
               <span className="live-indicator-dot" style={{ width: 7, height: 7 }} /> 
-              24/7 Autonomous Perception Engine Online
+              Autonomous Execution Engine Active
             </span>
           </div>
 
@@ -165,7 +163,7 @@ export default function WorkspaceOverview({ mode = 'brand', session, onNavigate 
               onClick={() => fetchStats(true)}
               style={{ color: '#78a9ff', padding: '0 0.75rem', height: '1.85rem' }}
             >
-              {isRefreshing ? 'Refreshing...' : 'Refresh KPIs'}
+              {isRefreshing ? 'Refreshing...' : 'Refresh Metrics'}
             </Button>
 
             <Button
@@ -176,21 +174,21 @@ export default function WorkspaceOverview({ mode = 'brand', session, onNavigate 
               onClick={handleTriggerDirectorCycle}
               style={{ height: '1.85rem', fontSize: '0.75rem' }}
             >
-              {triggerStatus === 'RUNNING' ? 'Running Cycle...' : triggerStatus === 'SUCCESS' ? 'Cycle Finished' : 'Run Agent Cycle'}
+              {triggerStatus === 'RUNNING' ? 'Executing Cycle...' : triggerStatus === 'SUCCESS' ? 'Cycle Completed' : 'Trigger Policy Cycle'}
             </Button>
           </div>
         </div>
 
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1.5rem', alignItems: 'flex-start' }}>
           <div>
-            <h1 style={{ margin: 0, fontSize: '1.75rem', fontWeight: 300, color: '#f4f4f4', letterSpacing: '-0.02em', lineHeight: 1.25 }}>
-              Hi {name}, <span style={{ fontWeight: 600, color: '#ffffff' }}>{config.title}</span>
+            <h1 style={{ margin: 0, fontSize: '1.65rem', fontWeight: 600, color: '#f4f4f4', letterSpacing: '-0.02em', lineHeight: 1.25 }}>
+              {config.title}
             </h1>
-            <p style={{ color: '#a8a8a8', maxWidth: 780, lineHeight: 1.5, marginTop: '0.4rem', fontSize: '0.9rem' }}>
+            <p style={{ color: '#a8a8a8', maxWidth: 780, lineHeight: 1.5, marginTop: '0.4rem', fontSize: '0.875rem' }}>
               {config.description}
             </p>
           </div>
-          <div style={{ padding: '0.75rem', background: 'rgba(15, 98, 254, 0.12)', borderRadius: '12px', border: '1px solid rgba(15, 98, 254, 0.3)', flexShrink: 0 }}>
+          <div style={{ padding: '0.75rem', background: 'rgba(15, 98, 254, 0.12)', borderRadius: 8, border: '1px solid rgba(15, 98, 254, 0.3)', flexShrink: 0 }}>
             <Icon size={28} style={{ color: '#78a9ff', display: 'block' }} />
           </div>
         </div>
@@ -200,20 +198,20 @@ export default function WorkspaceOverview({ mode = 'brand', session, onNavigate 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.85rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <h2 style={{ fontSize: '1.05rem', fontWeight: 600, color: '#f4f4f4', margin: 0 }}>
-            Live Performance & Governance KPIs
+            Performance & Financial Telemetry
           </h2>
           <span style={{ fontSize: '0.75rem', color: '#42be65', background: 'rgba(66, 190, 101, 0.1)', padding: '0.1rem 0.45rem', borderRadius: 4, border: '1px solid rgba(66, 190, 101, 0.25)', fontWeight: 600 }}>
-            ● Real-Time Database Sync
+            ● Real-Time Ledger Sync
           </span>
         </div>
         {statsData?.lastUpdated && (
           <span style={{ fontSize: '0.7rem', color: '#6f6f6f' }}>
-            Last synced {new Date(statsData.lastUpdated).toLocaleTimeString()}
+            Last synchronized {new Date(statsData.lastUpdated).toLocaleTimeString()}
           </span>
         )}
       </div>
 
-      <Grid style={{ padding: 0, marginBottom: '2rem', rowGap: '1.25rem', columnGap: '1.25rem' }}>
+      <Grid fullWidth style={{ padding: 0, marginBottom: '2rem', rowGap: '1.25rem', columnGap: '1.25rem' }}>
         {metrics.map((metric, idx) => (
           <Column key={metric.id || idx} lg={5} md={4} sm={4}>
             <div 
@@ -275,7 +273,7 @@ export default function WorkspaceOverview({ mode = 'brand', session, onNavigate 
                 <span style={{ color: metric.trendType === 'warning' ? '#f1c21b' : '#42be65', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
                   <span>●</span> {metric.trend}
                 </span>
-                <span style={{ color: '#525252' }}>Audited</span>
+                <span style={{ color: '#6f6f6f' }}>Verified</span>
               </div>
             </div>
           </Column>
@@ -286,23 +284,22 @@ export default function WorkspaceOverview({ mode = 'brand', session, onNavigate 
       <div style={{ marginBottom: '2.5rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
           <div>
-            <h2 style={{ fontSize: '1.15rem', fontWeight: 600, color: '#f4f4f4', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <h2 style={{ fontSize: '1.05rem', fontWeight: 600, color: '#f4f4f4', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <span className="live-indicator-dot" style={{ width: 8, height: 8 }} />
-              Real-Time Autonomous Activity Feed
+              Autonomous Execution & Audit Stream
             </h2>
             <span style={{ fontSize: '0.75rem', color: '#6f6f6f' }}>
-              Chronological log of agent actions, video indexing, negotiations, and conversions
+              Deterministic event ledger tracking agent actions, indexing jobs, negotiations, and conversions
             </span>
           </div>
 
-          {/* Activity Filter Chips */}
           <div style={{ display: 'flex', gap: '0.35rem' }}>
             {[
               { id: 'ALL', label: 'All Events' },
-              { id: 'AGENTS', label: 'AI Agents' },
-              { id: 'DEALS', label: 'Deals & State' },
-              { id: 'APPROVALS', label: 'Approvals' },
-              { id: 'VISION', label: 'VideoIntel' }
+              { id: 'AGENTS', label: 'Agent Runs' },
+              { id: 'DEALS', label: 'Deal States' },
+              { id: 'APPROVALS', label: 'Escalations' },
+              { id: 'VISION', label: 'Video Audits' }
             ].map(f => (
               <button
                 key={f.id}
@@ -325,9 +322,8 @@ export default function WorkspaceOverview({ mode = 'brand', session, onNavigate 
           </div>
         </div>
 
-        {/* Activity Stream List Container */}
         <div style={{ 
-          background: 'rgba(22, 22, 22, 0.7)', 
+          background: 'var(--color-surface)', 
           borderRadius: 8, 
           border: '1px solid rgba(255, 255, 255, 0.08)',
           overflow: 'hidden'
@@ -335,7 +331,7 @@ export default function WorkspaceOverview({ mode = 'brand', session, onNavigate 
           {filteredFeed.length === 0 ? (
             <div style={{ padding: '2.5rem', textAlign: 'center', color: '#6f6f6f' }}>
               <Time size={24} style={{ marginBottom: '0.5rem', opacity: 0.5 }} />
-              <div>No activity logs found for this filter. Run an agent cycle or verify a video.</div>
+              <div>No audit events recorded for the selected filter.</div>
             </div>
           ) : (
             filteredFeed.map((item, idx) => (
@@ -348,81 +344,28 @@ export default function WorkspaceOverview({ mode = 'brand', session, onNavigate 
                   padding: '0.9rem 1.25rem',
                   borderBottom: idx === filteredFeed.length - 1 ? 'none' : '1px solid rgba(255, 255, 255, 0.05)',
                   transition: 'background 0.15s ease',
-                  background: idx % 2 === 0 ? 'transparent' : 'rgba(255, 255, 255, 0.015)'
                 }}
               >
-                {/* Left side: Actor & Details */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', minWidth: 0, flex: 1 }}>
-                  {/* Event Type Icon Indicator */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
                   <div style={{
-                    width: '34px',
-                    height: '34px',
-                    borderRadius: '8px',
-                    background: item.type === 'VIDEO_INTEL' ? 'rgba(15, 98, 254, 0.15)' :
-                                item.type === 'CONVERSION' ? 'rgba(36, 161, 72, 0.15)' :
-                                item.type === 'ESCALATION' ? 'rgba(218, 30, 40, 0.15)' : 'rgba(138, 63, 252, 0.15)',
-                    border: '1px solid rgba(255, 255, 255, 0.08)',
+                    width: 32,
+                    height: 32,
+                    borderRadius: '50%',
+                    background: item.type === 'AGENT_RUN' ? 'rgba(15, 98, 254, 0.15)' : item.type === 'ESCALATION' ? 'rgba(255, 131, 43, 0.15)' : 'rgba(66, 190, 101, 0.15)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     flexShrink: 0
                   }}>
-                    {item.type === 'VIDEO_INTEL' ? <Video size={16} style={{ color: '#78a9ff' }} /> :
-                     item.type === 'CONVERSION' ? <ShoppingBag size={16} style={{ color: '#42be65' }} /> :
-                     item.type === 'ESCALATION' ? <WarningAlt size={16} style={{ color: '#ff8389' }} /> :
-                     <Security size={16} style={{ color: '#be95ff' }} />}
+                    {item.type === 'AGENT_RUN' ? <Rocket size={14} style={{ color: '#78a9ff' }} /> : item.type === 'ESCALATION' ? <WarningAlt size={14} style={{ color: '#ff832b' }} /> : <CheckmarkOutline size={14} style={{ color: '#42be65' }} />}
                   </div>
-
-                  <div style={{ minWidth: 0, flex: 1 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-                      <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#f4f4f4' }}>
-                        {item.title}
-                      </span>
-                      <Tag 
-                        type={item.badgeColor || 'gray'} 
-                        size="sm" 
-                        style={{ fontSize: '0.65rem', padding: '0 0.4rem', height: '1.15rem' }}
-                      >
-                        {item.badgeText}
-                      </Tag>
-                    </div>
-
-                    <div style={{ fontSize: '0.75rem', color: '#8d8d8d', marginTop: '0.2rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      <span style={{ color: '#78a9ff', fontWeight: 500 }}>{item.actor}</span>: {item.description}
-                    </div>
+                  <div>
+                    <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#f4f4f4' }}>{item.title || item.action}</div>
+                    <div style={{ fontSize: '0.75rem', color: '#a8a8a8' }}>{item.description || item.detail}</div>
                   </div>
                 </div>
-
-                {/* Right side: Timestamp & Action Link */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexShrink: 0, marginLeft: '1rem' }}>
-                  <span style={{ fontSize: '0.75rem', color: '#6f6f6f', whiteSpace: 'nowrap' }}>
-                    {item.timeAgo}
-                  </span>
-
-                  <button
-                    onClick={() => {
-                      if (item.type === 'ESCALATION') onNavigate('approvals');
-                      else if (item.type === 'CONVERSION') onNavigate('attribution');
-                      else if (item.type === 'VIDEO_INTEL') onNavigate('negotiator');
-                      else onNavigate('negotiator');
-                    }}
-                    style={{
-                      background: 'rgba(255, 255, 255, 0.04)',
-                      border: '1px solid rgba(255, 255, 255, 0.1)',
-                      color: '#78a9ff',
-                      borderRadius: 4,
-                      padding: '0.25rem 0.6rem',
-                      fontSize: '0.7rem',
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.3rem'
-                    }}
-                  >
-                    <span>View</span>
-                    <ArrowRight size={12} />
-                  </button>
+                <div style={{ fontSize: '0.72rem', color: '#6f6f6f' }}>
+                  {item.timestamp ? new Date(item.timestamp).toLocaleTimeString() : 'Just now'}
                 </div>
               </div>
             ))
@@ -430,15 +373,15 @@ export default function WorkspaceOverview({ mode = 'brand', session, onNavigate 
         </div>
       </div>
 
-      {/* ─── Recommended Workflows & Next Actions ───────────────────────── */}
+      {/* ─── Operational Modules & Core Workflows ───────────────────────── */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-        <h2 style={{ fontSize: '1.15rem', fontWeight: 600, color: '#f4f4f4', margin: 0 }}>
-          Your Next Actions & Workflows
+        <h2 style={{ fontSize: '1.05rem', fontWeight: 600, color: '#f4f4f4', margin: 0 }}>
+          Operational Modules & Core Workflows
         </h2>
-        <span style={{ fontSize: '0.75rem', color: '#6f6f6f' }}>Select a workflow to launch</span>
+        <span style={{ fontSize: '0.75rem', color: '#6f6f6f' }}>Select module to execute</span>
       </div>
 
-      <Grid style={{ padding: 0, rowGap: '1.25rem', columnGap: '1.25rem' }}>
+      <Grid fullWidth style={{ padding: 0, rowGap: '1.25rem', columnGap: '1.25rem' }}>
         {config.cards.map((card) => {
           const CardIcon = card.icon;
           return (
@@ -451,7 +394,7 @@ export default function WorkspaceOverview({ mode = 'brand', session, onNavigate 
                   display: 'flex', 
                   flexDirection: 'column', 
                   cursor: 'pointer',
-                  background: 'rgba(26, 26, 26, 0.7)',
+                  background: 'var(--color-surface)',
                   border: '1px solid rgba(255, 255, 255, 0.08)',
                   borderRadius: 8,
                   transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)'
@@ -459,9 +402,9 @@ export default function WorkspaceOverview({ mode = 'brand', session, onNavigate 
                 onClick={() => onNavigate(card.tab)}
               >
                 <div style={{ 
-                  width: '38px', 
-                  height: '38px', 
-                  borderRadius: '8px', 
+                  width: 38, 
+                  height: 38, 
+                  borderRadius: 8, 
                   background: 'rgba(15, 98, 254, 0.1)', 
                   border: '1px solid rgba(15, 98, 254, 0.25)', 
                   display: 'flex', 
@@ -488,7 +431,7 @@ export default function WorkspaceOverview({ mode = 'brand', session, onNavigate 
                   alignItems: 'center', 
                   justifyContent: 'space-between' 
                 }}>
-                  <span style={{ fontSize: '0.75rem', color: '#78a9ff', fontWeight: 600 }}>Launch Module</span>
+                  <span style={{ fontSize: '0.75rem', color: '#78a9ff', fontWeight: 600 }}>Open Module</span>
                   <ArrowRight size={14} style={{ color: '#78a9ff' }} />
                 </div>
               </div>

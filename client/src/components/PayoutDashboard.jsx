@@ -125,9 +125,9 @@ export default function PayoutDashboard({ activeDeal }) {
       <div className="hero-header" style={{ marginBottom: '1.25rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
           <div>
-            <h1>Payouts & Section 194J TDS Settlement</h1>
+            <h1>Financial Settlement & Tax Compliance</h1>
             <p>
-              Statutory Indian Income Tax Section 194J/194C TDS withholding calculator, PAN validation, and instant automated bank / UPI settlement.
+              Statutory Indian Income Tax Section 194J/194C withholding, automated PAN verification, and escrow settlement via UPI and bank transfer.
             </p>
           </div>
 
@@ -137,7 +137,7 @@ export default function PayoutDashboard({ activeDeal }) {
             renderIcon={Identification}
             onClick={() => setKycModalOpen(true)}
           >
-            {isKycVerified ? "View / Edit Creator KYC" : "Verify Creator KYC (Required)"}
+            {isKycVerified ? "View Compliance & KYC Records" : "Complete Creator KYC (Mandatory)"}
           </Button>
         </div>
       </div>

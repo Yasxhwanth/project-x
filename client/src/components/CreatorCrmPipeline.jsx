@@ -1,96 +1,77 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Tile, 
+  Grid, 
+  Column, 
   Tag, 
   Button, 
-  Loading, 
-  Grid, 
-  Column,
-  Select,
-  SelectItem,
-  TextInput,
-  DataTable,
+  ProgressBar, 
+  DataTable, 
+  Table, 
+  TableHead, 
+  TableRow, 
+  TableHeader, 
+  TableBody, 
+  TableCell,
   TableContainer,
-  Table,
-  TableHead,
-  TableRow,
-  TableHeader,
-  TableBody,
-  TableCell
+  Loading
 } from '@carbon/react';
 import { 
   Application, 
   Email, 
   Video, 
-  Currency, 
-  Checkmark, 
-  ArrowRight, 
-  User, 
+  Money, 
+  CheckmarkFilled, 
+  WarningAlt, 
   Time, 
-  Chat, 
-  Idea,
-  Filter
+  Renew, 
+  UserFollow,
+  ArrowRight,
+  Idea
 } from '@carbon/icons-react';
 
-export default function CreatorCrmPipeline({ campaignId, onSelectDealForNegotiation, onSelectDealForVideo, onSelectDealForPayout }) {
+export default function CreatorCrmPipeline({ onSelectDealForNegotiation, onSelectDealForVerification, onSelectDealForPayout }) {
   const [deals, setDeals] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedView, setSelectedView] = useState('stream');
   const [filterStage, setFilterStage] = useState('ALL');
-
-  const pipelineStages = [
-    { id: 'DISCOVERED', label: '1. Discovered', color: 'gray' },
-    { id: 'SHORTLISTED', label: '2. Shortlisted', color: 'blue' },
-    { id: 'INVITED', label: '3. Contacted', color: 'cyan' },
-    { id: 'NEGOTIATING', label: '4. Negotiating', color: 'magenta' },
-    { id: 'AGREED', label: '5. Accepted', color: 'purple' },
-    { id: 'CONTENT_PENDING', label: '6. Content Pending', color: 'teal' },
-    { id: 'VIDEO_SUBMITTED', label: '7. Posted & Verified', color: 'green' },
-    { id: 'PAID', label: '8. Paid & Closed', color: 'warm-gray' }
-  ];
+  const [selectedView, setSelectedView] = useState('stream'); // 'stream' | 'datatable' | 'lifecycle'
 
   useEffect(() => {
     fetchDeals();
-  }, [campaignId]);;
+  }, []);
 
   const fetchDeals = async () => {
     setLoading(true);
     try {
-      const url = campaignId ? `/api/deals?campaignId=${campaignId}` : '/api/deals';
-      const res = await fetch(url);
+      const res = await fetch('/api/deals');
       const data = await res.json();
-      setDeals(data || []);
+      setDeals(Array.isArray(data) ? data : []);
     } catch (err) {
-      console.error("Failed to load CRM deals", err);
+      console.error("Failed to fetch CRM deals", err);
     } finally {
       setLoading(false);
     }
   };
 
-  const getStageDeals = (stageId) => {
-    return deals.filter(d => {
-      const s = (d.status || 'INVITED').toUpperCase();
-      if (stageId === 'DISCOVERED') return s === 'DISCOVERED';
-      if (stageId === 'SHORTLISTED') return s === 'SHORTLISTED';
-      if (stageId === 'INVITED') return s === 'INVITED' || s === 'CONTACTED';
-      if (stageId === 'NEGOTIATING') return s === 'NEGOTIATING' || s === 'COUNTER_OFFER';
-      if (stageId === 'AGREED') return s === 'AGREED' || s === 'ACCEPTED';
-      if (stageId === 'CONTENT_PENDING') return s === 'CONTENT_PENDING' || s === 'REVISION_REQUESTED';
-      if (stageId === 'VIDEO_SUBMITTED') return s === 'VIDEO_SUBMITTED' || s === 'VERIFIED';
-      if (stageId === 'PAID') return s === 'PAID';
-      return false;
-    });
-  };
+  const pipelineStages = [
+    { id: 'INVITED', label: 'Outreach Sent', color: 'blue', tag: 'blue' },
+    { id: 'NEGOTIATING', label: 'Negotiating Rate', color: 'yellow', tag: 'yellow' },
+    { id: 'AGREED', label: 'Terms Locked', color: 'teal', tag: 'teal' },
+    { id: 'VIDEO_SUBMITTED', label: 'Submitted for QA', color: 'purple', tag: 'purple' },
+    { id: 'VERIFIED_PASSED', label: 'QA Approved', color: 'green', tag: 'green' },
+    { id: 'PAID', label: 'Disbursed', color: 'green', tag: 'green' }
+  ];
 
-  const filteredDeals = filterStage === 'ALL' ? deals : getStageDeals(filterStage);
+  const getStageDeals = (stageId) => deals.filter(d => d.status === stageId);
+  const filteredDeals = filterStage === 'ALL' ? deals : deals.filter(d => d.status === filterStage);
 
-  const headers = [
-    { key: 'creator', header: 'Creator & Channel' },
+  const tableHeaders = [
+    { key: 'creator', header: 'Creator' },
     { key: 'platform', header: 'Platform' },
     { key: 'status', header: 'Pipeline Stage' },
-    { key: 'fee', header: 'Agreed Commercial Fee' },
-    { key: 'agent', header: 'Assigned AI Agent' },
-    { key: 'action', header: 'Action' }
+    { key: 'fee', header: 'Agreed Fee (₹)' },
+    { key: 'agent', header: 'Governing Agent' },
+    { key: 'actions', header: 'Actions' }
   ];
 
   const tableRows = filteredDeals.map(d => ({
@@ -99,63 +80,64 @@ export default function CreatorCrmPipeline({ campaignId, onSelectDealForNegotiat
     platform: d.platform || 'INSTAGRAM',
     status: d.status || 'INVITED',
     fee: `₹${(d.currentAgreedPrice || d.offeredPrice || 0).toLocaleString('en-IN')}`,
-    agent: d.status === 'PAID' ? 'Payment Agent' : d.status === 'VIDEO_SUBMITTED' ? 'Content QA Agent' : 'Director Agent',
+    agent: d.status === 'PAID' ? 'Payment Settlement Agent' : d.status === 'VIDEO_SUBMITTED' ? 'Content QA Agent' : 'Negotiation Director',
     rawDeal: d
   }));
 
   return (
-    <div className="creator-crm-pipeline-module">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-        <div>
-          <h2 style={{ fontSize: '1.6rem', fontWeight: '400', marginBottom: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <Application size={24} style={{ color: '#0f62fe' }} /> Layer 2: Creator CRM & Autonomous Agentic Pipeline
-          </h2>
-          <p style={{ color: '#a8a8a8' }}>
-            End-to-end autonomous relationship tracking governed by event-driven AI state machines.
-          </p>
-        </div>
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
-          <Button 
-            size="sm" 
-            kind={selectedView === 'stream' ? 'primary' : 'tertiary'}
-            onClick={() => setSelectedView('stream')}
-          >
-            ⚡ Autonomous Agent Stream
-          </Button>
-          <Button 
-            size="sm" 
-            kind={selectedView === 'datatable' ? 'primary' : 'tertiary'}
-            onClick={() => setSelectedView('datatable')}
-          >
-            📊 Carbon Data Table
-          </Button>
-          <Button 
-            size="sm" 
-            kind={selectedView === 'lifecycle' ? 'primary' : 'tertiary'}
-            onClick={() => setSelectedView('lifecycle')}
-          >
-            🗺️ Stage Lifecycle Map
-          </Button>
+    <div style={{ width: '100%' }}>
+      {/* ─── Hero Header ──────────────────────────────────────────────────── */}
+      <div className="hero-header" style={{ marginBottom: '1.25rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
+          <div>
+            <h1>Creator CRM & Commercial Pipeline</h1>
+            <p>
+              End-to-end relationship management governed by event-driven policy state machines and milestone trackers.
+            </p>
+          </div>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <Button 
+              size="sm" 
+              kind={selectedView === 'stream' ? 'primary' : 'tertiary'}
+              onClick={() => setSelectedView('stream')}
+            >
+              Execution Stream
+            </Button>
+            <Button 
+              size="sm" 
+              kind={selectedView === 'datatable' ? 'primary' : 'tertiary'}
+              onClick={() => setSelectedView('datatable')}
+            >
+              Data Ledger
+            </Button>
+            <Button 
+              size="sm" 
+              kind={selectedView === 'lifecycle' ? 'primary' : 'tertiary'}
+              onClick={() => setSelectedView('lifecycle')}
+            >
+              Lifecycle Map
+            </Button>
+          </div>
         </div>
       </div>
 
       {/* Stage Summary Header */}
-      <Tile style={{ background: '#262626', padding: '1rem 1.25rem', marginBottom: '1.5rem' }}>
+      <Tile style={{ background: 'var(--color-surface)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: 6, padding: '1rem 1.25rem', marginBottom: '1.5rem' }}>
         <div style={{ display: 'flex', gap: '0.75rem', overflowX: 'auto', paddingBottom: '0.25rem' }}>
           <div 
             style={{ 
               flex: '1 0 110px', 
-              background: filterStage === 'ALL' ? '#0f62fe' : '#161616', 
+              background: filterStage === 'ALL' ? '#0f62fe' : '#111111', 
               padding: '0.75rem', 
-              borderRadius: '4px',
-              border: '1px solid #393939',
+              borderRadius: 4,
+              border: '1px solid rgba(255, 255, 255, 0.08)',
               textAlign: 'center',
               cursor: 'pointer'
             }}
             onClick={() => setFilterStage('ALL')}
           >
-            <div style={{ fontSize: '0.75rem', color: '#a8a8a8', marginBottom: '0.25rem' }}>ALL CREATORS</div>
-            <div style={{ fontSize: '1.2rem', fontWeight: '700', color: '#ffffff' }}>{deals.length}</div>
+            <div style={{ fontSize: '0.7rem', color: filterStage === 'ALL' ? '#ffffff' : '#8d8d8d', textTransform: 'uppercase', marginBottom: '0.25rem' }}>ALL CREATORS</div>
+            <div style={{ fontSize: '1.2rem', fontWeight: 700, color: '#ffffff' }}>{deals.length}</div>
           </div>
           {pipelineStages.map(stage => {
             const count = getStageDeals(stage.id).length;
@@ -165,17 +147,17 @@ export default function CreatorCrmPipeline({ campaignId, onSelectDealForNegotiat
                 key={stage.id}
                 style={{ 
                   flex: '1 0 130px', 
-                  background: isSelected ? '#0f62fe' : '#161616', 
+                  background: isSelected ? '#0f62fe' : '#111111', 
                   padding: '0.75rem', 
-                  borderRadius: '4px',
-                  border: '1px solid #393939',
+                  borderRadius: 4,
+                  border: '1px solid rgba(255, 255, 255, 0.08)',
                   textAlign: 'center',
                   cursor: 'pointer'
                 }}
                 onClick={() => setFilterStage(stage.id)}
               >
-                <div style={{ fontSize: '0.75rem', color: isSelected ? '#ffffff' : '#a8a8a8', marginBottom: '0.25rem' }}>{stage.label}</div>
-                <div style={{ fontSize: '1.2rem', fontWeight: '700', color: '#ffffff' }}>{count}</div>
+                <div style={{ fontSize: '0.7rem', color: isSelected ? '#ffffff' : '#8d8d8d', textTransform: 'uppercase', marginBottom: '0.25rem' }}>{stage.label}</div>
+                <div style={{ fontSize: '1.2rem', fontWeight: 700, color: '#ffffff' }}>{count}</div>
               </div>
             );
           })}
@@ -187,49 +169,49 @@ export default function CreatorCrmPipeline({ campaignId, onSelectDealForNegotiat
           <Loading description="Loading CRM pipeline deals..." withOverlay={false} />
         </div>
       ) : selectedView === 'stream' ? (
-        /* ⚡ VIEW 1: Autonomous AI Agent Workflow Stream (Modern Feed) */
+        /* VIEW 1: Autonomous Workflow Stream */
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           {filteredDeals.length === 0 ? (
-            <Tile style={{ background: '#262626', padding: '3rem', textAlign: 'center', color: '#a8a8a8' }}>
+            <Tile style={{ background: 'var(--color-surface)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: 6, padding: '3rem', textAlign: 'center', color: '#8d8d8d' }}>
               No active creator deals found in this pipeline filter.
             </Tile>
           ) : (
             filteredDeals.map(deal => (
-              <Tile key={deal.id} style={{ background: '#262626', padding: '1.25rem', borderLeft: `4px solid ${deal.status === 'PAID' ? '#42be65' : deal.status === 'NEGOTIATING' ? '#f1c21b' : '#0f62fe'}` }}>
+              <Tile key={deal.id} style={{ background: 'var(--color-surface)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: 6, padding: '1.25rem', borderLeft: `4px solid ${deal.status === 'PAID' ? '#42be65' : deal.status === 'NEGOTIATING' ? '#f1c21b' : '#0f62fe'}` }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                     <img 
                       src={deal.creatorAvatar || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=250&q=80"} 
                       alt={deal.creatorName} 
-                      style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover', border: '2px solid #393939' }}
+                      style={{ width: 44, height: 44, borderRadius: '50%', objectFit: 'cover', border: '1px solid rgba(255, 255, 255, 0.12)' }} 
                     />
                     <div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <h4 style={{ color: '#ffffff', fontSize: '1.1rem', margin: 0 }}>{deal.creatorName}</h4>
+                        <h4 style={{ color: '#ffffff', fontSize: '1.05rem', fontWeight: 600, margin: 0 }}>{deal.creatorName}</h4>
                         <Tag type="blue" size="sm">{deal.platform || 'INSTAGRAM'}</Tag>
                         <Tag type={deal.status === 'PAID' ? 'green' : deal.status === 'NEGOTIATING' ? 'yellow' : 'cyan'} size="sm">
                           {deal.status}
                         </Tag>
                       </div>
-                      <div style={{ color: '#a8a8a8', fontSize: '0.85rem', marginTop: '0.25rem' }}>
+                      <div style={{ color: '#8d8d8d', fontSize: '0.8rem', marginTop: '0.25rem' }}>
                         {deal.creatorHandle} • {deal.creatorEmail || 'Verified Business Email'}
                       </div>
                     </div>
                   </div>
 
                   <div style={{ textAlign: 'right' }}>
-                    <div style={{ color: '#a8a8a8', fontSize: '0.8rem' }}>Agreed Sponsorship Fee</div>
-                    <div style={{ color: '#f1c21b', fontSize: '1.25rem', fontWeight: '700' }}>
+                    <div style={{ color: '#8d8d8d', fontSize: '0.75rem', textTransform: 'uppercase' }}>Agreed Sponsorship Fee</div>
+                    <div style={{ color: '#42be65', fontSize: '1.25rem', fontWeight: 700, fontFamily: 'monospace' }}>
                       ₹{(deal.currentAgreedPrice || deal.offeredPrice || 0).toLocaleString('en-IN')}
                     </div>
                   </div>
                 </div>
 
                 {/* Workflow Agent Status Bar */}
-                <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid #393939', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#d0d0d0', fontSize: '0.85rem' }}>
+                <div style={{ marginTop: '1rem', paddingTop: '0.85rem', borderTop: '1px solid rgba(255, 255, 255, 0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#c6c6c6', fontSize: '0.8rem' }}>
                     <Idea size={16} style={{ color: '#0f62fe' }} />
-                    <span>Assigned Agent: <strong>{deal.status === 'PAID' ? 'Payment Authorization Agent' : deal.status === 'VIDEO_SUBMITTED' ? 'Multimodal VideoDB QA Agent' : 'Autonomous Director Agent'}</strong></span>
+                    <span>Governing Agent: <strong>{deal.status === 'PAID' ? 'Payment Settlement Agent' : deal.status === 'VIDEO_SUBMITTED' ? 'Content QA Agent' : 'Negotiation Director'}</strong></span>
                   </div>
 
                   <div style={{ display: 'flex', gap: '0.5rem' }}>
@@ -240,7 +222,7 @@ export default function CreatorCrmPipeline({ campaignId, onSelectDealForNegotiat
                         renderIcon={Email}
                         onClick={() => onSelectDealForNegotiation && onSelectDealForNegotiation(deal)}
                       >
-                        Launch AI Negotiation Studio
+                        Negotiation Studio
                       </Button>
                     )}
                     {(deal.status === 'AGREED' || deal.status === 'CONTENT_PENDING') && (
@@ -248,23 +230,21 @@ export default function CreatorCrmPipeline({ campaignId, onSelectDealForNegotiat
                         size="sm" 
                         kind="tertiary" 
                         renderIcon={Video}
-                        onClick={() => onSelectDealForVideo && onSelectDealForVideo(deal)}
+                        onClick={() => onSelectDealForVerification && onSelectDealForVerification(deal)}
                       >
-                        Execute VideoDB Multimodal Verification
+                        Verify Content
                       </Button>
                     )}
-                    {deal.status === 'VIDEO_SUBMITTED' && (
+                    {(deal.status === 'VERIFIED_PASSED' || deal.status === 'PAYMENT_PENDING') && (
                       <Button 
                         size="sm" 
                         kind="primary" 
-                        renderIcon={Currency}
+                        renderIcon={Money}
                         onClick={() => onSelectDealForPayout && onSelectDealForPayout(deal)}
+                        style={{ background: '#24a148', borderColor: '#24a148' }}
                       >
-                        Authorize Sec 194J TDS UPI Settlement
+                        Disburse Payout
                       </Button>
-                    )}
-                    {deal.status === 'PAID' && (
-                      <Tag type="green" size="md">✓ Payout Complete & Closed</Tag>
                     )}
                   </div>
                 </div>
@@ -273,76 +253,118 @@ export default function CreatorCrmPipeline({ campaignId, onSelectDealForNegotiat
           )}
         </div>
       ) : selectedView === 'datatable' ? (
-        /* 📊 VIEW 2: Enterprise Carbon DataTable Matrix */
-        <DataTable rows={tableRows} headers={headers}>
-          {({ rows, headers, getTableProps, getHeaderProps, getRowProps }) => (
-            <TableContainer title="Creator Campaign Deal Matrix">
-              <Table {...getTableProps()}>
-                <TableHead>
-                  <TableRow>
-                    {headers.map((header) => (
-                      <TableHeader key={header.key} {...getHeaderProps({ header })}>
-                        {header.header}
-                      </TableHeader>
-                    ))}
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {rows.map((row) => {
-                    const d = filteredDeals.find(item => item.id === row.id) || {};
-                    return (
-                      <TableRow key={row.id} {...getRowProps({ row })}>
-                        <TableCell>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            <img src={d.creatorAvatar} alt="" style={{ width: '32px', height: '32px', borderRadius: '50%' }} />
-                            <div>
-                              <div style={{ fontWeight: '600' }}>{row.cells[0].value}</div>
-                              <div style={{ fontSize: '0.75rem', color: '#a8a8a8' }}>{d.creatorHandle}</div>
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell><Tag type="blue" size="sm">{row.cells[1].value}</Tag></TableCell>
-                        <TableCell><Tag type="cyan" size="sm">{row.cells[2].value}</Tag></TableCell>
-                        <TableCell style={{ color: '#f1c21b', fontWeight: '600' }}>{row.cells[3].value}</TableCell>
-                        <TableCell>{row.cells[4].value}</TableCell>
-                        <TableCell>
-                          <Button 
-                            size="sm" 
-                            kind="ghost" 
-                            onClick={() => onSelectDealForNegotiation && onSelectDealForNegotiation(d)}
-                          >
-                            Open Deal Workspace
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          )}
-        </DataTable>
+        /* VIEW 2: Data Ledger */
+        <Tile style={{ padding: '1.5rem', background: 'var(--color-surface)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: 6 }}>
+          <DataTable rows={tableRows} headers={tableHeaders}>
+            {({ rows, headers, getHeaderProps, getRowProps }) => (
+              <TableContainer>
+                <Table size="md">
+                  <TableHead>
+                    <TableRow>
+                      {headers.map(header => (
+                        <TableHeader key={header.key} {...getHeaderProps({ header })}>
+                          {header.header}
+                        </TableHeader>
+                      ))}
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {rows.map(row => {
+                      const deal = tableRows.find(r => r.id === row.id)?.rawDeal;
+                      return (
+                        <TableRow key={row.id} {...getRowProps({ row })}>
+                          <TableCell style={{ fontWeight: 600, color: '#ffffff' }}>
+                            {deal?.creatorName}
+                          </TableCell>
+                          <TableCell>
+                            <Tag type="blue" size="sm">{deal?.platform}</Tag>
+                          </TableCell>
+                          <TableCell>
+                            <Tag type={deal?.status === 'PAID' ? 'green' : deal?.status === 'NEGOTIATING' ? 'yellow' : 'cyan'} size="sm">
+                              {deal?.status}
+                            </Tag>
+                          </TableCell>
+                          <TableCell style={{ color: '#42be65', fontWeight: 700, fontFamily: 'monospace' }}>
+                            ₹{(deal?.currentAgreedPrice || deal?.offeredPrice || 0).toLocaleString('en-IN')}
+                          </TableCell>
+                          <TableCell style={{ color: '#8d8d8d' }}>
+                            {deal?.status === 'PAID' ? 'Payment Agent' : deal?.status === 'VIDEO_SUBMITTED' ? 'QA Agent' : 'Negotiator'}
+                          </TableCell>
+                          <TableCell>
+                            <Button 
+                              size="sm" 
+                              kind="ghost" 
+                              renderIcon={ArrowRight}
+                              onClick={() => {
+                                if (deal?.status === 'PAID' || deal?.status === 'VERIFIED_PASSED') onSelectDealForPayout && onSelectDealForPayout(deal);
+                                else if (deal?.status === 'VIDEO_SUBMITTED') onSelectDealForVerification && onSelectDealForVerification(deal);
+                                else onSelectDealForNegotiation && onSelectDealForNegotiation(deal);
+                              }}
+                            >
+                              Manage
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            )}
+          </DataTable>
+        </Tile>
       ) : (
-        /* 🗺️ VIEW 3: Interactive Stage Lifecycle Map */
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem' }}>
+        /* VIEW 3: Lifecycle Map */
+        <Grid fullWidth style={{ padding: 0, rowGap: '1.25rem', columnGap: '1.25rem' }}>
           {pipelineStages.map(stage => {
             const stageDeals = getStageDeals(stage.id);
             return (
-              <Tile key={stage.id} style={{ background: '#262626', padding: '1.25rem', borderRadius: '6px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                  <h4 style={{ color: '#ffffff', margin: 0, fontSize: '1rem' }}>{stage.label}</h4>
-                  <Tag type="blue" size="sm">{stageDeals.length} Deals</Tag>
-                </div>
-                {stageDeals.map(d => (
-                  <div key={d.id} style={{ background: '#161616', padding: '0.75rem', borderRadius: '4px', marginBottom: '0.5rem', border: '1px solid #393939' }}>
-                    <div style={{ color: '#ffffff', fontWeight: '600', fontSize: '0.85rem' }}>{d.creatorName}</div>
-                    <div style={{ color: '#f1c21b', fontSize: '0.8rem', marginTop: '0.25rem' }}>₹{(d.currentAgreedPrice || d.offeredPrice || 0).toLocaleString('en-IN')}</div>
+              <Column lg={5} md={4} sm={4} key={stage.id}>
+                <Tile style={{ background: 'var(--color-surface)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: 6, padding: '1.25rem', minHeight: '380px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', paddingBottom: '0.75rem', borderBottom: '1px solid rgba(255, 255, 255, 0.06)' }}>
+                    <h4 style={{ color: '#ffffff', margin: 0, fontSize: '0.95rem', fontWeight: 600 }}>{stage.label}</h4>
+                    <Tag type={stage.tag} size="sm">{stageDeals.length}</Tag>
                   </div>
-                ))}
-              </Tile>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                    {stageDeals.length === 0 ? (
+                      <div style={{ color: '#6f6f6f', fontSize: '0.8rem', textAlign: 'center', padding: '2rem 0' }}>
+                        No creators in this stage.
+                      </div>
+                    ) : (
+                      stageDeals.map(d => (
+                        <div 
+                          key={d.id} 
+                          style={{ 
+                            background: '#111111', 
+                            padding: '0.85rem', 
+                            borderRadius: 4, 
+                            border: '1px solid rgba(255, 255, 255, 0.06)',
+                            cursor: 'pointer'
+                          }}
+                          onClick={() => {
+                            if (d.status === 'PAID' || d.status === 'VERIFIED_PASSED') onSelectDealForPayout && onSelectDealForPayout(d);
+                            else if (d.status === 'VIDEO_SUBMITTED') onSelectDealForVerification && onSelectDealForVerification(d);
+                            else onSelectDealForNegotiation && onSelectDealForNegotiation(d);
+                          }}
+                        >
+                          <div style={{ fontWeight: 600, color: '#ffffff', fontSize: '0.9rem' }}>{d.creatorName}</div>
+                          <div style={{ fontSize: '0.75rem', color: '#8d8d8d', marginTop: '0.2rem' }}>{d.creatorHandle}</div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.5rem' }}>
+                            <span style={{ fontSize: '0.8rem', color: '#42be65', fontWeight: 700, fontFamily: 'monospace' }}>
+                              ₹{(d.currentAgreedPrice || d.offeredPrice || 0).toLocaleString('en-IN')}
+                            </span>
+                            <span style={{ fontSize: '0.7rem', color: '#78a9ff' }}>Open &rarr;</span>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </Tile>
+              </Column>
             );
           })}
-        </div>
+        </Grid>
       )}
     </div>
   );

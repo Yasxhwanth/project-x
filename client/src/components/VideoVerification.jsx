@@ -166,9 +166,9 @@ export default function VideoVerification({ activeDeal, activeCampaign, onVerifi
       <div className="hero-header" style={{ marginBottom: '1.25rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
           <div>
-            <h1>Video QA & ASCI Compliance Verifier</h1>
+            <h1>Content Quality Assurance & ASCI Compliance</h1>
             <p>
-              Powered by <strong>VideoIntel SDK</strong> — Computer Vision keyframe inspection, speech transcription, sponsorship window extraction, and ASCI legal audits.
+              Multimodal computer vision and speech recognition engine auditing brand disclosures, verbatim phrase requirements, and ASCI regulatory standards.
             </p>
           </div>
 

@@ -553,7 +553,7 @@ export default function EmailNegotiator({ campaignId, activeDeal, onDealUpdated,
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <Email size={18} style={{ color: '#0f62fe' }} />
                 <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 600, color: '#f4f4f4' }}>
-                  Deal Negotiations ({deals.length})
+                  Commercial Negotiations ({deals.length})
                 </h3>
               </div>
               <Button 
@@ -1024,9 +1024,9 @@ export default function EmailNegotiator({ campaignId, activeDeal, onDealUpdated,
           ) : (
             <Tile style={{ background: 'var(--color-surface)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: 6, padding: '3.5rem 2rem', textAlign: 'center' }}>
               <Email size={36} style={{ color: '#0f62fe', marginBottom: '0.75rem' }} />
-              <h3 style={{ color: '#f4f4f4', marginBottom: '0.25rem', fontSize: '1.1rem', fontWeight: 600 }}>No Creator Selected</h3>
-              <p style={{ color: '#8d8d8d', maxWidth: '380px', margin: '0 auto', fontSize: '0.85rem' }}>
-                Select a creator from the left list to view conversation history and manage deal terms.
+              <h3 style={{ color: '#f4f4f4', marginBottom: '0.25rem', fontSize: '1.1rem', fontWeight: 600 }}>No Active Negotiation Selected</h3>
+              <p style={{ color: '#8d8d8d', maxWidth: '420px', margin: '0 auto', fontSize: '0.85rem' }}>
+                Select a commercial thread from the queue to inspect communication history, negotiate deliverables, and approve rate terms.
               </p>
             </Tile>
           )}

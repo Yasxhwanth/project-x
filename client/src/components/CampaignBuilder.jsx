@@ -123,9 +123,9 @@ export default function CampaignBuilder({ activeCampaign, onCampaignSaved, onSwi
       <div className="hero-header" style={{ marginBottom: '1.25rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
           <div>
-            <h1>Campaign Hub & Brief Workspace</h1>
+            <h1>Campaign Portfolio & Brief Management</h1>
             <p>
-              Each campaign operates as an isolated workspace — creator discovery, autonomous email negotiation, multimodal video QA, and payouts are scoped per campaign brief.
+              Define commercial guardrails, mandatory deliverables, target creator tier allocations, and pacing parameters for active campaign workspaces.
             </p>
           </div>
           <div style={{ display: 'flex', gap: '0.75rem' }}>

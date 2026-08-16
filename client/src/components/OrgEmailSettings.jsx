@@ -1,31 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Tile, 
-  Grid, 
-  Column, 
-  TextInput, 
-  Select, 
-  SelectItem, 
-  Button, 
-  Toggle, 
-  InlineNotification,
-  Loading,
-  Tag
-} from '@carbon/react';
-import { Email, Settings, Checkmark, Enterprise, Locked, Bot } from '@carbon/icons-react';
+import { Tile, Grid, Column, TextInput, Select, SelectItem, Button, Toggle, InlineNotification, Loading } from '@carbon/react';
+import { Settings, Checkmark, Bot, Email } from '@carbon/icons-react';
 
 export default function OrgEmailSettings() {
-  const [senderName, setSenderName] = useState('');
-  const [senderEmail, setSenderEmail] = useState('');
   const [geminiApiKey, setGeminiApiKey] = useState('');
-  const [smtpHost, setSmtpHost] = useState('smtp.gmail.com');
-  const [smtpPort, setSmtpPort] = useState(587);
-  const [smtpUser, setSmtpUser] = useState('');
-  const [smtpPass, setSmtpPass] = useState('');
   const [aiTone, setAiTone] = useState('Professional Executive & Strategic');
   const [autoReplyEnabled, setAutoReplyEnabled] = useState(true);
-
-  const [loading, setLoading] = useState(false);
+  const [senderName, setSenderName] = useState('Project X Brand Team');
+  const [senderEmail, setSenderEmail] = useState('collabs@projectx.ai');
+  const [smtpHost, setSmtpHost] = useState('');
+  const [smtpUser, setSmtpUser] = useState('');
+  const [smtpPass, setSmtpPass] = useState('');
+  const [loading, setLoading] = useState(true);
   const [savedSuccess, setSavedSuccess] = useState(false);
 
   useEffect(() => {
@@ -33,22 +19,21 @@ export default function OrgEmailSettings() {
   }, []);
 
   const fetchSettings = async () => {
-    setLoading(true);
     try {
-      const res = await fetch('/api/organization/email-settings');
-      const data = await res.json();
-      if (data) {
-        setSenderName(data.senderName || '');
-        setSenderEmail(data.senderEmail || '');
+      const res = await fetch('/api/org/settings');
+      if (res.ok) {
+        const data = await res.json();
         setGeminiApiKey(data.geminiApiKey || '');
-        setSmtpHost(data.smtpHost || 'smtp.gmail.com');
-        setSmtpPort(data.smtpPort || 587);
-        setSmtpUser(data.smtpUser || '');
         setAiTone(data.aiTone || 'Professional Executive & Strategic');
         setAutoReplyEnabled(data.autoReplyEnabled ?? true);
+        setSenderName(data.senderName || 'Project X Brand Team');
+        setSenderEmail(data.senderEmail || 'collabs@projectx.ai');
+        setSmtpHost(data.smtpHost || '');
+        setSmtpUser(data.smtpUser || '');
+        setSmtpPass(data.smtpPass || '');
       }
     } catch (err) {
-      console.error("Failed to load email settings", err);
+      console.error('Failed to load settings', err);
     } finally {
       setLoading(false);
     }
@@ -57,29 +42,27 @@ export default function OrgEmailSettings() {
   const handleSave = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setSavedSuccess(false);
     try {
-      const res = await fetch('/api/organization/email-settings', {
+      const res = await fetch('/api/org/settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          geminiApiKey,
+          aiTone,
+          autoReplyEnabled,
           senderName,
           senderEmail,
-          geminiApiKey,
           smtpHost,
-          smtpPort,
           smtpUser,
-          smtpPass,
-          aiTone,
-          autoReplyEnabled
+          smtpPass
         })
       });
       if (res.ok) {
         setSavedSuccess(true);
-        setTimeout(() => setSavedSuccess(false), 3000);
+        setTimeout(() => setSavedSuccess(false), 4000);
       }
     } catch (err) {
-      console.error("Failed to save email settings", err);
+      console.error('Failed to save settings', err);
     } finally {
       setLoading(false);
     }
@@ -88,61 +71,60 @@ export default function OrgEmailSettings() {
   if (loading) {
     return (
       <div style={{ padding: '3rem', textAlign: 'center' }}>
-        <Loading description="Loading Organization Settings..." withOverlay={false} />
+        <Loading description="Loading communication and model settings..." withOverlay={false} />
       </div>
     );
   }
 
   return (
-    <div className="org-email-settings-module">
-      <div style={{ marginBottom: '1.5rem' }}>
-        <h2 style={{ fontSize: '1.5rem', fontWeight: '400', marginBottom: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <Settings size={24} style={{ color: '#0f62fe' }} /> Organization Email & AI Agent Settings
-        </h2>
-        <p style={{ color: '#a8a8a8' }}>
-          Configure your Brand Organization's Google Gemini API key, Gmail/SMTP email integration, sender identity, and autonomous AI negotiation tone.
+    <div style={{ width: '100%' }}>
+      {/* ─── Hero Header ──────────────────────────────────────────────────── */}
+      <div className="hero-header" style={{ marginBottom: '1.25rem' }}>
+        <h1>Outbound Communications & Model Governance</h1>
+        <p>
+          Configure enterprise SMTP relays, OAuth credentials, sender identity, and policy governance for autonomous creator communications.
         </p>
       </div>
 
       {savedSuccess && (
         <InlineNotification
           kind="success"
-          title="Organization Email Settings Saved!"
-          subtitle="Your brand email dispatcher & AI negotiator configuration have been updated."
-          style={{ marginBottom: '1.5rem' }}
+          title="Communication Settings Saved"
+          subtitle="Outbound email dispatcher credentials and model policies have been updated."
+          style={{ marginBottom: '1.25rem' }}
         />
       )}
 
       <form onSubmit={handleSave}>
         {/* Section 1: AI Provider & Agent Personality */}
-        <Tile style={{ padding: '1.75rem', marginBottom: '1.5rem', background: '#262626' }}>
-          <h4 style={{ fontSize: '1.1rem', color: '#0f62fe', marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <Bot size={20} /> 1. Google Gemini AI Agent & Negotiation Tone
+        <Tile style={{ padding: '1.75rem', marginBottom: '1.5rem', background: 'var(--color-surface)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: 6 }}>
+          <h4 style={{ fontSize: '1.05rem', fontWeight: 600, color: '#0f62fe', marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <Bot size={20} /> 1. Language Model Integration & Negotiation Tone
           </h4>
 
-          <Grid style={{ padding: 0, rowGap: '1.25rem', columnGap: '1.25rem' }}>
+          <Grid fullWidth style={{ padding: 0, rowGap: '1.25rem', columnGap: '1.25rem' }}>
             <Column lg={8} md={4} sm={4}>
               <TextInput
                 id="gemini-api-key-input"
-                labelText="Google Gemini API Key (Free at aistudio.google.com)"
-                placeholder="AIzaSy... (Leave empty to use built-in negotiator)"
+                labelText="Google Gemini API Key"
+                placeholder="AIzaSy... (Leave empty to use built-in engine)"
                 type="password"
                 value={geminiApiKey}
                 onChange={(e) => setGeminiApiKey(e.target.value)}
-                helperText="Get your free key from Google AI Studio. Used for real-time dynamic email generation."
+                helperText="Custom API key for dedicated rate limits. Used for dynamic email formulation."
               />
             </Column>
 
             <Column lg={8} md={4} sm={4}>
               <Select
                 id="ai-tone-select"
-                labelText="AI Negotiator Personality & Tone"
+                labelText="Negotiator Personality & Tone"
                 value={aiTone}
                 onChange={(e) => setAiTone(e.target.value)}
               >
                 <SelectItem value="Professional Executive & Strategic" text="Professional Executive & Strategic (Recommended)" />
                 <SelectItem value="Formal Corporate" text="Formal Corporate & Precise" />
-                <SelectItem value="Friendly & Youthful" text="Friendly & Youthful (College Brand Tone)" />
+                <SelectItem value="Friendly & Youthful" text="Friendly & Youthful (D2C Brand Tone)" />
               </Select>
             </Column>
 
@@ -150,9 +132,9 @@ export default function OrgEmailSettings() {
               <div style={{ marginTop: '0.5rem' }}>
                 <Toggle
                   id="auto-reply-toggle"
-                  labelText="Autonomous AI Auto-Reply Mode"
-                  labelA="Disabled (Manual Review)"
-                  labelB="Enabled (Autonomous 24/7 AI Responding)"
+                  labelText="Autonomous Auto-Response Engine"
+                  labelA="Disabled (Human Review Required)"
+                  labelB="Enabled (Autonomous 24/7 Dispatch)"
                   toggled={autoReplyEnabled}
                   onToggle={(val) => setAutoReplyEnabled(val)}
                 />
@@ -162,20 +144,20 @@ export default function OrgEmailSettings() {
         </Tile>
 
         {/* Section 2: Gmail / SMTP Email Dispatch Configuration */}
-        <Tile style={{ padding: '1.75rem', marginBottom: '2rem', background: '#262626' }}>
-          <h4 style={{ fontSize: '1.1rem', color: '#42be65', marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <Email size={20} /> 2. Brand Sender Identity & Gmail / SMTP Integration
+        <Tile style={{ padding: '1.75rem', marginBottom: '1.5rem', background: 'var(--color-surface)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: 6 }}>
+          <h4 style={{ fontSize: '1.05rem', fontWeight: 600, color: '#42be65', marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <Email size={20} /> 2. Sender Identity & Outbound Relay Infrastructure
           </h4>
 
-          <Grid style={{ padding: 0, rowGap: '1.25rem', columnGap: '1.25rem' }}>
+          <Grid fullWidth style={{ padding: 0, rowGap: '1.25rem', columnGap: '1.25rem' }}>
             <Column lg={8} md={4} sm={4}>
               <TextInput
                 id="sender-name-input"
-                labelText="Brand Sender Name"
+                labelText="Sender Display Name"
                 value={senderName}
                 onChange={(e) => setSenderName(e.target.value)}
-                placeholder="e.g. Acme Marketing Team"
-                helperText="Displays in creator's inbox as the sender title"
+                placeholder="e.g. Brand Partnerships Team"
+                helperText="Displays as the sender title in creator inboxes"
                 required
               />
             </Column>
@@ -187,7 +169,7 @@ export default function OrgEmailSettings() {
                 value={senderEmail}
                 onChange={(e) => setSenderEmail(e.target.value)}
                 placeholder="e.g. collabs@yourbrand.com"
-                helperText="Official outreach email address"
+                helperText="Official verified sender email address"
                 required
               />
             </Column>
@@ -195,7 +177,7 @@ export default function OrgEmailSettings() {
             <Column lg={6} md={4} sm={4}>
               <TextInput
                 id="smtp-host-input"
-                labelText="SMTP Host Server"
+                labelText="SMTP Server Host"
                 placeholder="smtp.gmail.com"
                 value={smtpHost}
                 onChange={(e) => setSmtpHost(e.target.value)}
@@ -205,7 +187,7 @@ export default function OrgEmailSettings() {
             <Column lg={5} md={4} sm={4}>
               <TextInput
                 id="smtp-user-input"
-                labelText="SMTP Username / Gmail ID"
+                labelText="SMTP Username / Service Account"
                 placeholder="collabs@company.com"
                 value={smtpUser}
                 onChange={(e) => setSmtpUser(e.target.value)}
@@ -216,7 +198,7 @@ export default function OrgEmailSettings() {
               <TextInput
                 id="smtp-pass-input"
                 type="password"
-                labelText="SMTP Password / Gmail App Password"
+                labelText="SMTP Password / App Key"
                 placeholder="••••••••••••"
                 value={smtpPass}
                 onChange={(e) => setSmtpPass(e.target.value)}
@@ -226,7 +208,7 @@ export default function OrgEmailSettings() {
         </Tile>
 
         <Button type="submit" kind="primary" renderIcon={Checkmark} disabled={loading}>
-          {loading ? "Saving Settings..." : "Save Organization Email & AI Settings"}
+          {loading ? "Saving Settings..." : "Save Communication & Model Settings"}
         </Button>
       </form>
     </div>

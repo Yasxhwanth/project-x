@@ -212,18 +212,18 @@ export default function CreatorSearch({ onSelectCreator, onViewDeal, activeCampa
       <div className="hero-header" style={{ marginBottom: '1.25rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
           <div>
-            <h1>AI Creator Discovery</h1>
+            <h1>Creator Intelligence & Talent Discovery</h1>
             <p>
-              Search 500+ verified Indian creators with authenticated emails, live follower metrics, and audience authenticity scoring.
+              Comprehensive database of verified Indian creators with authenticated business contacts, audience authenticity scoring, and commercial rate benchmarks.
             </p>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             <Tag type="blue" size="md">
-              500+ Curated Profiles
+              500+ Verified Profiles
             </Tag>
             <Tag type="green" size="md">
-              Direct Email Outreach Ready
+              Public Business Contacts
             </Tag>
           </div>
         </div>
