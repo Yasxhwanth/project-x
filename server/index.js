@@ -82,6 +82,27 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '../client/dist')));
 
+// ─── Health & Telemetry Probes ──────────────────────────────────────────────
+app.get(['/api/health', '/healthz'], async (req, res) => {
+  try {
+    const dbCheck = await getDbRow('SELECT 1 as is_alive');
+    res.json({
+      status: 'healthy',
+      database: dbCheck?.is_alive === 1 ? 'connected' : 'degraded',
+      uptime_seconds: Math.floor(process.uptime()),
+      timestamp: new Date().toISOString(),
+      version: '3.2.0-enterprise'
+    });
+  } catch (err) {
+    res.status(503).json({
+      status: 'unhealthy',
+      database: 'disconnected',
+      error: err.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
 // --- API Endpoints utilizing CreatorScraperSDK ---
 
 // 0. User Authentication & Organization Endpoints
@@ -2098,6 +2119,20 @@ if (!process.env.VERCEL) {
     }, 25000);
   });
 }
+
+// ─── Process Resilience & Graceful Shutdown ─────────────────────────────────
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('[Process] Unhandled Promise Rejection:', reason);
+});
+
+process.on('uncaughtException', (err) => {
+  console.error('[Process] Uncaught Exception:', err);
+});
+
+process.on('SIGTERM', () => {
+  console.log('[Process] SIGTERM received. Gracefully closing...');
+  process.exit(0);
+});
 
 export { app };
 export default app;
