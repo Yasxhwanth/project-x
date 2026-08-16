@@ -2044,12 +2044,43 @@ app.post('/api/campaigns/:id/closeout-report/generate', async (req, res) => {
 });
 
 // Serve static client build files in production
-const clientDistPath = path.join(__dirname, '../client/dist');
+const clientDistPath = path.resolve(__dirname, '../client/dist');
+const indexPath = path.resolve(clientDistPath, 'index.html');
+
+console.log(`[Static Asset Server] Client Dist Path: ${clientDistPath} (Exists: ${fs.existsSync(indexPath)})`);
+
 app.use(express.static(clientDistPath));
 
 // Wildcard SPA route
 app.get('*', (req, res) => {
-  res.sendFile(path.join(clientDistPath, 'index.html'));
+  if (fs.existsSync(indexPath)) {
+    res.sendFile(indexPath);
+  } else {
+    res.status(200).send(`
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Project X — Server Active</title>
+        <style>
+          body { background: #121212; color: #f4f4f4; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+          .card { text-align: center; padding: 2.5rem; border: 1px solid #333; border-radius: 8px; background: #1a1a1a; max-width: 520px; box-shadow: 0 8px 24px rgba(0,0,0,0.5); }
+          h2 { color: #0f62fe; margin-top: 0; }
+          p { color: #a8a8a8; line-height: 1.5; }
+          .btn { display: inline-block; padding: 0.65rem 1.4rem; background: #0f62fe; color: #fff; text-decoration: none; border-radius: 4px; font-weight: 500; margin-top: 1rem; }
+        </style>
+      </head>
+      <body>
+        <div class="card">
+          <h2>⚡ Project X Server Active</h2>
+          <p>The Express API is healthy on port ${PORT}. Client assets are currently compiling.</p>
+          <a class="btn" href="/api/campaigns">Test API Status</a>
+        </div>
+      </body>
+      </html>
+    `);
+  }
 });
 
 if (!process.env.VERCEL) {

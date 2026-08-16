@@ -14,11 +14,9 @@
     "@carbon/icons-react": "^11.85.0",
     "@carbon/react": "^1.113.0",
     "@carbon/styles": "^1.112.0",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1"
-  },
-  "devDependencies": {
     "@vitejs/plugin-react": "^4.3.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
     "sass": "^1.77.8",
     "vite": "^5.4.1"
   }
