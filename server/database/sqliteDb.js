@@ -432,6 +432,21 @@ function initDatabaseSchema() {
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )
+    `);
+
+    // 22. System & Activity Notifications Table
+    db.run(`
+      CREATE TABLE IF NOT EXISTS notifications (
+        id              TEXT PRIMARY KEY,
+        organization_id TEXT DEFAULT 'org_default',
+        title           TEXT NOT NULL,
+        message         TEXT NOT NULL,
+        type            TEXT DEFAULT 'info',
+        link_tab        TEXT DEFAULT 'overview',
+        entity_id       TEXT,
+        is_read         INTEGER DEFAULT 0,
+        created_at      DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
     `, () => {
       // Run safe DB schema migrations
       db.run(`ALTER TABLE campaigns ADD COLUMN organization_id TEXT`, () => {});
@@ -447,6 +462,7 @@ function initDatabaseSchema() {
       seedDefaultAuthAndOrganization().catch(err => console.error('Auth seeding error:', err));
       seedFullCreatorDatabase().catch(err => console.error('Creator seeding error:', err));
       seedKycPresets().catch(err => console.error('KYC preset seeding error:', err));
+      seedNotifications().catch(err => console.error('Notifications seeding error:', err));
       // Seed after a short delay to allow auth+creators to finish first
       setTimeout(() => {
         seedE2EScenario().catch(err => console.error("E2E scenario seeding error:", err));
@@ -663,6 +679,81 @@ async function seedKycPresets() {
     }
   } catch (err) {
     console.error('Error seeding KYC presets:', err);
+  }
+}
+
+async function seedNotifications() {
+  try {
+    const row = await getDbRow('SELECT COUNT(*) as count FROM notifications');
+    if (row && row.count > 0) return;
+
+    const initialNotifications = [
+      {
+        id: 'notif_' + Math.random().toString(36).substring(2, 9),
+        organization_id: 'org_boat',
+        title: 'Commercial Offer Received',
+        message: 'Yashwanth accepted the collaboration terms for boAt Protein Powder at ₹25,000.',
+        type: 'deal',
+        link_tab: 'negotiator',
+        entity_id: 'deal_9eb8ce10',
+        is_read: 0,
+        created_at: new Date(Date.now() - 5 * 60 * 1000).toISOString()
+      },
+      {
+        id: 'notif_' + Math.random().toString(36).substring(2, 9),
+        organization_id: 'org_boat',
+        title: 'Video Compliance Audited',
+        message: 'FitWithPriya submitted deliverable. ASCI disclosure & promo code verified (96% Pass).',
+        type: 'compliance',
+        link_tab: 'verification',
+        entity_id: 'video_01',
+        is_read: 0,
+        created_at: new Date(Date.now() - 25 * 60 * 1000).toISOString()
+      },
+      {
+        id: 'notif_' + Math.random().toString(36).substring(2, 9),
+        organization_id: 'org_boat',
+        title: 'Section 194J TDS Escrow Released',
+        message: 'Net payout of ₹16,200 disbursed to FitWithPriya after 10% TDS deduction.',
+        type: 'payout',
+        link_tab: 'payouts',
+        entity_id: 'deal_fitwithpriya',
+        is_read: 0,
+        created_at: new Date(Date.now() - 2 * 3600 * 1000).toISOString()
+      },
+      {
+        id: 'notif_' + Math.random().toString(36).substring(2, 9),
+        organization_id: 'org_boat',
+        title: 'Budget Escalation Ticket Pending',
+        message: 'MuscleWithMohit requested fee counter of ₹22,000. Approval required in Human Inbox.',
+        type: 'warning',
+        link_tab: 'approvals',
+        entity_id: 'ticket_01',
+        is_read: 0,
+        created_at: new Date(Date.now() - 4 * 3600 * 1000).toISOString()
+      },
+      {
+        id: 'notif_' + Math.random().toString(36).substring(2, 9),
+        organization_id: 'org_boat',
+        title: 'Autonomous Outreach Initiated',
+        message: 'Campaign Director dispatched commercial briefs to 5 creator prospects for boAt Lifestyle.',
+        type: 'info',
+        link_tab: 'negotiator',
+        entity_id: 'camp_01',
+        is_read: 1,
+        created_at: new Date(Date.now() - 8 * 3600 * 1000).toISOString()
+      }
+    ];
+
+    for (const n of initialNotifications) {
+      await runDb(
+        `INSERT INTO notifications (id, organization_id, title, message, type, link_tab, entity_id, is_read, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [n.id, n.organization_id, n.title, n.message, n.type, n.link_tab, n.entity_id, n.is_read, n.created_at]
+      );
+    }
+  } catch (err) {
+    console.error('Error seeding notifications:', err);
   }
 }
 

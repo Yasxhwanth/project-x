@@ -1572,6 +1572,56 @@ app.post('/api/agents/escalations/:id/reject', async (req, res) => {
   }
 });
 
+// ─── System Notifications & Live Activity Stream ────────────────────────────
+app.get('/api/notifications', async (req, res) => {
+  try {
+    const rows = await queryDb("SELECT * FROM notifications ORDER BY created_at DESC LIMIT 50");
+    const unreadRow = await getDbRow("SELECT COUNT(*) as count FROM notifications WHERE is_read = 0");
+    res.json({
+      notifications: rows,
+      unreadCount: unreadRow?.count || 0
+    });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch notifications" });
+  }
+});
+
+app.post('/api/notifications/:id/read', async (req, res) => {
+  try {
+    const { id } = req.params;
+    await runDb("UPDATE notifications SET is_read = 1 WHERE id = ?", [id]);
+    res.json({ success: true, message: "Notification marked as read" });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to update notification" });
+  }
+});
+
+app.post('/api/notifications/mark-all-read', async (req, res) => {
+  try {
+    await runDb("UPDATE notifications SET is_read = 1 WHERE is_read = 0");
+    res.json({ success: true, message: "All notifications marked as read" });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to mark all as read" });
+  }
+});
+
+app.post('/api/notifications', async (req, res) => {
+  try {
+    const { title, message, type = 'info', linkTab = 'overview', entityId = null, organizationId = 'org_default' } = req.body;
+    if (!title || !message) return res.status(400).json({ error: "Title and message are required" });
+
+    const id = 'notif_' + uuidv4().substring(0, 8);
+    await runDb(
+      `INSERT INTO notifications (id, organization_id, title, message, type, link_tab, entity_id, is_read, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, 0, CURRENT_TIMESTAMP)`,
+      [id, organizationId, title, message, type, linkTab, entityId]
+    );
+
+    res.json({ success: true, id, message: "Notification published" });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to create notification" });
+  }
+});
 
 app.get('/api/agents/audit-logs', async (req, res) => {
   try {

@@ -10,6 +10,9 @@ import {
   Tag,
   Theme,
   SkipToContent,
+  Modal,
+  Button,
+  Loading,
 } from '@carbon/react';
 import {
   Search,
@@ -25,12 +28,17 @@ import {
   ShoppingBag,
   Rocket,
   WarningAltFilled,
+  Notification,
+  NotificationFilled,
   DocumentDownload,
   ChevronRight,
   OverflowMenuHorizontal,
   CheckmarkFilled,
+  Checkmark,
   Renew,
   Launch,
+  Bot,
+  View,
 } from '@carbon/icons-react';
 
 import CreatorSearch from './components/CreatorSearch';
@@ -190,6 +198,199 @@ function NavSectionLabel({ label }) {
   );
 }
 
+// ─── Dynamic Notification Center Modal ───────────────────────────────────────
+function NotificationCenterModal({ isOpen, onClose, onNavigate }) {
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [filter, setFilter] = useState('all'); // 'all' | 'unread'
+
+  const fetchNotifs = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch('/api/notifications');
+      if (res.ok) {
+        const data = await res.json();
+        setNotifications(data.notifications || []);
+        setUnreadCount(data.unreadCount || 0);
+      }
+    } catch {}
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    if (isOpen) fetchNotifs();
+  }, [isOpen]);
+
+  const handleMarkRead = async (id, e) => {
+    e.stopPropagation();
+    try {
+      await fetch(`/api/notifications/${id}/read`, { method: 'POST' });
+      setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: 1 } : n));
+      setUnreadCount(c => Math.max(0, c - 1));
+    } catch {}
+  };
+
+  const handleMarkAllRead = async () => {
+    try {
+      await fetch('/api/notifications/mark-all-read', { method: 'POST' });
+      setNotifications(prev => prev.map(n => ({ ...n, is_read: 1 })));
+      setUnreadCount(0);
+    } catch {}
+  };
+
+  const getNotifIcon = (type) => {
+    switch (type) {
+      case 'deal':       return <Email size={16} style={{ color: '#78a9ff' }} />;
+      case 'compliance': return <Video size={16} style={{ color: '#42be65' }} />;
+      case 'payout':     return <Currency size={16} style={{ color: '#42be65' }} />;
+      case 'warning':    return <WarningAltFilled size={16} style={{ color: '#f1c21b' }} />;
+      default:           return <Bot size={16} style={{ color: '#be95ff' }} />;
+    }
+  };
+
+  const formatTime = (d) => {
+    if (!d) return 'Recent';
+    const diff = Math.floor((Date.now() - new Date(d)) / 60000);
+    if (diff < 1) return 'Just now';
+    if (diff < 60) return `${diff}m ago`;
+    const hrs = Math.floor(diff / 60);
+    if (hrs < 24) return `${hrs}h ago`;
+    return `${Math.floor(hrs / 24)}d ago`;
+  };
+
+  const filtered = filter === 'unread' ? notifications.filter(n => !n.is_read) : notifications;
+
+  return (
+    <Modal
+      open={isOpen}
+      onRequestClose={onClose}
+      modalHeading="Live System Notifications"
+      primaryButtonText="Close"
+      onRequestSubmit={onClose}
+      size="md"
+    >
+      <div style={{ padding: '0.5rem 0' }}>
+        {/* Controls Bar */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: '1px solid rgba(255, 255, 255, 0.08)', paddingBottom: '0.75rem' }}>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <Button
+              kind={filter === 'all' ? 'primary' : 'ghost'}
+              size="sm"
+              onClick={() => setFilter('all')}
+              style={{ height: '1.85rem', fontSize: '0.75rem' }}
+            >
+              All Activity ({notifications.length})
+            </Button>
+            <Button
+              kind={filter === 'unread' ? 'primary' : 'ghost'}
+              size="sm"
+              onClick={() => setFilter('unread')}
+              style={{ height: '1.85rem', fontSize: '0.75rem' }}
+            >
+              Unread ({unreadCount})
+            </Button>
+          </div>
+
+          {unreadCount > 0 && (
+            <Button
+              kind="ghost"
+              size="sm"
+              onClick={handleMarkAllRead}
+              style={{ height: '1.85rem', fontSize: '0.75rem', color: '#78a9ff' }}
+            >
+              Mark all as read
+            </Button>
+          )}
+        </div>
+
+        {/* Notifications Feed */}
+        <div style={{ maxHeight: '420px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+          {loading ? (
+            <div style={{ textAlign: 'center', padding: '2.5rem', color: '#8d8d8d' }}>
+              <Loading small withOverlay={false} />
+              <p style={{ marginTop: '0.5rem', fontSize: '0.8rem' }}>Syncing notification stream...</p>
+            </div>
+          ) : filtered.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '3rem 1rem', color: '#8d8d8d', fontSize: '0.85rem' }}>
+              <Notification size={28} style={{ color: '#525252', marginBottom: '0.5rem' }} />
+              <p>No {filter === 'unread' ? 'unread ' : ''}notifications at this time.</p>
+            </div>
+          ) : (
+            filtered.map(n => (
+              <div
+                key={n.id}
+                onClick={() => {
+                  if (n.link_tab) onNavigate(n.link_tab, n.entity_id);
+                  if (!n.is_read) handleMarkRead(n.id, { stopPropagation: () => {} });
+                  onClose();
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: '0.85rem',
+                  padding: '0.85rem 1rem',
+                  borderRadius: '6px',
+                  background: n.is_read ? 'rgba(255, 255, 255, 0.02)' : 'rgba(15, 98, 254, 0.08)',
+                  border: n.is_read ? '1px solid rgba(255, 255, 255, 0.06)' : '1px solid rgba(15, 98, 254, 0.35)',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                <div style={{
+                  width: 32, height: 32, borderRadius: '50%',
+                  background: n.is_read ? 'rgba(255, 255, 255, 0.04)' : 'rgba(15, 98, 254, 0.18)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                  marginTop: '0.1rem'
+                }}>
+                  {getNotifIcon(n.type)}
+                </div>
+
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.2rem' }}>
+                    <span style={{ fontWeight: n.is_read ? 500 : 600, color: n.is_read ? '#e0e0e0' : '#ffffff', fontSize: '0.85rem' }}>
+                      {n.title}
+                    </span>
+                    <span style={{ fontSize: '0.7rem', color: '#8d8d8d' }}>
+                      {formatTime(n.created_at)}
+                    </span>
+                  </div>
+
+                  <p style={{ margin: 0, fontSize: '0.78rem', color: '#a8a8a8', lineHeight: 1.4 }}>
+                    {n.message}
+                  </p>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.5rem' }}>
+                    <span style={{ fontSize: '0.72rem', color: '#78a9ff', display: 'flex', alignItems: 'center', gap: '0.25rem', fontWeight: 500 }}>
+                      <span>View in {n.link_tab || 'Dashboard'}</span>
+                      <ChevronRight size={10} />
+                    </span>
+
+                    {!n.is_read && (
+                      <button
+                        onClick={(e) => handleMarkRead(n.id, e)}
+                        title="Mark as read"
+                        style={{
+                          background: 'transparent', border: 'none',
+                          color: '#8d8d8d', cursor: 'pointer', fontSize: '0.72rem',
+                          display: 'flex', alignItems: 'center', gap: '0.25rem'
+                        }}
+                      >
+                        <Checkmark size={12} />
+                        <span>Mark read</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
 // ─── Main App ────────────────────────────────────────────────────────────────
 export default function App() {
   const getInitialTab = () => {
@@ -204,12 +405,13 @@ export default function App() {
   const [activeDeal, setActiveDeal]           = useState(null);
   const [activeCampaign, setActiveCampaign]   = useState(null);
   const [campaigns, setCampaigns]             = useState([]);
-  const [isCampaignModalOpen, setIsCampaignModalOpen] = useState(false);
-  const [isAuthModalOpen, setIsAuthModalOpen]         = useState(false);
-  const [isOrgSettingsOpen, setIsOrgSettingsOpen]     = useState(false);
-  const [session, setSession]                         = useState(null);
-  const [workspaceMode, setWorkspaceMode]             = useState(() => localStorage.getItem('cc_workspace_mode') || 'brand');
-  const [navCounts, setNavCounts]                     = useState({ approvals: 0, deals: 0, videos: 0 });
+  const [isCampaignModalOpen, setIsCampaignModalOpen]         = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen]                 = useState(false);
+  const [isOrgSettingsOpen, setIsOrgSettingsOpen]             = useState(false);
+  const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
+  const [session, setSession]                                 = useState(null);
+  const [workspaceMode, setWorkspaceMode]                     = useState(() => localStorage.getItem('cc_workspace_mode') || 'brand');
+  const [navCounts, setNavCounts]                             = useState({ approvals: 0, deals: 0, videos: 0, notifications: 0 });
   const [forceCreateNewCampaign, setForceCreateNewCampaign]   = useState(false);
   const [selectedWorkspaceCampaign, setSelectedWorkspaceCampaign] = useState(null);
   const [navHovered, setNavHovered] = useState(null);
@@ -245,7 +447,7 @@ export default function App() {
     fetchSession();
     fetchActiveCampaign();
     fetchNavTelemetry();
-    const iv = setInterval(fetchNavTelemetry, 25000);
+    const iv = setInterval(fetchNavTelemetry, 20000);
     return () => clearInterval(iv);
   }, []);
 
@@ -270,10 +472,19 @@ export default function App() {
         submittedVideos = dealList.filter(d => d.status === 'VIDEO_SUBMITTED').length;
       }
 
+      // 3. System Unread Notifications
+      const resNotifs = await fetch('/api/notifications');
+      let unreadNotifs = 0;
+      if (resNotifs.ok) {
+        const notifData = await resNotifs.json();
+        unreadNotifs = notifData.unreadCount || 0;
+      }
+
       setNavCounts({
         approvals: pendingCount,
         deals: activeDeals,
-        videos: submittedVideos
+        videos: submittedVideos,
+        notifications: unreadNotifs
       });
     } catch {}
   };
@@ -365,16 +576,20 @@ export default function App() {
               </Tag>
             </div>
 
-            {/* Pending Approvals Bell */}
+            {/* Live System Notifications Bell Trigger */}
             <HeaderGlobalAction
-              aria-label={`${navCounts.approvals} pending approvals`}
+              aria-label={`${navCounts.notifications} live notifications`}
               tooltipAlignment="end"
-              onClick={() => setCurrentTab('approvals')}
+              onClick={() => setIsNotificationModalOpen(true)}
               style={{ position: 'relative' }}
             >
-              <WarningAltFilled size={20} style={{ color: navCounts.approvals > 0 ? '#f1c21b' : '#8d8d8d' }} />
-              {navCounts.approvals > 0 && (
-                <span className="header-badge">{navCounts.approvals}</span>
+              {navCounts.notifications > 0 ? (
+                <NotificationFilled size={20} style={{ color: '#78a9ff' }} />
+              ) : (
+                <Notification size={20} style={{ color: '#8d8d8d' }} />
+              )}
+              {navCounts.notifications > 0 && (
+                <span className="header-badge">{navCounts.notifications}</span>
               )}
             </HeaderGlobalAction>
 
@@ -403,6 +618,13 @@ export default function App() {
         </Header>
 
         {/* ── Modals ───────────────────────────────────────────────── */}
+        <NotificationCenterModal
+          isOpen={isNotificationModalOpen}
+          onClose={() => setIsNotificationModalOpen(false)}
+          onNavigate={(tab) => {
+            if (tab && VALID_TABS.includes(tab)) setCurrentTab(tab);
+          }}
+        />
         <CampaignPortfolioModal
           isOpen={isCampaignModalOpen}
           onClose={() => setIsCampaignModalOpen(false)}
