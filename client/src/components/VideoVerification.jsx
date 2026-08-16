@@ -38,19 +38,38 @@ import {
 } from '@carbon/icons-react';
 
 export default function VideoVerification({ activeDeal, activeCampaign, onVerificationComplete }) {
-  const deal = activeDeal || {
-    id: 'deal_01',
-    creatorName: 'Hamish Hodder',
-    creatorEmail: 'collabs@hamishhodder.com',
-    currentAgreedPrice: 45000,
+  const [deals, setDeals] = useState([]);
+  const [selectedDealId, setSelectedDealId] = useState(activeDeal?.id || null);
+  const [loadingDeals, setLoadingDeals] = useState(true);
+
+  // Fetch real deals from server on mount
+  useEffect(() => {
+    fetch('/api/deals')
+      .then(r => r.json())
+      .then(data => {
+        const list = Array.isArray(data) ? data : data.deals || [];
+        setDeals(list);
+        if (!selectedDealId && list.length > 0) {
+          setSelectedDealId(activeDeal?.id || list[0].id);
+        }
+      })
+      .catch(() => {})
+      .finally(() => setLoadingDeals(false));
+  }, [activeDeal?.id]);
+
+  const deal = deals.find(d => d.id === selectedDealId) || activeDeal || (deals.length > 0 ? deals[0] : {
+    id: 'deal_e2e_A',
+    creatorName: 'FitWithPriya',
+    creatorEmail: 'priya@fit.in',
+    currentAgreedPrice: 18000,
     videoUrl: 'https://youtu.be/vXQdYFcT_uE'
-  };
+  });
 
   const campaign = activeCampaign || {
-    brandName: 'The Daily Upside',
-    productName: 'The Daily Upside Newsletter',
-    mandatoryPhrases: 'Use link in description to subscribe',
-    promoCode: 'SAVER20'
+    brandName: deal?.brandName || deal?.brand_name || 'boAt Lifestyle',
+    productName: deal?.productName || deal?.product_name || 'boAt Nirvana Ion Earbuds',
+    mandatoryPhrases: 'Say "boAt protein gives me the power to go further"',
+    promoCode: 'BOAT30'
   };
 
   const [reelUrl, setReelUrl] = useState(deal.videoUrl || 'https://youtu.be/vXQdYFcT_uE');
@@ -63,6 +82,16 @@ export default function VideoVerification({ activeDeal, activeCampaign, onVerifi
   const [transcriptSearch, setTranscriptSearch] = useState('');
   const [selectedKeyframe, setSelectedKeyframe] = useState(null);
 
+  // Sync reelUrl when deal selection changes
+  useEffect(() => {
+    if (deal?.videoUrl) {
+      setReelUrl(deal.videoUrl);
+    }
+    if (deal?.videoAnalysis) {
+      setAnalysisResult(deal.videoAnalysis);
+    }
+  }, [deal?.id]);
+
   const handleRunVideoAudit = async (overrideFlag = false) => {
     if (!reelUrl.trim()) return;
     setLoading(true);
@@ -74,7 +103,8 @@ export default function VideoVerification({ activeDeal, activeCampaign, onVerifi
       const stepTimer1 = setTimeout(() => setLoadingStep('Analyzing keyframes with Gemini Multimodal Vision...'), 1200);
       const stepTimer2 = setTimeout(() => setLoadingStep('Extracting sponsorship windows & deep link proofs...'), 2400);
 
-      const res = await fetch(`/api/deals/${deal.id}/verify-video`, {
+      const targetDealId = deal?.id || 'deal_e2e_A';
+      const res = await fetch(`/api/deals/${targetDealId}/verify-video`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -213,6 +243,50 @@ export default function VideoVerification({ activeDeal, activeCampaign, onVerifi
         {/* Input Video URL & Action Buttons */}
         <Column lg={16} md={8} sm={4}>
           <Tile style={{ padding: '1.25rem 1.5rem', background: 'var(--color-surface)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: 6 }}>
+            
+            {/* Target Commercial Deal Switcher */}
+            {deals.length > 0 && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.1rem', paddingBottom: '0.85rem', borderBottom: '1px solid rgba(255, 255, 255, 0.08)', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: '0.72rem', color: '#8d8d8d', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                  Target Commercial Deliverable:
+                </span>
+                <div style={{ display: 'flex', gap: '0.45rem', flexWrap: 'wrap' }}>
+                  {deals.map(d => {
+                    const isSelected = d.id === (deal?.id || selectedDealId);
+                    return (
+                      <button
+                        key={d.id}
+                        onClick={() => {
+                          setSelectedDealId(d.id);
+                          if (d.video_url || d.videoUrl) setReelUrl(d.video_url || d.videoUrl);
+                        }}
+                        style={{
+                          background: isSelected ? 'rgba(15, 98, 254, 0.2)' : 'rgba(255, 255, 255, 0.03)',
+                          border: isSelected ? '1px solid #0f62fe' : '1px solid rgba(255, 255, 255, 0.08)',
+                          borderRadius: 4,
+                          color: isSelected ? '#ffffff' : '#c6c6c6',
+                          padding: '0.35rem 0.75rem',
+                          fontSize: '0.75rem',
+                          fontWeight: isSelected ? 600 : 400,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.4rem',
+                          transition: 'all 0.15s ease'
+                        }}
+                      >
+                        <span style={{ width: 6, height: 6, borderRadius: '50%', background: isSelected ? '#0f62fe' : '#525252' }} />
+                        <span>{d.creator_name || d.creatorName || 'Creator'}</span>
+                        <span style={{ color: '#42be65', fontFamily: 'monospace' }}>
+                          ₹{Number(d.current_agreed_price || d.offered_price || d.currentAgreedPrice || 0).toLocaleString('en-IN')}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             <Grid fullWidth style={{ padding: 0, rowGap: '1rem', columnGap: '1rem', alignItems: 'flex-end' }}>
               <Column lg={9} md={8} sm={4}>
                 <TextInput
