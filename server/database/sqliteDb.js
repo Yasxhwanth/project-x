@@ -441,7 +441,7 @@ function initDatabaseSchema() {
       db.run(`ALTER TABLE creator_kyc ADD COLUMN tds_rate REAL DEFAULT 10.0`, () => {});
       isInitialized = true;
       seedDefaultAuthAndOrganization().catch(err => console.error('Auth seeding error:', err));
-      seedFullCreatorDatabase(10000).catch(err => console.error('Creator seeding error:', err));
+      seedFullCreatorDatabase().catch(err => console.error('Creator seeding error:', err));
       seedKycPresets().catch(err => console.error('KYC preset seeding error:', err));
       // Seed after a short delay to allow auth+creators to finish first
       setTimeout(() => {
