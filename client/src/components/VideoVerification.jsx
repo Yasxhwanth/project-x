@@ -121,7 +121,6 @@ export default function VideoVerification({ activeDeal, activeCampaign, onVerifi
     }
   };
 
-  // Filter transcript chunks based on in-browser search
   const filteredChunks = useMemo(() => {
     const chunks = analysisResult?.transcriptChunks || [];
     if (!transcriptSearch.trim()) return chunks.slice(0, 15);
@@ -161,33 +160,34 @@ export default function VideoVerification({ activeDeal, activeCampaign, onVerifi
   const metadata = analysisResult?.metadata || {};
 
   return (
-    <div className="video-verification-module" style={{ color: '#f4f4f4' }}>
-      {/* Header */}
-      <div style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
-        <div>
-          <h2 style={{ fontSize: '1.5rem', fontWeight: '600', marginBottom: '0.35rem', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-            <Video size={24} style={{ color: '#42be65' }} /> Sovereign Multimodal Perception & Sponsorship Verifier
-          </h2>
-          <p style={{ color: '#a8a8a8', fontSize: '0.875rem', margin: 0 }}>
-            Powered by <strong>VideoIntel SDK</strong> — Computer Vision keyframe inspection, speech transcription, sponsorship window extraction, and ASCI legal audits.
-          </p>
-        </div>
-
-        {analysisResult && (
-          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-            <Tag type="cyan" size="md">
-              {metadata?.platform || 'YouTube'}
-            </Tag>
-            {metadata?.durationSeconds && (
-              <Tag type="purple" size="md">
-                ⏱ {Math.floor(metadata.durationSeconds / 60)}m {metadata.durationSeconds % 60}s
-              </Tag>
-            )}
-            <Tag type={analysisResult.complianceScore >= 80 ? 'green' : 'red'} size="md">
-              {analysisResult.status === 'VERIFIED_PASSED' ? '✓ VERIFIED PASSED' : 'REVISION REQUIRED'}
-            </Tag>
+    <div style={{ color: '#f4f4f4', width: '100%' }}>
+      
+      {/* ─── Hero Header ──────────────────────────────────────────────────── */}
+      <div className="hero-header" style={{ marginBottom: '1.25rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
+          <div>
+            <h1>Video QA & ASCI Compliance Verifier</h1>
+            <p>
+              Powered by <strong>VideoIntel SDK</strong> — Computer Vision keyframe inspection, speech transcription, sponsorship window extraction, and ASCI legal audits.
+            </p>
           </div>
-        )}
+
+          {analysisResult && (
+            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+              <Tag type="cyan" size="md">
+                {metadata?.platform || 'YouTube'}
+              </Tag>
+              {metadata?.durationSeconds && (
+                <Tag type="purple" size="md">
+                  ⏱ {Math.floor(metadata.durationSeconds / 60)}m {metadata.durationSeconds % 60}s
+                </Tag>
+              )}
+              <Tag type={analysisResult.complianceScore >= 80 ? 'green' : 'red'} size="md">
+                {analysisResult.status === 'VERIFIED_PASSED' ? '✓ VERIFIED PASSED' : 'REVISION REQUIRED'}
+              </Tag>
+            </div>
+          )}
+        </div>
       </div>
 
       {overrideMessage && (
@@ -195,7 +195,7 @@ export default function VideoVerification({ activeDeal, activeCampaign, onVerifi
           kind="success"
           title="Manual Approval Applied"
           subtitle={overrideMessage}
-          style={{ marginBottom: '1.5rem' }}
+          style={{ marginBottom: '1.25rem' }}
         />
       )}
 
@@ -204,15 +204,16 @@ export default function VideoVerification({ activeDeal, activeCampaign, onVerifi
           kind="info"
           title="Revision Request Dispatched"
           subtitle={`AI revision guidance emailed to ${deal.creatorName} (${deal.creatorEmail || 'creator'}).`}
-          style={{ marginBottom: '1.5rem' }}
+          style={{ marginBottom: '1.25rem' }}
         />
       )}
 
-      <Grid style={{ padding: 0, rowGap: '1.25rem', columnGap: '1.25rem' }}>
+      <Grid fullWidth style={{ padding: 0, rowGap: '1.25rem', columnGap: '1.25rem' }}>
+        
         {/* Input Video URL & Action Buttons */}
         <Column lg={16} md={8} sm={4}>
-          <Tile style={{ padding: '1.25rem 1.5rem', background: '#1c1c1c', border: '1px solid #333', borderRadius: '6px' }}>
-            <Grid style={{ padding: 0, rowGap: '1rem', columnGap: '1rem', alignItems: 'flex-end' }}>
+          <Tile style={{ padding: '1.25rem 1.5rem', background: 'var(--color-surface)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: 6 }}>
+            <Grid fullWidth style={{ padding: 0, rowGap: '1rem', columnGap: '1rem', alignItems: 'flex-end' }}>
               <Column lg={10} md={5} sm={4}>
                 <TextInput
                   id="reel-url-input"
@@ -230,7 +231,7 @@ export default function VideoVerification({ activeDeal, activeCampaign, onVerifi
                   renderIcon={Video} 
                   disabled={loading} 
                   onClick={() => handleRunVideoAudit(false)} 
-                  style={{ width: '100%' }}
+                  style={{ width: '100%', maxWidth: 'none' }}
                 >
                   {loading ? "Perceiving Video..." : "Run Multimodal Audit"}
                 </Button>
@@ -242,7 +243,7 @@ export default function VideoVerification({ activeDeal, activeCampaign, onVerifi
                   renderIcon={Checkmark} 
                   disabled={loading} 
                   onClick={() => handleRunVideoAudit(true)} 
-                  style={{ width: '100%' }}
+                  style={{ width: '100%', maxWidth: 'none' }}
                 >
                   Force Approve
                 </Button>
@@ -254,9 +255,9 @@ export default function VideoVerification({ activeDeal, activeCampaign, onVerifi
         {/* Loading Spinner with Progress Steps */}
         {loading && (
           <Column lg={16} md={8} sm={4}>
-            <Tile style={{ padding: '3.5rem', textAlign: 'center', background: '#1c1c1c', border: '1px solid #333', borderRadius: '6px' }}>
+            <Tile style={{ padding: '3.5rem 2rem', textAlign: 'center', background: 'var(--color-surface)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: 6 }}>
               <Loading description={loadingStep} withOverlay={false} />
-              <div style={{ marginTop: '1.25rem', color: '#78a9ff', fontSize: '0.95rem', fontWeight: '500' }}>
+              <div style={{ marginTop: '1.25rem', color: '#78a9ff', fontSize: '0.95rem', fontWeight: 500 }}>
                 {loadingStep}
               </div>
             </Tile>
@@ -268,23 +269,23 @@ export default function VideoVerification({ activeDeal, activeCampaign, onVerifi
           <>
             {/* Top Score Cards Grid */}
             <Column lg={4} md={4} sm={4}>
-              <Tile style={{ padding: '1.25rem', background: '#1c1c1c', border: '1px solid #333', height: '100%', borderRadius: '6px' }}>
+              <Tile style={{ padding: '1.25rem', background: 'var(--color-surface)', border: '1px solid rgba(255, 255, 255, 0.08)', height: '100%', borderRadius: 6 }}>
                 <span style={{ fontSize: '0.75rem', color: '#8d8d8d', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                   Composite Score
                 </span>
-                <div style={{ fontSize: '2.5rem', fontWeight: '700', color: analysisResult.complianceScore >= 80 ? '#42be65' : '#da1e28', margin: '0.35rem 0' }}>
+                <div style={{ fontSize: '2.25rem', fontWeight: 700, color: analysisResult.complianceScore >= 80 ? '#42be65' : '#da1e28', margin: '0.35rem 0' }}>
                   {analysisResult.complianceScore}%
                 </div>
                 <ProgressBar value={analysisResult.complianceScore} hideLabel style={{ marginBottom: '0.75rem' }} />
                 <Tag type={analysisResult.complianceScore >= 80 ? 'green' : 'red'} size="sm">
-                  {analysisResult.complianceScore >= 80 ? "PASSED (Ready for Escrow Release)" : "REVISION REQUIRED"}
+                  {analysisResult.complianceScore >= 80 ? "PASSED (Ready for Escrow)" : "REVISION REQUIRED"}
                 </Tag>
               </Tile>
             </Column>
 
             {/* Plagiarism Card */}
             <Column lg={4} md={4} sm={4}>
-              <Tile style={{ padding: '1.25rem', background: '#1c1c1c', border: '1px solid #333', height: '100%', borderRadius: '6px' }}>
+              <Tile style={{ padding: '1.25rem', background: 'var(--color-surface)', border: '1px solid rgba(255, 255, 255, 0.08)', height: '100%', borderRadius: 6 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ fontSize: '0.75rem', color: '#8d8d8d', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                     Script Originality
@@ -293,10 +294,10 @@ export default function VideoVerification({ activeDeal, activeCampaign, onVerifi
                     {plagiarism.originalityScore}% UNIQUE
                   </Tag>
                 </div>
-                <div style={{ fontSize: '2.5rem', fontWeight: '700', color: '#0f62fe', margin: '0.35rem 0' }}>
+                <div style={{ fontSize: '2.25rem', fontWeight: 700, color: '#0f62fe', margin: '0.35rem 0' }}>
                   {plagiarism.originalityScore}%
                 </div>
-                <p style={{ margin: 0, fontSize: '0.8rem', color: '#c6c6c6', lineHeight: '1.4' }}>
+                <p style={{ margin: 0, fontSize: '0.8rem', color: '#c6c6c6', lineHeight: 1.4 }}>
                   {plagiarism.details || 'Script verified for original content and competitor template isolation.'}
                 </p>
               </Tile>
@@ -304,7 +305,7 @@ export default function VideoVerification({ activeDeal, activeCampaign, onVerifi
 
             {/* AI Voice Card */}
             <Column lg={4} md={4} sm={4}>
-              <Tile style={{ padding: '1.25rem', background: '#1c1c1c', border: '1px solid #333', height: '100%', borderRadius: '6px' }}>
+              <Tile style={{ padding: '1.25rem', background: 'var(--color-surface)', border: '1px solid rgba(255, 255, 255, 0.08)', height: '100%', borderRadius: 6 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ fontSize: '0.75rem', color: '#8d8d8d', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                     Voice Authenticity
@@ -313,10 +314,10 @@ export default function VideoVerification({ activeDeal, activeCampaign, onVerifi
                     {aiVoice.humanVoiceScore >= 75 ? 'HUMAN VOICE' : 'AI SYNTHETIC'}
                   </Tag>
                 </div>
-                <div style={{ fontSize: '2.5rem', fontWeight: '700', color: '#8a3ffc', margin: '0.35rem 0' }}>
+                <div style={{ fontSize: '2.25rem', fontWeight: 700, color: '#8a3ffc', margin: '0.35rem 0' }}>
                   {aiVoice.humanVoiceScore}%
                 </div>
-                <p style={{ margin: 0, fontSize: '0.8rem', color: '#c6c6c6', lineHeight: '1.4' }}>
+                <p style={{ margin: 0, fontSize: '0.8rem', color: '#c6c6c6', lineHeight: 1.4 }}>
                   {aiVoice.assessment || 'Natural conversational acoustics verified.'}
                 </p>
               </Tile>
@@ -324,7 +325,7 @@ export default function VideoVerification({ activeDeal, activeCampaign, onVerifi
 
             {/* Brand Safety Card */}
             <Column lg={4} md={4} sm={4}>
-              <Tile style={{ padding: '1.25rem', background: '#1c1c1c', border: '1px solid #333', height: '100%', borderRadius: '6px' }}>
+              <Tile style={{ padding: '1.25rem', background: 'var(--color-surface)', border: '1px solid rgba(255, 255, 255, 0.08)', height: '100%', borderRadius: 6 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ fontSize: '0.75rem', color: '#8d8d8d', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                     Brand Safety & Shield
@@ -333,43 +334,43 @@ export default function VideoVerification({ activeDeal, activeCampaign, onVerifi
                     {brandSafety.isSafe ? 'SAFE ✓' : 'COMPLIANCE RISK'}
                   </Tag>
                 </div>
-                <div style={{ fontSize: '2.5rem', fontWeight: '700', color: '#0072c3', margin: '0.35rem 0' }}>
+                <div style={{ fontSize: '2.25rem', fontWeight: 700, color: '#4589ff', margin: '0.35rem 0' }}>
                   {brandSafety.brandSafetyScore || 96}%
                 </div>
-                <p style={{ margin: 0, fontSize: '0.8rem', color: '#c6c6c6', lineHeight: '1.4' }}>
+                <p style={{ margin: 0, fontSize: '0.8rem', color: '#c6c6c6', lineHeight: 1.4 }}>
                   {brandSafety.details || regulatory.details || 'Zero competitor mentions detected.'}
                 </p>
               </Tile>
             </Column>
 
-            {/* Tier 2: AI Executive Content Brief Banner */}
+            {/* AI Executive Content Brief Banner */}
             {executiveSummary && (
               <Column lg={16} md={8} sm={4}>
                 <Tile style={{ 
                   padding: '1.25rem 1.5rem', 
-                  background: 'linear-gradient(135deg, rgba(15, 98, 254, 0.12) 0%, rgba(138, 63, 252, 0.08) 100%)', 
-                  border: '1px solid rgba(15, 98, 254, 0.35)', 
-                  borderRadius: '6px' 
+                  background: 'linear-gradient(135deg, rgba(15, 98, 254, 0.1) 0%, rgba(138, 63, 252, 0.08) 100%)', 
+                  border: '1px solid rgba(15, 98, 254, 0.3)', 
+                  borderRadius: 6 
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.4rem' }}>
                     <Idea size={18} style={{ color: '#4589ff' }} />
-                    <h5 style={{ margin: 0, fontSize: '0.95rem', fontWeight: '600', color: '#edf5ff' }}>
+                    <h5 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 600, color: '#edf5ff' }}>
                       AI Executive Summary & Narrative Synthesis
                     </h5>
                   </div>
-                  <p style={{ margin: 0, fontSize: '0.875rem', color: '#f4f4f4', lineHeight: '1.6' }}>
+                  <p style={{ margin: 0, fontSize: '0.875rem', color: '#f4f4f4', lineHeight: 1.6 }}>
                     {executiveSummary}
                   </p>
                 </Tile>
               </Column>
             )}
 
-            {/* Tier 1 & 2: Verified Sponsorship Deliverables & Proof Deep Links */}
+            {/* Verified Sponsorship Deliverables */}
             {sponsorshipSegments.length > 0 && (
               <Column lg={16} md={8} sm={4}>
-                <Tile style={{ padding: '1.5rem', background: '#1c1c1c', border: '1px solid #333', borderRadius: '6px' }}>
+                <Tile style={{ padding: '1.5rem', background: 'var(--color-surface)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: 6 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
-                    <h4 style={{ fontSize: '1.05rem', fontWeight: '600', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <h4 style={{ fontSize: '1.05rem', fontWeight: 600, margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                       <Bullhorn size={20} style={{ color: '#42be65' }} /> Verified Sponsorship Deliverables ({sponsorshipSegments.length} Detected)
                     </h4>
                     <span style={{ fontSize: '0.8rem', color: '#8d8d8d' }}>
@@ -377,14 +378,14 @@ export default function VideoVerification({ activeDeal, activeCampaign, onVerifi
                     </span>
                   </div>
 
-                  <Grid style={{ padding: 0, rowGap: '1rem', columnGap: '1rem' }}>
+                  <Grid fullWidth style={{ padding: 0, rowGap: '1rem', columnGap: '1rem' }}>
                     {sponsorshipSegments.map((seg, idx) => (
                       <Column lg={8} md={4} sm={4} key={idx}>
                         <div style={{ 
-                          background: '#141414', 
+                          background: '#111111', 
                           padding: '1.2rem', 
-                          borderRadius: '6px', 
-                          border: '1px solid #282828',
+                          borderRadius: 6, 
+                          border: '1px solid rgba(255, 255, 255, 0.06)',
                           borderLeft: '4px solid #0f62fe',
                           height: '100%',
                           display: 'flex',
@@ -396,16 +397,16 @@ export default function VideoVerification({ activeDeal, activeCampaign, onVerifi
                               <Tag type={seg.type === 'DEDICATED_MID_ROLL' ? 'green' : 'cyan'} size="sm">
                                 {seg.type.replace(/_/g, ' ')}
                               </Tag>
-                              <span style={{ fontSize: '0.85rem', fontWeight: '600', color: '#4589ff' }}>
+                              <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#4589ff' }}>
                                 ⏱ {seg.startTime} – {seg.endTime} ({seg.durationSeconds}s)
                               </span>
                             </div>
 
-                            <div style={{ fontWeight: '600', color: '#f4f4f4', fontSize: '0.95rem', marginBottom: '0.35rem' }}>
+                            <div style={{ fontWeight: 600, color: '#f4f4f4', fontSize: '0.95rem', marginBottom: '0.35rem' }}>
                               Sponsor: {seg.sponsorBrand}
                             </div>
 
-                            <p style={{ fontSize: '0.8rem', color: '#c6c6c6', lineHeight: '1.5', margin: '0 0 0.75rem 0' }}>
+                            <p style={{ fontSize: '0.8rem', color: '#c6c6c6', lineHeight: 1.5, margin: '0 0 0.75rem 0' }}>
                               "{seg.transcriptSnippet}"
                             </p>
 
@@ -445,29 +446,29 @@ export default function VideoVerification({ activeDeal, activeCampaign, onVerifi
               </Column>
             )}
 
-            {/* Tier 1: Multimodal Keyframe Stills Gallery */}
+            {/* Multimodal Keyframe Stills Gallery */}
             {visualFrames.length > 0 && (
               <Column lg={16} md={8} sm={4}>
-                <Tile style={{ padding: '1.5rem', background: '#1c1c1c', border: '1px solid #333', borderRadius: '6px' }}>
+                <Tile style={{ padding: '1.5rem', background: 'var(--color-surface)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: 6 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                    <h4 style={{ fontSize: '1.05rem', fontWeight: '600', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      <ImageIcon size={20} style={{ color: '#0f62fe' }} /> Multimodal Computer Vision Keyframes (Gemini Analyzed)
+                    <h4 style={{ fontSize: '1.05rem', fontWeight: 600, margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <ImageIcon size={20} style={{ color: '#0f62fe' }} /> Multimodal Computer Vision Keyframes
                     </h4>
                     <span style={{ fontSize: '0.8rem', color: '#8d8d8d' }}>
                       Visual inspection at 0%, 25%, 50%, 75% intervals
                     </span>
                   </div>
 
-                  <Grid style={{ padding: 0, rowGap: '1rem', columnGap: '1rem' }}>
+                  <Grid fullWidth style={{ padding: 0, rowGap: '1rem', columnGap: '1rem' }}>
                     {visualFrames.map((frame, idx) => {
                       const v = frame.visionAnalysis || {};
                       return (
                         <Column lg={4} md={4} sm={4} key={idx}>
                           <div style={{ 
-                            background: '#141414', 
-                            borderRadius: '6px', 
+                            background: '#111111', 
+                            borderRadius: 6, 
                             overflow: 'hidden', 
-                            border: '1px solid #282828',
+                            border: '1px solid rgba(255, 255, 255, 0.06)',
                             height: '100%',
                             display: 'flex',
                             flexDirection: 'column'
@@ -479,7 +480,7 @@ export default function VideoVerification({ activeDeal, activeCampaign, onVerifi
                                 style={{ width: '100%', height: '140px', objectFit: 'cover', background: '#0a0a0a' }} 
                               />
                             ) : (
-                              <div style={{ width: '100%', height: '140px', background: '#222', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#666' }}>
+                              <div style={{ width: '100%', height: '140px', background: '#1c1c1c', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#666' }}>
                                 Keyframe {frame.frameIndex}
                               </div>
                             )}
@@ -498,16 +499,6 @@ export default function VideoVerification({ activeDeal, activeCampaign, onVerifi
                                 <div style={{ fontSize: '0.8rem', color: '#c6c6c6', margin: '0.35rem 0' }}>
                                   <strong>Setting:</strong> {v.backgroundSetting || 'Studio'}
                                 </div>
-
-                                <div style={{ fontSize: '0.8rem', color: '#c6c6c6', margin: '0.35rem 0' }}>
-                                  <strong>Face Visible:</strong> {v.creatorFaceVisible ? '✓ Presenter in frame' : 'B-roll / screen share'}
-                                </div>
-
-                                {v.onScreenText && (
-                                  <div style={{ fontSize: '0.75rem', color: '#78a9ff', marginTop: '0.35rem', background: '#0d1117', padding: '0.35rem', borderRadius: '4px' }}>
-                                    OCR: "{v.onScreenText.substring(0, 45)}..."
-                                  </div>
-                                )}
                               </div>
                             </div>
                           </div>
@@ -519,144 +510,69 @@ export default function VideoVerification({ activeDeal, activeCampaign, onVerifi
               </Column>
             )}
 
-            {/* Tier 2: Interactive Scene Chapters & Sentiment Breakdown */}
-            {scenes.length > 0 && (
+            {/* Transcript Chunks Accordion */}
+            {filteredChunks.length > 0 && (
               <Column lg={16} md={8} sm={4}>
-                <Tile style={{ padding: '1.5rem', background: '#1c1c1c', border: '1px solid #333', borderRadius: '6px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                    <h4 style={{ fontSize: '1.05rem', fontWeight: '600', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      <DocumentView size={20} style={{ color: '#8a3ffc' }} /> Interactive Chapter Breakdown & Sentiment Timeline ({scenes.length} Scenes)
+                <Tile style={{ padding: '1.5rem', background: 'var(--color-surface)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: 6 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                    <h4 style={{ fontSize: '1.05rem', fontWeight: 600, margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <DocumentView size={20} style={{ color: '#0f62fe' }} /> Speech Transcription Timeline ({filteredChunks.length} Segments)
                     </h4>
-                    <span style={{ fontSize: '0.8rem', color: '#8d8d8d' }}>
-                      Full video timeline from 00:00 to end
-                    </span>
+                    <TextInput
+                      id="transcript-filter"
+                      size="sm"
+                      labelText=""
+                      placeholder="Search spoken dialogue..."
+                      value={transcriptSearch}
+                      onChange={(e) => setTranscriptSearch(e.target.value)}
+                      style={{ width: '220px' }}
+                    />
                   </div>
 
-                  <Accordion align="start">
-                    {scenes.map((scene, idx) => (
-                      <AccordionItem 
+                  <div className="transcript-timeline">
+                    {filteredChunks.map((chunk, idx) => (
+                      <div 
                         key={idx} 
-                        title={
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-                            <Tag type="cool-gray" size="sm" style={{ fontWeight: '600' }}>
-                              ⏱ {scene.startTime} – {scene.endTime}
-                            </Tag>
-                            <Tag type={scene.sceneType === 'INTRO_HOOK' ? 'cyan' : scene.sceneType === 'OUTRO_SUMMARY' ? 'purple' : 'teal'} size="sm">
-                              {scene.sceneType}
-                            </Tag>
-                            <Tag type={scene.sentiment === 'POSITIVE' ? 'green' : scene.sentiment === 'CONSTRUCTIVE_CRITIQUE' ? 'warm-gray' : 'cool-gray'} size="sm">
-                              {scene.sentiment || 'NEUTRAL'}
-                            </Tag>
-                            <span style={{ color: '#f4f4f4', fontSize: '0.875rem' }}>
-                              {scene.visualDescription?.substring(0, 80)}...
-                            </span>
-                          </div>
-                        }
+                        className={`timeline-event ${chunk.hasBrandMention ? 'highlight' : ''}`}
                       >
-                        <div style={{ padding: '0.5rem 0', color: '#c6c6c6', fontSize: '0.85rem', lineHeight: '1.6' }}>
-                          <p style={{ margin: '0 0 0.5rem 0' }}>
-                            <strong>Visual Description:</strong> {scene.visualDescription}
-                          </p>
-                          {scene.ocrText && (
-                            <p style={{ margin: '0 0 0.5rem 0', color: '#78a9ff' }}>
-                              <strong>On-Screen Headline (OCR):</strong> "{scene.ocrText}"
-                            </p>
-                          )}
-                          {scene.detectedElements && (
-                            <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.5rem' }}>
-                              <strong>Detected Visual Elements:</strong>
-                              {scene.detectedElements.map((elem, eIdx) => (
-                                <Tag key={eIdx} type="outline" size="sm">{elem}</Tag>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      </AccordionItem>
+                        <span className="time">{chunk.start || '00:00'}</span>
+                        <span style={{ color: '#f4f4f4' }}>{chunk.text}</span>
+                        {chunk.hasBrandMention && (
+                          <Tag type="green" size="sm" style={{ marginLeft: '0.5rem' }}>
+                            ✓ Verified Claim
+                          </Tag>
+                        )}
+                      </div>
                     ))}
-                  </Accordion>
+                  </div>
                 </Tile>
               </Column>
             )}
 
-            {/* Tier 3: In-Browser Transcript Search Explorer */}
-            {analysisResult.transcriptChunks && (
+            {/* Bottom Remediation Action Bar */}
+            {analysisResult.complianceScore < 80 && (
               <Column lg={16} md={8} sm={4}>
-                <Tile style={{ padding: '1.5rem', background: '#1c1c1c', border: '1px solid #333', borderRadius: '6px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
-                    <h4 style={{ fontSize: '1.05rem', fontWeight: '600', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      <SearchIcon size={20} style={{ color: '#0f62fe' }} /> Transcript Search Explorer ({analysisResult.transcriptChunks.length} Speech Chunks)
-                    </h4>
-                    <div style={{ width: '300px' }}>
-                      <TextInput
-                        id="transcript-search-input"
-                        labelText=""
-                        hideLabel
-                        placeholder="Search transcript (e.g. Daily Upside, hedge fund)..."
-                        value={transcriptSearch}
-                        onChange={(e) => setTranscriptSearch(e.target.value)}
-                        size="sm"
-                      />
+                <Tile style={{ padding: '1.25rem 1.5rem', background: 'rgba(218, 30, 40, 0.08)', border: '1px solid rgba(218, 30, 40, 0.3)', borderLeft: '4px solid #da1e28', borderRadius: 6, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+                  <div>
+                    <div style={{ fontWeight: 600, color: '#f4f4f4', fontSize: '0.95rem' }}>
+                      Content Revision Recommended
+                    </div>
+                    <div style={{ color: '#c6c6c6', fontSize: '0.85rem' }}>
+                      {analysisResult.remediationGuidance || 'Video does not satisfy minimum contractual promo code presentation or length requirements.'}
                     </div>
                   </div>
-
-                  <div style={{ maxHeight: '280px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.5rem', paddingRight: '0.5rem' }}>
-                    {filteredChunks.length === 0 ? (
-                      <div style={{ padding: '1.5rem', textAlign: 'center', color: '#8d8d8d' }}>
-                        No speech chunks matching "{transcriptSearch}"
-                      </div>
-                    ) : (
-                      filteredChunks.map((chunk, idx) => (
-                        <div 
-                          key={idx}
-                          style={{
-                            background: '#141414',
-                            padding: '0.65rem 0.85rem',
-                            borderRadius: '4px',
-                            border: '1px solid #282828',
-                            display: 'flex',
-                            alignItems: 'flex-start',
-                            gap: '0.75rem'
-                          }}
-                        >
-                          <Tag type="cool-gray" size="sm" style={{ flexShrink: 0, marginTop: '2px' }}>
-                            ⏱ {chunk.start || '00:00'}
-                          </Tag>
-                          <div style={{ fontSize: '0.85rem', color: '#e0e0e0', lineHeight: '1.4' }}>
-                            <strong style={{ color: '#78a9ff' }}>{chunk.speaker || 'Creator'}:</strong> {chunk.text}
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </Tile>
-              </Column>
-            )}
-
-            {/* Remediation Guidance & Action Bar */}
-            <Column lg={16} md={8} sm={4}>
-              <Tile style={{ padding: '1.25rem 1.5rem', background: 'rgba(15, 98, 254, 0.08)', border: '1px solid rgba(15, 98, 254, 0.3)', borderRadius: '6px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
-                <div style={{ flex: 1, minWidth: '280px' }}>
-                  <h5 style={{ margin: '0 0 0.25rem 0', color: '#78a9ff', fontSize: '0.95rem', fontWeight: '600' }}>
-                    🤖 AI Compliance Verdict & Action Guidance:
-                  </h5>
-                  <p style={{ margin: 0, color: '#f4f4f4', fontSize: '0.85rem', lineHeight: '1.5' }}>
-                    {analysisResult.remediationGuidance || 'All quality, plagiarism, and brand safety checks passed. Approved for instant escrow payout.'}
-                  </p>
-                </div>
-
-                <div style={{ display: 'flex', gap: '0.75rem' }}>
-                  <Button 
-                    kind="secondary" 
-                    size="sm" 
-                    renderIcon={Send} 
+                  <Button
+                    kind="danger"
+                    size="sm"
+                    renderIcon={Send}
                     disabled={sendingRevision}
                     onClick={handleSendRevisionGuidance}
                   >
-                    {sendingRevision ? 'Dispatching...' : 'Dispatch AI Revision Guidance'}
+                    {sendingRevision ? "Dispatching..." : "Send AI Revision Feedback to Creator"}
                   </Button>
-                </div>
-              </Tile>
-            </Column>
+                </Tile>
+              </Column>
+            )}
           </>
         )}
       </Grid>

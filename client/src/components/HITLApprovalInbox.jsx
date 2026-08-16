@@ -1,14 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   Button, Tag, InlineNotification, TextArea, Modal,
-  SkeletonText, Tooltip
+  SkeletonText, Tooltip, Tile
 } from '@carbon/react';
 import {
   CheckmarkFilled, CloseFilled, Warning, User, Currency,
   Email, ArrowRight, Renew, Time, Information, ChevronDown, ChevronUp
 } from '@carbon/icons-react';
-
-// ─── helpers ────────────────────────────────────────────────────────────────
 
 const TICKET_TYPE = (t) => {
   if (!t) return 'negotiation';
@@ -30,7 +28,7 @@ const RISK_META = {
   CRITICAL: { tagType: 'red',      label: 'Critical' },
 };
 
-const fmt = (n) => n ? `Rs.${Number(n).toLocaleString('en-IN')}` : '—';
+const fmt = (n) => n ? `₹${Number(n).toLocaleString('en-IN')}` : '—';
 const fmtDate = (d) => d ? new Date(d).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—';
 const elapsed = (d) => {
   if (!d) return '';
@@ -40,8 +38,6 @@ const elapsed = (d) => {
   if (hrs < 24) return `${hrs}h ago`;
   return `${Math.floor(hrs / 24)}d ago`;
 };
-
-// ─── TicketCard ──────────────────────────────────────────────────────────────
 
 function TicketCard({ ticket, actorName, onApprove, onReject, loading }) {
   const [expanded, setExpanded]       = useState(false);
@@ -61,17 +57,15 @@ function TicketCard({ ticket, actorName, onApprove, onReject, loading }) {
       id={`ticket-${ticket.id}`}
       className="interactive-card"
       style={{
-        background: 'rgba(26, 26, 26, 0.75)',
-        backdropFilter: 'blur(8px)',
+        background: 'var(--color-surface)',
         border: '1px solid rgba(255, 255, 255, 0.08)',
         borderLeft: `4px solid ${meta.color}`,
-        borderRadius: '6px',
+        borderRadius: 6,
         marginBottom: '0.85rem',
         overflow: 'hidden',
         transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
       }}
     >
-      {/* Card Header */}
       <div
         onClick={() => setExpanded(e => !e)}
         style={{
@@ -80,7 +74,6 @@ function TicketCard({ ticket, actorName, onApprove, onReject, loading }) {
           background: expanded ? 'rgba(255, 255, 255, 0.04)' : 'transparent'
         }}
       >
-        {/* Type Icon */}
         <div style={{
           width: 36, height: 36, borderRadius: '50%', flexShrink: 0,
           background: `${meta.color}15`, border: `1px solid ${meta.color}40`,
@@ -89,10 +82,9 @@ function TicketCard({ ticket, actorName, onApprove, onReject, loading }) {
           <TypeIcon size={16} style={{ color: meta.color }} />
         </div>
 
-        {/* Creator + Reason */}
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-            <span style={{ fontWeight: '600', color: '#f4f4f4', fontSize: '0.9rem' }}>
+            <span style={{ fontWeight: 600, color: '#f4f4f4', fontSize: '0.9rem' }}>
               {ticket.creator_name || 'Unknown Creator'}
             </span>
             <Tag type={meta.tagType} size="sm" style={{ margin: 0 }}>{meta.label}</Tag>
@@ -103,38 +95,34 @@ function TicketCard({ ticket, actorName, onApprove, onReject, loading }) {
           </div>
         </div>
 
-        {/* Amount + Time */}
         <div style={{ textAlign: 'right', flexShrink: 0 }}>
           {ticket.requested_rate && (
-            <div style={{ fontWeight: '700', color: '#f4f4f4', fontSize: '1rem' }}>
+            <div style={{ fontWeight: 700, color: '#42be65', fontSize: '1rem', fontFamily: 'monospace' }}>
               {fmt(ticket.requested_rate)}
             </div>
           )}
-          <div style={{ fontSize: '0.72rem', color: '#525252', display: 'flex', alignItems: 'center', gap: '0.25rem', justifyContent: 'flex-end', marginTop: '0.2rem' }}>
+          <div style={{ fontSize: '0.72rem', color: '#8d8d8d', display: 'flex', alignItems: 'center', gap: '0.25rem', justifyContent: 'flex-end', marginTop: '0.2rem' }}>
             <Time size={10} />
             {elapsed(ticket.created_at)}
           </div>
         </div>
 
-        {/* Expand icon */}
-        <div style={{ color: '#525252', flexShrink: 0 }}>
+        <div style={{ color: '#8d8d8d', flexShrink: 0 }}>
           {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
         </div>
       </div>
 
-      {/* Expanded Detail */}
       {expanded && (
-        <div style={{ padding: '0 1.25rem 1rem 1.25rem', borderTop: '1px solid #262626' }}>
-          {/* Budget bar */}
+        <div style={{ padding: '0 1.25rem 1rem 1.25rem', borderTop: '1px solid rgba(255, 255, 255, 0.06)' }}>
           {budgetUtilization !== null && (
             <div style={{ margin: '0.875rem 0' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: '#a8a8a8', marginBottom: '0.3rem' }}>
                 <span>Budget utilization</span>
-                <span style={{ color: budgetUtilization > 90 ? '#ff832b' : '#42be65', fontWeight: '600' }}>
+                <span style={{ color: budgetUtilization > 90 ? '#ff832b' : '#42be65', fontWeight: 600 }}>
                   {fmt(ticket.requested_rate)} / {fmt(ticket.max_allowed_rate)} ({budgetUtilization}%)
                 </span>
               </div>
-              <div style={{ height: 6, background: '#393939', borderRadius: 3, overflow: 'hidden' }}>
+              <div style={{ height: 6, background: '#111111', borderRadius: 3, overflow: 'hidden' }}>
                 <div style={{
                   height: '100%', borderRadius: 3,
                   width: `${budgetUtilization}%`,
@@ -145,29 +133,27 @@ function TicketCard({ ticket, actorName, onApprove, onReject, loading }) {
             </div>
           )}
 
-          {/* Detail grid */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginBottom: '1rem', fontSize: '0.8rem' }}>
-            <div style={{ background: '#262626', borderRadius: 4, padding: '0.5rem 0.75rem' }}>
-              <div style={{ color: '#525252', fontSize: '0.7rem', marginBottom: '0.2rem' }}>AGENT</div>
+            <div style={{ background: '#111111', borderRadius: 4, padding: '0.5rem 0.75rem', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+              <div style={{ color: '#8d8d8d', fontSize: '0.65rem', textTransform: 'uppercase', marginBottom: '0.2rem' }}>AGENT</div>
               <div style={{ color: '#c6c6c6' }}>{ticket.actor_agent || '—'}</div>
             </div>
-            <div style={{ background: '#262626', borderRadius: 4, padding: '0.5rem 0.75rem' }}>
-              <div style={{ color: '#525252', fontSize: '0.7rem', marginBottom: '0.2rem' }}>TICKET ID</div>
+            <div style={{ background: '#111111', borderRadius: 4, padding: '0.5rem 0.75rem', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+              <div style={{ color: '#8d8d8d', fontSize: '0.65rem', textTransform: 'uppercase', marginBottom: '0.2rem' }}>TICKET ID</div>
               <div style={{ color: '#c6c6c6', fontFamily: 'monospace', fontSize: '0.75rem' }}>{ticket.id}</div>
             </div>
-            <div style={{ background: '#262626', borderRadius: 4, padding: '0.5rem 0.75rem' }}>
-              <div style={{ color: '#525252', fontSize: '0.7rem', marginBottom: '0.2rem' }}>CREATED</div>
+            <div style={{ background: '#111111', borderRadius: 4, padding: '0.5rem 0.75rem', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+              <div style={{ color: '#8d8d8d', fontSize: '0.65rem', textTransform: 'uppercase', marginBottom: '0.2rem' }}>CREATED</div>
               <div style={{ color: '#c6c6c6' }}>{fmtDate(ticket.created_at)}</div>
             </div>
-            <div style={{ background: '#262626', borderRadius: 4, padding: '0.5rem 0.75rem' }}>
-              <div style={{ color: '#525252', fontSize: '0.7rem', marginBottom: '0.2rem' }}>DEAL ID</div>
+            <div style={{ background: '#111111', borderRadius: 4, padding: '0.5rem 0.75rem', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+              <div style={{ color: '#8d8d8d', fontSize: '0.65rem', textTransform: 'uppercase', marginBottom: '0.2rem' }}>DEAL ID</div>
               <div style={{ color: '#c6c6c6', fontFamily: 'monospace', fontSize: '0.75rem' }}>{ticket.deal_id || '—'}</div>
             </div>
           </div>
 
-          {/* Consequence guidance */}
           <div style={{
-            background: '#0f2027', border: '1px solid #1d3a4d', borderRadius: 4,
+            background: 'rgba(15, 98, 254, 0.08)', border: '1px solid rgba(15, 98, 254, 0.3)', borderRadius: 4,
             padding: '0.625rem 0.875rem', marginBottom: '1rem',
             display: 'flex', gap: '0.5rem', alignItems: 'flex-start'
           }}>
@@ -175,26 +161,24 @@ function TicketCard({ ticket, actorName, onApprove, onReject, loading }) {
             <div style={{ fontSize: '0.8rem', color: '#a8a8a8', lineHeight: 1.5 }}>
               <strong style={{ color: '#78a9ff' }}>If you approve: </strong>{meta.description}
               <br />
-              <strong style={{ color: '#ff6b6b' }}>If you reject: </strong>Deal moves to NEGOTIATION_FAILED. Creator is not contacted further.
+              <strong style={{ color: '#ff8389' }}>If you reject: </strong>Deal moves to NEGOTIATION_FAILED. Creator is not contacted further.
             </div>
           </div>
 
-          {/* Reject with reason */}
           {showReject && (
             <div style={{ marginBottom: '0.875rem' }}>
               <TextArea
                 id={`reject-reason-${ticket.id}`}
                 labelText="Rejection reason (optional)"
-                placeholder="e.g. Rate too high, try counter-offering Rs.30,000..."
+                placeholder="e.g. Rate too high, try counter-offering ₹30,000..."
                 value={rejectReason}
                 onChange={(e) => setRejectReason(e.target.value)}
                 rows={2}
-                style={{ background: '#262626', fontSize: '0.8rem' }}
+                style={{ fontSize: '0.8rem' }}
               />
             </div>
           )}
 
-          {/* Action buttons */}
           <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
             <Button
               id={`approve-btn-${ticket.id}`}
@@ -247,14 +231,12 @@ function TicketCard({ ticket, actorName, onApprove, onReject, loading }) {
   );
 }
 
-// ─── Main Component ──────────────────────────────────────────────────────────
-
 export default function HITLApprovalInbox({ session, compact = false }) {
   const [tickets, setTickets]         = useState([]);
   const [loading, setLoading]         = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [toast, setToast]             = useState(null);
-  const [filter, setFilter]           = useState('PENDING'); // PENDING | APPROVED | REJECTED | ALL
+  const [filter, setFilter]           = useState('PENDING');
   const [autoRefresh, setAutoRefresh] = useState(true);
 
   const actorName = session?.user?.name || 'Brand Admin';
@@ -276,7 +258,6 @@ export default function HITLApprovalInbox({ session, compact = false }) {
     fetchTickets();
   }, [fetchTickets]);
 
-  // Auto-refresh every 15 seconds
   useEffect(() => {
     if (!autoRefresh) return;
     const interval = setInterval(fetchTickets, 15000);
@@ -335,12 +316,11 @@ export default function HITLApprovalInbox({ session, compact = false }) {
   const filtered = tickets.filter(t => filter === 'ALL' ? true : t.status === filter);
   const pending  = tickets.filter(t => t.status === 'PENDING');
 
-  // ── Compact mode (for dashboard widget) ──────────────────────────────────
   if (compact) {
     if (loading) return <SkeletonText paragraph lines={3} />;
     if (pending.length === 0) {
       return (
-        <div style={{ textAlign: 'center', padding: '1.5rem', color: '#525252', fontSize: '0.85rem' }}>
+        <div style={{ textAlign: 'center', padding: '1.5rem', color: '#8d8d8d', fontSize: '0.85rem' }}>
           No pending approvals
         </div>
       );
@@ -350,13 +330,13 @@ export default function HITLApprovalInbox({ session, compact = false }) {
         {pending.slice(0, 3).map(t => (
           <div key={t.id} style={{
             display: 'flex', alignItems: 'center', gap: '0.75rem',
-            padding: '0.625rem 0', borderBottom: '1px solid #262626'
+            padding: '0.625rem 0', borderBottom: '1px solid rgba(255, 255, 255, 0.06)'
           }}>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: '0.85rem', fontWeight: '600', color: '#f4f4f4' }}>{t.creator_name}</div>
+              <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#f4f4f4' }}>{t.creator_name}</div>
               <div style={{ fontSize: '0.75rem', color: '#a8a8a8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.reason}</div>
             </div>
-            <div style={{ fontSize: '0.85rem', fontWeight: '700', color: '#f1c21b', flexShrink: 0 }}>{fmt(t.requested_rate)}</div>
+            <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#42be65', fontFamily: 'monospace', flexShrink: 0 }}>{fmt(t.requested_rate)}</div>
             <div style={{ display: 'flex', gap: '0.4rem', flexShrink: 0 }}>
               <Button size="sm" kind="primary" renderIcon={CheckmarkFilled}
                 onClick={() => handleApprove(t.id, t.creator_name)}
@@ -372,155 +352,90 @@ export default function HITLApprovalInbox({ session, compact = false }) {
           </div>
         ))}
         {pending.length > 3 && (
-          <div style={{ fontSize: '0.75rem', color: '#525252', padding: '0.5rem 0 0', textAlign: 'center' }}>
-            +{pending.length - 3} more in AI Governance
+          <div style={{ fontSize: '0.75rem', color: '#8d8d8d', padding: '0.5rem 0 0', textAlign: 'center' }}>
+            +{pending.length - 3} more in Approval Inbox
           </div>
         )}
       </div>
     );
   }
 
-  // ── Full page mode ─────────────────────────────────────────────────────────
   return (
-    <div style={{ maxWidth: 900, margin: '0 auto' }}>
-
-      {/* Page Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
-        <div>
-          <h2 style={{ margin: 0, fontWeight: '600', fontSize: '1.25rem', color: '#f4f4f4' }}>
-            Approval Inbox
-          </h2>
-          <p style={{ margin: '0.25rem 0 0', color: '#6f6f6f', fontSize: '0.85rem' }}>
-            AI agents pause here. You decide. Every decision is logged.
-          </p>
-        </div>
-        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-          <button
-            onClick={fetchTickets}
-            style={{ background: 'none', border: '1px solid #393939', borderRadius: 4, padding: '0.4rem 0.75rem', color: '#c6c6c6', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.8rem' }}
-          >
-            <Renew size={14} /> Refresh
-          </button>
-          <button
-            onClick={() => setAutoRefresh(a => !a)}
-            style={{
-              background: autoRefresh ? '#0f2027' : 'none',
-              border: `1px solid ${autoRefresh ? '#4589ff' : '#393939'}`,
-              borderRadius: 4, padding: '0.4rem 0.75rem',
-              color: autoRefresh ? '#4589ff' : '#c6c6c6',
-              cursor: 'pointer', fontSize: '0.8rem'
-            }}
-          >
-            {autoRefresh ? 'Live' : 'Paused'}
-          </button>
-        </div>
-      </div>
-
-      {/* Stats row */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem', marginBottom: '1.5rem' }}>
-        {[
-          { label: 'Pending',  val: tickets.filter(t => t.status === 'PENDING').length,   color: '#f1c21b' },
-          { label: 'Approved', val: tickets.filter(t => t.status === 'APPROVED').length,  color: '#42be65' },
-          { label: 'Rejected', val: tickets.filter(t => t.status === 'REJECTED').length,  color: '#ff832b' },
-        ].map(s => (
-          <div key={s.label} style={{ background: '#1c1c1c', border: '1px solid #393939', borderRadius: 4, padding: '0.875rem 1.25rem' }}>
-            <div style={{ fontSize: '1.75rem', fontWeight: '700', color: s.color, lineHeight: 1 }}>{s.val}</div>
-            <div style={{ fontSize: '0.8rem', color: '#525252', marginTop: '0.2rem' }}>{s.label}</div>
+    <div style={{ maxWidth: 900, margin: '0 auto', width: '100%' }}>
+      {/* Page Hero Header */}
+      <div className="hero-header" style={{ marginBottom: '1.25rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
+          <div>
+            <h1>Approval Inbox</h1>
+            <p>
+              Autonomous agents pause and escalate when rates or risks exceed safety thresholds. You govern every decision.
+            </p>
           </div>
-        ))}
+          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+            <Button
+              kind="ghost"
+              size="sm"
+              renderIcon={Renew}
+              onClick={fetchTickets}
+              style={{ color: '#78a9ff' }}
+            >
+              Refresh
+            </Button>
+          </div>
+        </div>
       </div>
 
-      {/* Toast */}
       {toast && (
-        <div style={{ marginBottom: '1rem' }}>
-          <InlineNotification
-            kind={toast.kind}
-            title={toast.kind === 'success' ? 'Done — ' : toast.kind === 'warning' ? 'Rejected — ' : 'Error — '}
-            subtitle={toast.msg}
-            lowContrast
-            onCloseButtonClick={() => setToast(null)}
-          />
-        </div>
+        <InlineNotification
+          kind={toast.kind}
+          title={toast.kind === 'success' ? 'Decision Recorded' : 'Action Required'}
+          subtitle={toast.msg}
+          onCloseButtonClick={() => setToast(null)}
+          style={{ marginBottom: '1.25rem' }}
+        />
       )}
 
-      {/* Filter tabs */}
-      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
+      {/* Filter Tabs */}
+      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.25rem' }}>
         {['PENDING', 'APPROVED', 'REJECTED', 'ALL'].map(f => (
-          <button
+          <Button
             key={f}
+            size="sm"
+            kind={filter === f ? 'primary' : 'ghost'}
             onClick={() => setFilter(f)}
-            style={{
-              background: filter === f ? '#393939' : 'transparent',
-              border: '1px solid',
-              borderColor: filter === f ? '#525252' : '#262626',
-              borderRadius: 4,
-              padding: '0.35rem 0.75rem',
-              color: filter === f ? '#f4f4f4' : '#6f6f6f',
-              cursor: 'pointer',
-              fontSize: '0.8rem',
-              fontWeight: filter === f ? '600' : '400'
-            }}
+            style={{ fontSize: '0.75rem', height: '2rem' }}
           >
-            {f === 'ALL' ? 'All' : `${f.charAt(0)}${f.slice(1).toLowerCase()}`}
-            {f === 'PENDING' && pending.length > 0 && (
-              <span style={{ marginLeft: '0.4rem', background: '#da1e28', color: '#fff', borderRadius: 10, padding: '0 5px', fontSize: '0.7rem' }}>
-                {pending.length}
-              </span>
-            )}
-          </button>
+            {f === 'PENDING' ? `Pending (${pending.length})` : f}
+          </Button>
         ))}
       </div>
 
-      {/* Ticket list */}
+      {/* Ticket List */}
       {loading ? (
-        <div style={{ padding: '2rem' }}>
+        <Tile style={{ background: 'var(--color-surface)', padding: '3rem', textAlign: 'center', borderRadius: 6 }}>
           <SkeletonText paragraph lines={4} />
-        </div>
+        </Tile>
       ) : filtered.length === 0 ? (
-        <div style={{
-          textAlign: 'center', padding: '4rem 2rem',
-          background: '#1c1c1c', border: '1px solid #262626', borderRadius: 4
-        }}>
-          <CheckmarkFilled size={40} style={{ color: '#42be65', marginBottom: '0.75rem' }} />
-          <div style={{ color: '#c6c6c6', fontWeight: '600', marginBottom: '0.5rem' }}>All clear</div>
-          <div style={{ color: '#525252', fontSize: '0.85rem' }}>No {filter.toLowerCase()} approvals. The AI agents are working autonomously.</div>
-        </div>
+        <Tile style={{ background: 'var(--color-surface)', border: '1px solid rgba(255, 255, 255, 0.08)', padding: '3.5rem 2rem', textAlign: 'center', borderRadius: 6 }}>
+          <CheckmarkFilled size={36} style={{ color: '#42be65', marginBottom: '0.75rem' }} />
+          <h3 style={{ color: '#f4f4f4', fontSize: '1.1rem', fontWeight: 600, margin: '0 0 0.5rem 0' }}>
+            {filter === 'PENDING' ? 'Zero pending escalations' : 'No tickets in this view'}
+          </h3>
+          <p style={{ color: '#8d8d8d', margin: 0, fontSize: '0.875rem' }}>
+            All autonomous negotiation and payout agents are operating safely within approved guardrails.
+          </p>
+        </Tile>
       ) : (
-        <>
-          {/* Pending always on top */}
-          {filter === 'PENDING' || filter === 'ALL' ? (
-            filtered.filter(t => t.status === 'PENDING').map(t => (
-              <TicketCard
-                key={t.id}
-                ticket={t}
-                actorName={actorName}
-                onApprove={handleApprove}
-                onReject={handleReject}
-                loading={actionLoading}
-              />
-            ))
-          ) : null}
-
-          {/* Non-pending history */}
-          {filter !== 'PENDING' && filtered.filter(t => t.status !== 'PENDING').map(t => (
-            <div key={t.id} style={{
-              background: '#161616', border: '1px solid #262626', borderRadius: 4,
-              padding: '0.75rem 1.25rem', marginBottom: '0.5rem',
-              display: 'flex', alignItems: 'center', gap: '0.75rem', opacity: 0.7
-            }}>
-              {t.status === 'APPROVED'
-                ? <CheckmarkFilled size={16} style={{ color: '#42be65' }} />
-                : <CloseFilled size={16} style={{ color: '#ff832b' }} />
-              }
-              <div style={{ flex: 1 }}>
-                <span style={{ color: '#c6c6c6', fontWeight: '500', fontSize: '0.85rem' }}>{t.creator_name}</span>
-                <span style={{ color: '#525252', fontSize: '0.8rem', marginLeft: '0.5rem' }}>{t.reason?.substring(0, 60)}</span>
-              </div>
-              <Tag type={t.status === 'APPROVED' ? 'green' : 'orange'} size="sm" style={{ margin: 0 }}>{t.status}</Tag>
-              <span style={{ color: '#525252', fontSize: '0.75rem' }}>{fmtDate(t.created_at)}</span>
-            </div>
-          ))}
-        </>
+        filtered.map(t => (
+          <TicketCard
+            key={t.id}
+            ticket={t}
+            actorName={actorName}
+            onApprove={handleApprove}
+            onReject={handleReject}
+            loading={actionLoading}
+          />
+        ))
       )}
     </div>
   );
