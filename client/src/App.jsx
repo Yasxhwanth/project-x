@@ -801,7 +801,7 @@ export default function App() {
             )}
             {currentTab === 'discovery'    && <CreatorSearch onSelectCreator={handleSelectCreatorForOutreach} onViewDeal={handleViewDeal} activeCampaign={activeCampaign} />}
             {currentTab === 'negotiator'   && <EmailNegotiator activeDeal={activeDeal} campaignId={activeCampaign?.id} onDealUpdated={fetchActiveCampaign} onNavigateToDiscovery={() => setCurrentTab('discovery')} />}
-            {currentTab === 'verification' && <VideoVerification activeDeal={activeDeal} />}
+            {currentTab === 'verification' && <VideoVerification activeDeal={activeDeal} activeCampaign={activeCampaign} onNavigateToPayouts={() => setCurrentTab('payouts')} />}
             {currentTab === 'payouts'      && <PayoutDashboard activeDeal={activeDeal} />}
             {currentTab === 'closeout'     && <CampaignCloseoutReport defaultCampaignId={activeCampaign?.id || 'camp_01'} />}
             {currentTab === 'portfolio'    && <CampaignBuilder activeCampaign={activeCampaign} forceCreateNew={forceCreateNewCampaign} initialWorkspaceCampaign={selectedWorkspaceCampaign} onCampaignSaved={(c) => { setActiveCampaign(c); fetchActiveCampaign(); setForceCreateNewCampaign(false); }} onSwitchCampaign={(c) => { setActiveCampaign(c); setSelectedWorkspaceCampaign(c); }} />}
