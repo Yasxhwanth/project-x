@@ -214,7 +214,7 @@ export default function VideoVerification({ activeDeal, activeCampaign, onVerifi
         <Column lg={16} md={8} sm={4}>
           <Tile style={{ padding: '1.25rem 1.5rem', background: 'var(--color-surface)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: 6 }}>
             <Grid fullWidth style={{ padding: 0, rowGap: '1rem', columnGap: '1rem', alignItems: 'flex-end' }}>
-              <Column lg={10} md={5} sm={4}>
+              <Column lg={9} md={8} sm={4}>
                 <TextInput
                   id="reel-url-input"
                   labelText="YouTube Video or Reel Submission URL"
@@ -225,25 +225,25 @@ export default function VideoVerification({ activeDeal, activeCampaign, onVerifi
                 />
               </Column>
 
-              <Column lg={3} md={3} sm={2}>
+              <Column lg={4} md={4} sm={2}>
                 <Button 
                   kind="primary" 
                   renderIcon={Video} 
                   disabled={loading} 
                   onClick={() => handleRunVideoAudit(false)} 
-                  style={{ width: '100%', maxWidth: 'none' }}
+                  style={{ width: '100%', maxWidth: 'none', whiteSpace: 'nowrap' }}
                 >
-                  {loading ? "Perceiving Video..." : "Run Multimodal Audit"}
+                  {loading ? "Perceiving..." : "Run AI Video Audit"}
                 </Button>
               </Column>
 
-              <Column lg={3} md={3} sm={2}>
+              <Column lg={3} md={4} sm={2}>
                 <Button 
                   kind="tertiary" 
                   renderIcon={Checkmark} 
                   disabled={loading} 
                   onClick={() => handleRunVideoAudit(true)} 
-                  style={{ width: '100%', maxWidth: 'none' }}
+                  style={{ width: '100%', maxWidth: 'none', whiteSpace: 'nowrap' }}
                 >
                   Force Approve
                 </Button>

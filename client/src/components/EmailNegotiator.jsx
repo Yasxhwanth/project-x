@@ -238,6 +238,12 @@ export default function EmailNegotiator({ campaignId, activeDeal, onDealUpdated,
       .catch(() => {});
   }, []);
 
+  useEffect(() => {
+    if (activeDeal?.id) {
+      setSelectedDealId(activeDeal.id);
+    }
+  }, [activeDeal?.id]);
+
   const fetchDeals = useCallback(async () => {
     try {
       const url = campaignId ? `/api/deals?campaignId=${campaignId}` : '/api/deals';
@@ -245,21 +251,22 @@ export default function EmailNegotiator({ campaignId, activeDeal, onDealUpdated,
       const data = await res.json();
       const list = Array.isArray(data) ? data : data.deals || [];
       setDeals(list);
-      if (!selectedDealId && list.length > 0) {
-        setSelectedDealId(list[0].id);
-      }
+      setSelectedDealId(prev => {
+        if (prev && list.some(d => d.id === prev)) return prev;
+        return activeDeal?.id || (list.length > 0 ? list[0].id : null);
+      });
     } catch (err) {
       console.error('Failed to load deals', err);
     } finally {
       setLoadingDeals(false);
     }
-  }, [campaignId, selectedDealId]);
+  }, [campaignId, activeDeal?.id]);
 
   useEffect(() => {
     fetchDeals();
   }, [fetchDeals]);
 
-  const currentDeal = deals.find(d => d.id === selectedDealId);
+  const currentDeal = deals.find(d => d.id === selectedDealId) || (deals.length > 0 ? deals[0] : null);
   const activeBrandName = currentDeal?.brandName || currentDeal?.brand_name || 'boAt Lifestyle';
   const brandTheme = getClientBrandTheme(activeBrandName);
 

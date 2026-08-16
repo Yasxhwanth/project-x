@@ -510,16 +510,33 @@ export default function CreatorSearch({ onSelectCreator, onViewDeal, activeCampa
 
                 {/* Action CTA */}
                 <div style={{ marginTop: '0.85rem', paddingTop: '0.75rem', borderTop: '1px solid rgba(255, 255, 255, 0.06)' }}>
-                  <Button 
-                    kind="primary" 
-                    size="sm" 
-                    renderIcon={Send}
-                    style={{ width: '100%', maxWidth: 'none', justifyContent: 'space-between' }}
-                    onClick={() => handleOpenOutreachModal(c)}
-                    disabled={isRisky}
-                  >
-                    {isRisky ? 'Blocked by Policy' : 'Draft Outreach'}
-                  </Button>
+                  {isRisky ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                      <Button 
+                        kind="danger--ghost" 
+                        size="sm" 
+                        renderIcon={WarningAlt}
+                        style={{ width: '100%', maxWidth: 'none', justifyContent: 'space-between', color: '#ff8389' }}
+                        onClick={() => handleOpenOutreachModal(c)}
+                        title={`Audience authenticity (${authScore}%) is below 60% brand threshold.`}
+                      >
+                        Safety Warning ({authScore}% Auth)
+                      </Button>
+                      <div style={{ fontSize: '0.7rem', color: '#da1e28', textAlign: 'center' }}>
+                        Low audience quality score (&lt;60%)
+                      </div>
+                    </div>
+                  ) : (
+                    <Button 
+                      kind="primary" 
+                      size="sm" 
+                      renderIcon={Send}
+                      style={{ width: '100%', maxWidth: 'none', justifyContent: 'space-between' }}
+                      onClick={() => handleOpenOutreachModal(c)}
+                    >
+                      Draft Outreach
+                    </Button>
+                  )}
                 </div>
               </div>
             );
