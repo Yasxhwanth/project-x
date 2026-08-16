@@ -25,7 +25,8 @@ import {
   Security,
   ShoppingBag,
   Rocket,
-  WarningAlt
+  WarningAlt,
+  DocumentDownload
 } from '@carbon/icons-react';
 
 import CreatorSearch from './components/CreatorSearch';
